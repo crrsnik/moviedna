@@ -91,3 +91,23 @@ Tailwind CSS v4 подключён плагином `@tailwindcss/vite` в `vite
 Layout использует нейтральный тёмный стиль, адаптивный Header, активные ссылки
 и состояния hover и keyboard focus. Повторяющаяся разметка страниц вынесена
 в `PagePlaceholder`. Это временная техническая основа, а не финальный дизайн.
+
+## Firebase CLI
+
+Firebase CLI установлен локально как devDependency `firebase-tools`.
+Авторизация выполняется вручную через `npm run firebase:login`.
+Команды для последующего деплоя:
+
+```sh
+npm run firebase:deploy:rules
+npm run firebase:deploy:indexes
+npm run firebase:deploy:firestore
+```
+
+`.firebaserc` хранит только публичный Project ID. `firebase.json` связывает
+существующую базу Firestore `(default)` с `firestore.rules` и
+`firestore.indexes.json`. Эти четыре файла коммитятся; `.env.local` не коммитится.
+Локальные правила запрещают все чтения и записи (deny-all), индексы пока пустые.
+Добавление файлов не меняет правила в Firebase Console: они применяются
+только при явном деплое. Авторизация CLI выполнена владельцем проекта; deny-all правила развёрнуты
+в базе `(default)`. Индексы и другие сервисы не деплоились.
