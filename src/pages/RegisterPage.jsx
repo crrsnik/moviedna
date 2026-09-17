@@ -1,9 +1,11 @@
+import PagePlaceholder from '../shared/components/PagePlaceholder.jsx'
+
 function RegisterPage() {
   return (
-    <>
-      <h1>Register</h1>
-      <p>Your MovieDNA journey will start here.</p>
-    </>
+    <PagePlaceholder
+      title="Register"
+      subtitle="Your MovieDNA journey will start here."
+    />
   )
 }
 

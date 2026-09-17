@@ -1,9 +1,11 @@
+import PagePlaceholder from '../shared/components/PagePlaceholder.jsx'
+
 function ActorsPage() {
   return (
-    <>
-      <h1>Actors</h1>
-      <p>Discover the people behind your favorite characters.</p>
-    </>
+    <PagePlaceholder
+      title="Actors"
+      subtitle="Discover the people behind your favorite characters."
+    />
   )
 }
 

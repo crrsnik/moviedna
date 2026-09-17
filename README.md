@@ -5,12 +5,13 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 1 — technical foundation.
+Stage 1 — routing and styling foundation.
 
 ## Стек
 
 - React и React DOM
 - Vite и обычный JavaScript (JSX), без TypeScript
+- Tailwind CSS v4 — utility-классы через `@tailwindcss/vite`
 - OXLint для проверки кода
 - react-router-dom — Data Router с общим layout и страницами-заглушками
 - Firebase SDK — установлен, Firebase-проект пока не подключён
@@ -72,3 +73,11 @@ src/
 - `*` — NotFoundPage
 
 Страницы содержат только заголовки и подписи. Авторизация и API не подключены.
+
+## Стили
+
+Tailwind CSS v4 подключён плагином `@tailwindcss/vite` в `vite.config.js`
+рядом с React plugin и импортом `@import "tailwindcss";` в `src/index.css`.
+Layout использует нейтральный тёмный стиль, адаптивный Header, активные ссылки
+и состояния hover и keyboard focus. Повторяющаяся разметка страниц вынесена
+в `PagePlaceholder`. Это временная техническая основа, а не финальный дизайн.

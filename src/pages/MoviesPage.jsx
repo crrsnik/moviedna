@@ -1,9 +1,11 @@
+import PagePlaceholder from '../shared/components/PagePlaceholder.jsx'
+
 function MoviesPage() {
   return (
-    <>
-      <h1>Movies</h1>
-      <p>Your movie discoveries will begin here.</p>
-    </>
+    <PagePlaceholder
+      title="Movies"
+      subtitle="Your movie discoveries will begin here."
+    />
   )
 }
 

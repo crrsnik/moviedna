@@ -1,9 +1,11 @@
+import PagePlaceholder from '../shared/components/PagePlaceholder.jsx'
+
 function LoginPage() {
   return (
-    <>
-      <h1>Log in</h1>
-      <p>Account access is coming soon.</p>
-    </>
+    <PagePlaceholder
+      title="Log in"
+      subtitle="Account access is coming soon."
+    />
   )
 }
 

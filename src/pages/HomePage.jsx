@@ -1,9 +1,11 @@
+import PagePlaceholder from '../shared/components/PagePlaceholder.jsx'
+
 function HomePage() {
   return (
-    <>
-      <h1>MovieDNA</h1>
-      <p>Discover your movie identity</p>
-    </>
+    <PagePlaceholder
+      title="MovieDNA"
+      subtitle="Discover your movie identity"
+    />
   )
 }
 

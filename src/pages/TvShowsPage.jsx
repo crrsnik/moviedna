@@ -1,9 +1,11 @@
+import PagePlaceholder from '../shared/components/PagePlaceholder.jsx'
+
 function TvShowsPage() {
   return (
-    <>
-      <h1>TV Shows</h1>
-      <p>Your next series discovery starts here.</p>
-    </>
+    <PagePlaceholder
+      title="TV Shows"
+      subtitle="Your next series discovery starts here."
+    />
   )
 }
 
