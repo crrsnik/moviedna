@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 1 — routing and styling foundation.
+Stage 1 — Firebase foundation.
 
 ## Стек
 
@@ -14,12 +14,19 @@ Stage 1 — routing and styling foundation.
 - Tailwind CSS v4 — utility-классы через `@tailwindcss/vite`
 - OXLint для проверки кода
 - react-router-dom — Data Router с общим layout и страницами-заглушками
-- Firebase SDK — установлен, Firebase-проект пока не подключён
+- Firebase SDK — modular API, инициализация App, Auth, Firestore и Storage через переменные Vite
 
 ## Локальный запуск
 
 ```sh
 npm install
+cp .env.example .env.local
+```
+
+Заполните `.env.local` значениями Web App configuration из Firebase Console
+(настройки проекта → ваше веб-приложение). Затем запустите:
+
+```sh
 npm run dev
 ```
 
@@ -55,9 +62,12 @@ src/
 ```
 
 Пустые каталоги сохранены в Git с помощью `.gitkeep`.
-Файл `.env.example` содержит пустые переменные для будущего подключения Firebase.
-Для текущего запуска заполнять их не требуется. Firebase-конфигурации и реальных
-ключей в проекте нет; `.env` и `.env.local` игнорируются Git.
+Файл `.env.example` содержит имена шести обязательных переменных Firebase без значений.
+Firebase SDK инициализируется при старте через `src/shared/config/firebase.js`
+из `import.meta.env`. При отсутствии или пустом значении переменной ошибка
+содержит только её имя. Повторная инициализация при HMR защищена проверкой `getApps()`.
+`.env` и `.env.local` игнорируются Git; `.env.local` не коммитится.
+Реальные значения не добавляются в исходный код, README или `.env.example`.
 
 ## Базовая маршрутизация
 
@@ -72,7 +82,7 @@ src/
 - `/register` — RegisterPage
 - `*` — NotFoundPage
 
-Страницы содержат только заголовки и подписи. Авторизация и API не подключены.
+Страницы содержат только заголовки и подписи. Вход и регистрация не реализованы; запросы к Firestore, Storage и TMDB не выполняются.
 
 ## Стили
 
