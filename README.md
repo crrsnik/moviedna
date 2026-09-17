@@ -12,7 +12,7 @@ Stage 1 — technical foundation.
 - React и React DOM
 - Vite и обычный JavaScript (JSX), без TypeScript
 - OXLint для проверки кода
-- react-router-dom — установлен, маршруты пока не настроены
+- react-router-dom — Data Router с общим layout и страницами-заглушками
 - Firebase SDK — установлен, Firebase-проект пока не подключён
 
 ## Локальный запуск
@@ -57,3 +57,18 @@ src/
 Файл `.env.example` содержит пустые переменные для будущего подключения Firebase.
 Для текущего запуска заполнять их не требуется. Firebase-конфигурации и реальных
 ключей в проекте нет; `.env` и `.env.local` игнорируются Git.
+
+## Базовая маршрутизация
+
+Общий `AppLayout` содержит Header и область контента с `Outlet`.
+Маршруты определены в `src/app/router.jsx` через `createBrowserRouter`:
+
+- `/` — HomePage
+- `/movies` — MoviesPage
+- `/tv` — TvShowsPage
+- `/actors` — ActorsPage
+- `/login` — LoginPage
+- `/register` — RegisterPage
+- `*` — NotFoundPage
+
+Страницы содержат только заголовки и подписи. Авторизация и API не подключены.

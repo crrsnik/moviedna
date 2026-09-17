@@ -17,8 +17,10 @@ body {
   min-width: 320px;
 }
 
-main {
-  min-height: 100svh;
+.page-container {
+  flex: 1;
+  width: min(100%, 1120px);
+  margin-inline: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -35,4 +37,72 @@ h1 {
 p {
   margin: 0;
   color: #b9bdc8;
+}
+
+.app-layout {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.site-header {
+  border-bottom: 1px solid #353842;
+}
+
+.header-container {
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px 32px;
+}
+
+.site-header a {
+  display: inline-block;
+  padding-block: 8px;
+  color: #b9bdc8;
+  text-decoration: none;
+}
+
+.site-header .brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f3f4f6;
+}
+
+.primary-nav,
+.account-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.account-nav {
+  margin-left: auto;
+}
+
+.site-header a:hover,
+.site-header a.active {
+  color: #f3f4f6;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+
+.site-header a:focus-visible {
+  outline: 2px solid #c4b5fd;
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+@media (max-width: 600px) {
+  .header-container {
+    gap: 8px 20px;
+  }
+
+  .primary-nav {
+    order: 1;
+    width: 100%;
+  }
 }
