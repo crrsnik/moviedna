@@ -1,16 +1,59 @@
-# React + Vite
+# MovieDNA
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+MovieDNA — приложение для исследования собственных кинопредпочтений.
+Стартовый экран: «MovieDNA — Discover your movie identity».
 
-Currently, two official plugins are available:
+## Статус
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Stage 1 — technical foundation.
 
-## React Compiler
+## Стек
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React и React DOM
+- Vite и обычный JavaScript (JSX), без TypeScript
+- OXLint для проверки кода
+- react-router-dom — установлен, маршруты пока не настроены
+- Firebase SDK — установлен, Firebase-проект пока не подключён
 
-## Expanding the Oxlint configuration
+## Локальный запуск
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+```sh
+npm install
+npm run dev
+```
+
+## Проверка и сборка
+
+```sh
+npm run lint
+npm run build
+```
+
+Production-сборка создаётся в `dist/`. Просмотр сборки локально:
+
+```sh
+npm run preview
+```
+
+## Структура
+
+```text
+src/
+├── app/
+├── pages/
+├── features/
+├── entities/
+├── shared/
+│   ├── components/
+│   ├── config/
+│   ├── hooks/
+│   └── utils/
+├── App.jsx
+├── main.jsx
+└── index.css
+```
+
+Пустые каталоги сохранены в Git с помощью `.gitkeep`.
+Файл `.env.example` содержит пустые переменные для будущего подключения Firebase.
+Для текущего запуска заполнять их не требуется. Firebase-конфигурации и реальных
+ключей в проекте нет; `.env` и `.env.local` игнорируются Git.
