@@ -81,6 +81,9 @@ function LoginForm() {
           )
         })}
       </fieldset>
+      <p className="text-right text-sm">
+        <Link to="/forgot-password" className="rounded text-zinc-100 underline underline-offset-4 hover:text-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100">Forgot password?</Link>
+      </p>
       {serverError && <p role="alert" className="text-sm text-red-300">{serverError}</p>}
       <button type="submit" disabled={isSubmitting} className="w-full rounded-md bg-zinc-100 px-4 py-3 font-semibold text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100 disabled:cursor-wait disabled:opacity-60">
         {isSubmitting ? 'Signing in…' : 'Log in'}

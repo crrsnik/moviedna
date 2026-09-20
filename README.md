@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 2 — login.
+Stage 2 — password recovery.
 
 ## Стек
 
@@ -79,11 +79,12 @@ Firebase SDK инициализируется при старте через `sr
 - `/tv` — TvShowsPage
 - `/actors` — ActorsPage
 - `/login` — LoginPage
+- `/forgot-password` — ForgotPasswordPage
 - `/register` — RegisterPage
 - `*` — NotFoundPage
 
 Страница `/register` содержит форму регистрации, `/login` — форму входа по email и паролю.
-Оба маршрута доступны гостям. Каталог, Storage и TMDB пока не подключены.
+Эти маршруты и `/forgot-password` доступны гостям. Каталог, Storage и TMDB пока не подключены.
 
 ## Стили
 
@@ -211,6 +212,23 @@ AuthProvider получает сессию через существующую �
 
 Неверные credentials, неизвестный пользователь и неверный пароль показывают
 одинаковое сообщение `Incorrect email or password.`. Raw Firebase errors
-и наличие конкретного email не раскрываются. Восстановление пароля и социальный
-вход пока не реализованы. Unit tests входа используют подмену Firebase;
+и наличие конкретного email не раскрываются. Социальный вход пока не реализован. Unit tests входа используют подмену Firebase;
 настоящий вход и изменения production-данных автоматическими проверками не выполняются.
+
+## Восстановление пароля
+
+Ссылка `Forgot password?` на странице входа ведёт на `/forgot-password`.
+Форма проверяет email общей валидацией после trim и вызывает Firebase
+`sendPasswordResetEmail`. Используется стандартное Firebase-письмо и hosted
+action handler; custom continueUrl, ActionCodeSettings и обработка oobCode
+в приложении не добавлены.
+
+Успех и `auth/user-not-found` дают одинаковый результат и сообщение:
+`If an account exists for this email, password reset instructions have been sent.`
+Email в сообщении не отображается. Автоматического перенаправления нет;
+остаётся ссылка `Back to log in`. На время запроса повторная отправка блокируется.
+Ошибки сети, лимита запросов и недоступности операции показываются без Firebase codes.
+
+Unit tests используют подменённую Firebase-функцию: настоящие письма не отправляются,
+пароли и production users/documents не изменяются. Собственной страницы установки
+нового пароля и email verification пока нет.
