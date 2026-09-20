@@ -1,3 +1,5 @@
+import { isValidEmail } from './emailValidation.js'
+
 export function normalizeUsername(username) {
   return typeof username === 'string' ? username.trim().toLowerCase() : ''
 }
@@ -11,7 +13,7 @@ export function validateRegistration({ username, displayName, email, password, c
   if (typeof displayName !== 'string' || displayName.trim().length < 1 || displayName.trim().length > 50) {
     errors.displayName = 'Enter a display name of 1–50 characters.'
   }
-  if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+  if (!isValidEmail(email)) {
     errors.email = 'Enter a valid email address.'
   }
   if (typeof password !== 'string' || password.length < 8 || password.length > 128) {
