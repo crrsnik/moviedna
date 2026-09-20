@@ -12,7 +12,8 @@
     "firebase:deploy:rules": "firebase deploy --only firestore:rules",
     "firebase:deploy:indexes": "firebase deploy --only firestore:indexes",
     "firebase:deploy:firestore": "firebase deploy --only firestore",
-    "test:rules": "firebase emulators:exec --only firestore --project demo-moviedna \"node --test tests/firestore.rules.test.js\""
+    "test:rules": "firebase emulators:exec --only firestore --project demo-moviedna \"node --test tests/firestore.rules.test.js\"",
+    "test:unit": "node --test tests/unit/*.test.js"
   },
   "dependencies": {
     "firebase": "^12.19.0",

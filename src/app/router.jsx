@@ -1,4 +1,5 @@
 import { createBrowserRouter } from 'react-router-dom'
+import GuestOnlyRoute from '../features/auth/components/GuestOnlyRoute.jsx'
 import HomePage from '../pages/HomePage.jsx'
 import MoviesPage from '../pages/MoviesPage.jsx'
 import TvShowsPage from '../pages/TvShowsPage.jsx'
@@ -17,8 +18,13 @@ const router = createBrowserRouter([
       { path: 'movies', element: <MoviesPage /> },
       { path: 'tv', element: <TvShowsPage /> },
       { path: 'actors', element: <ActorsPage /> },
-      { path: 'login', element: <LoginPage /> },
-      { path: 'register', element: <RegisterPage /> },
+      {
+        element: <GuestOnlyRoute />,
+        children: [
+          { path: 'login', element: <LoginPage /> },
+          { path: 'register', element: <RegisterPage /> },
+        ],
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

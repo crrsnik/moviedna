@@ -5,7 +5,7 @@ import { useAuth } from '../../../features/auth/hooks/useAuth.js'
 const linkClasses = 'rounded-md px-3 py-2 text-sm font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100 [&.active]:bg-zinc-800 [&.active]:text-white [&.active]:underline [&.active]:underline-offset-4'
 
 function Header() {
-  const { user, isAuthenticated, logout } = useAuth()
+  const { user, isAuthenticated, logout, registrationStatus } = useAuth()
   const navigate = useNavigate()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [logoutError, setLogoutError] = useState(null)
@@ -43,7 +43,9 @@ function Header() {
           <NavLink className={linkClasses} to="/actors">Actors</NavLink>
         </nav>
         <nav className="ml-auto flex flex-wrap items-center gap-2" aria-label="Account">
-          {isAuthenticated ? (
+          {registrationStatus === 'pending' ? (
+            <span role="status" className="text-sm text-zinc-400">Creating account…</span>
+          ) : isAuthenticated ? (
             <>
               <span className="max-w-48 break-words text-sm text-zinc-300">{user.displayName || user.email || 'Account'}</span>
               <button

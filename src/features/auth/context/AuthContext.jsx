@@ -7,6 +7,7 @@ import { logoutUser, subscribeToAuthState } from '../services/authService.js'
 export const AuthContext = createContext(undefined)
 
 export function AuthProvider({ children }) {
+  const [registrationStatus, setRegistrationStatus] = useState('idle')
   const [user, setUser] = useState(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const [authError, setAuthError] = useState(null)
@@ -44,6 +45,8 @@ export function AuthProvider({ children }) {
     isAuthLoading,
     authError,
     logout: logoutUser,
+    registrationStatus,
+    setRegistrationStatus,
   }
 
   return (
