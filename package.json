@@ -11,7 +11,8 @@
     "firebase:login": "firebase login",
     "firebase:deploy:rules": "firebase deploy --only firestore:rules",
     "firebase:deploy:indexes": "firebase deploy --only firestore:indexes",
-    "firebase:deploy:firestore": "firebase deploy --only firestore"
+    "firebase:deploy:firestore": "firebase deploy --only firestore",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-moviedna \"node --test tests/firestore.rules.test.js\""
   },
   "dependencies": {
     "firebase": "^12.19.0",
@@ -20,6 +21,7 @@
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@tailwindcss/vite": "^4.3.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",

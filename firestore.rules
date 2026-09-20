@@ -2,6 +2,60 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUsername(username) {
+      return username is string && username.matches('^[a-z0-9_]{3,20}$');
+    }
+
+    function isValidDisplayName(displayName) {
+      return displayName is string && displayName.size() >= 1 && displayName.size() <= 50;
+    }
+
+    function hasInitialProfileFields(data) {
+      let fields = ['username', 'displayName', 'photoURL', 'bio',
+                    'onboardingCompleted', 'createdAt', 'updatedAt'];
+      return data.keys().hasAll(fields) && data.keys().hasOnly(fields);
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list, update, delete: if false;
+      allow create: if isOwner(userId)
+        && hasInitialProfileFields(request.resource.data)
+        && isValidUsername(request.resource.data.username)
+        && isValidDisplayName(request.resource.data.displayName)
+        && request.resource.data.photoURL == null
+        && request.resource.data.bio == ''
+        && request.resource.data.onboardingCompleted == false
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        // Reservation must be new in this atomic operation, not pre-existing.
+        && !exists(/databases/$(database)/documents/usernames/$(request.resource.data.username))
+        && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.username)).data.userId == userId;
+    }
+
+    match /usernames/{username} {
+      allow get: if isAuthenticated();
+      allow list, update, delete: if false;
+      allow create: if isAuthenticated()
+        && isValidUsername(username)
+        && request.resource.data.keys().hasAll(['userId', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['userId', 'createdAt'])
+        && request.resource.data.userId is string
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        // Profile must also be created in this atomic operation.
+        && !exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.username == username;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
