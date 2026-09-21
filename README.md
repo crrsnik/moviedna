@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 3 — user profile state.
+Stage 3 — TMDB catalog foundation.
 
 ## Стек
 
@@ -85,7 +85,7 @@ Firebase SDK инициализируется при старте через `sr
 - `*` — NotFoundPage
 
 Страница `/register` содержит форму регистрации, `/login` — форму входа по email и паролю.
-Эти маршруты и `/forgot-password` доступны гостям. Каталог, Storage и TMDB пока не подключены.
+Эти маршруты и `/forgot-password` доступны гостям. Главная загружает trending movies и TV из TMDB; остальные страницы каталога пока остаются заглушками.
 
 ## Стили
 
@@ -247,3 +247,43 @@ UserProfileProvider внутри AuthProvider связывает Firebase Auth u
 при `true` — переход на `/`. Header и logout доступны при ошибке профиля.
 Главная, Movies, TV Shows и Actors остаются открытыми. Выбор фильмов и обновление
 профиля пока не реализованы. Unit tests профиля используют подмену подписки Firebase.
+
+## Локальный каталог TMDB
+
+В `.env.local` заполните `TMDB_READ_ACCESS_TOKEN` из настроек TMDB API.
+Переменная **не использует префикс `VITE_`**. Не добавляйте значение в код или Git.
+Локальная схема при `npm run dev`:
+
+```text
+Browser → /api/tmdb → Vite dev proxy → https://api.themoviedb.org/3
+```
+
+Proxy добавляет Bearer token только на сервере, проверяет TLS и разрешает только
+GET к двум trending endpoints с параметром language. Token не попадает в client
+bundle, URL или браузерные заголовки. Без токена dev-сервер сообщает об ошибке
+конфигурации; `npm run build` токен не требует.
+
+Главная параллельно загружает `/trending/movie/day` и `/trending/tv/day`
+с `language=en-US`. Секции имеют отдельные loading/error/empty состояния и Retry;
+уход со страницы отменяет запросы. Poster CDN — `https://image.tmdb.org/t/p/w342`.
+Данные не записываются в Firebase. Поиск пока неактивен; detail pages отсутствуют.
+
+**Production limitation:** статический hosting и `npm run preview` не предоставляют
+`/api/tmdb`. Перед публичным deployment необходим backend/serverless route с этим
+путём и серверным хранением токена. Не заменяйте proxy прямым браузерным запросом
+с публичной переменной `VITE_*`.
+
+Unit tests используют только синтетические данные и подменённый fetch.
+
+### TMDB credits
+
+This product uses the TMDB API but is not endorsed or certified by TMDB.
+
+Логотип `public/tmdb-logo.svg` получен с [официальной страницы TMDB logos & attribution](https://www.themoviedb.org/about/logos-attribution)
+и сохранён без изменений цвета, пропорций или ориентации. Атрибуция находится в общем footer.
+
+Документация: [TMDB authentication](https://developer.themoviedb.org/docs/authentication-application),
+[trending movies](https://developer.themoviedb.org/reference/trending-movies),
+[trending TV](https://developer.themoviedb.org/reference/trending-tv),
+[images](https://developer.themoviedb.org/docs/image-basics),
+[Vite proxy](https://vite.dev/config/server-options#server-proxy).
