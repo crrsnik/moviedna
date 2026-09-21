@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 3 — TMDB catalog foundation.
+Stage 3 — onboarding security foundation.
 
 ## Стек
 
@@ -150,7 +150,9 @@ Display name нужно обрезать клиентским `trim()` до за
 `serverTimestamp()`. Правила проверяют отсутствие связанного документа до
 операции и взаимные ссылки через `getAfter()` после неё. Владелец может получить
 только свой профиль; авторизованный пользователь — конкретный username.
-List, update и delete запрещены. Остальные коллекции остаются deny-all.
+List и delete профилей запрещены; update допускается только для атомарного завершения
+onboarding по Rules этапа 3.3a. Username reservation остаётся неизменяемым.
+Неописанные коллекции сохраняют deny-all.
 
 ### Тестирование
 
@@ -167,7 +169,7 @@ UI отключён. Project ID `demo-moviedna` используется иск�
 работать без локального emulator host и демонстрационного Project ID.
 Контексты авторизации имитируются библиотекой тестирования, Auth users не создаются.
 
-Правила развёрнуты в production после успешного прохождения 63 тестов
+Базовые правила профиля/username были развёрнуты в production после прохождения 63 тестов
 в Emulator и чистого production audit. Деплой затронул только Firestore Rules;
 production-документы и Auth users при проверке правил не создавались.
 
@@ -287,3 +289,19 @@ This product uses the TMDB API but is not endorsed or certified by TMDB.
 [trending TV](https://developer.themoviedb.org/reference/trending-tv),
 [images](https://developer.themoviedb.org/docs/image-basics),
 [Vite proxy](https://vite.dev/config/server-options#server-proxy).
+
+## Локальная модель onboarding
+
+[Firestore data model](docs/firestore-data-model.md) описывает собственные
+`onboardingResponses` и единственный `onboarding/summary`. Завершение требует одного
+атомарного batch: создание summary и переход профиля `onboardingCompleted: false → true`
+с серверными timestamps. Rules проверяют обе стороны через `getAfter()`.
+После завершения responses и summary доступны владельцу только для чтения.
+
+Rules не пересчитывают реальные responses и не валидируют каждый элемент genreIds;
+границы серверной проверки и обязанности будущего клиентского сервиса указаны в модели.
+Rules этапа 3.3a развёрнуты в production только как `firestore:rules` после
+прохождения 208 Rules tests (63 прежних + 145 новых), 209 unit tests и чистого
+production audit. Автоматические тесты выполняются только в локальном Emulator;
+production documents/users не читались и не изменялись, indexes не разворачивались.
+Frontend onboarding service и swipe UI на этапе 3.3a не добавлены.

@@ -24,9 +24,50 @@ service cloud.firestore {
       return data.keys().hasAll(fields) && data.keys().hasOnly(fields);
     }
 
+    function hasIncompleteProfile(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId))
+        && get(/databases/$(database)/documents/users/$(userId)).data.onboardingCompleted == false;
+    }
+
+    function isValidResponse(data, responseId) {
+      let fields = ['tmdbId', 'mediaType', 'reaction', 'genreIds', 'createdAt', 'updatedAt'];
+      return data.keys().hasAll(fields) && data.keys().hasOnly(fields)
+        && responseId.matches('^[1-9][0-9]{0,11}$')
+        && data.tmdbId is int && data.tmdbId > 0
+        && string(data.tmdbId) == responseId
+        && data.mediaType == 'movie'
+        && data.reaction in ['like', 'dislike', 'skip']
+        && data.genreIds is list && data.genreIds.size() <= 10
+        && data.createdAt is timestamp
+        && data.updatedAt == request.time;
+    }
+
+    function isValidSummary(data, userId) {
+      let fields = ['version', 'userId', 'status', 'responseCount', 'likedCount',
+                    'dislikedCount', 'skippedCount', 'completedAt', 'updatedAt'];
+      return data.keys().hasAll(fields) && data.keys().hasOnly(fields)
+        && data.version is int && data.version == 1
+        && data.userId == userId && data.status == 'completed'
+        && data.responseCount is int && data.responseCount >= 10 && data.responseCount <= 30
+        && data.likedCount is int && data.likedCount >= 0 && data.likedCount <= data.responseCount
+        && data.dislikedCount is int && data.dislikedCount >= 0 && data.dislikedCount <= data.responseCount
+        && data.skippedCount is int && data.skippedCount >= 0 && data.skippedCount <= data.responseCount
+        && data.likedCount + data.dislikedCount + data.skippedCount == data.responseCount
+        && data.completedAt == request.time && data.updatedAt == request.time;
+    }
+
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow list, update, delete: if false;
+      allow list, delete: if false;
+      allow update: if isOwner(userId)
+        && hasInitialProfileFields(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['onboardingCompleted', 'updatedAt'])
+        && resource.data.onboardingCompleted == false
+        && request.resource.data.onboardingCompleted == true
+        && request.resource.data.updatedAt == request.time
+        // A pre-existing summary must never be reused for completion.
+        && !exists(/databases/$(database)/documents/users/$(userId)/onboarding/summary)
+        && isValidSummary(getAfter(/databases/$(database)/documents/users/$(userId)/onboarding/summary).data, userId);
       allow create: if isOwner(userId)
         && hasInitialProfileFields(request.resource.data)
         && isValidUsername(request.resource.data.username)
@@ -39,6 +80,27 @@ service cloud.firestore {
         // Reservation must be new in this atomic operation, not pre-existing.
         && !exists(/databases/$(database)/documents/usernames/$(request.resource.data.username))
         && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.username)).data.userId == userId;
+
+      match /onboardingResponses/{responseId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasIncompleteProfile(userId)
+          && isValidResponse(request.resource.data, responseId)
+          && request.resource.data.createdAt == request.time;
+        allow update: if isOwner(userId) && hasIncompleteProfile(userId)
+          && isValidResponse(request.resource.data, responseId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reaction', 'genreIds', 'updatedAt']);
+        allow delete: if false;
+      }
+
+      match /onboarding/{documentId} {
+        allow get: if documentId == 'summary' && isOwner(userId);
+        allow list, update, delete: if false;
+        allow create: if documentId == 'summary' && isOwner(userId)
+          && hasIncompleteProfile(userId)
+          && isValidSummary(request.resource.data, userId)
+          && getAfter(/databases/$(database)/documents/users/$(userId)).data.onboardingCompleted == true
+          && getAfter(/databases/$(database)/documents/users/$(userId)).data.updatedAt == request.time;
+      }
     }
 
     match /usernames/{username} {
