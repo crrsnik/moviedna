@@ -1,5 +1,8 @@
 import { createBrowserRouter } from 'react-router-dom'
 import GuestOnlyRoute from '../features/auth/components/GuestOnlyRoute.jsx'
+import ProtectedRoute from '../features/auth/components/ProtectedRoute.jsx'
+import OnboardingRoute from '../features/profile/components/OnboardingRoute.jsx'
+import OnboardingPage from '../pages/OnboardingPage.jsx'
 import HomePage from '../pages/HomePage.jsx'
 import MoviesPage from '../pages/MoviesPage.jsx'
 import TvShowsPage from '../pages/TvShowsPage.jsx'
@@ -26,6 +29,13 @@ const router = createBrowserRouter([
           { path: 'forgot-password', element: <ForgotPasswordPage /> },
           { path: 'register', element: <RegisterPage /> },
         ],
+      },
+      {
+        element: <ProtectedRoute />,
+        children: [{
+          element: <OnboardingRoute />,
+          children: [{ path: 'onboarding', element: <OnboardingPage /> }],
+        }],
       },
       { path: '*', element: <NotFoundPage /> },
     ],

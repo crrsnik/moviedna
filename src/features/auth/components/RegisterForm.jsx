@@ -69,7 +69,7 @@ function RegisterForm() {
       pending.current = false
     }
     // Navigation is outside the registration error handler: the account is complete.
-    if (mounted.current) navigate('/', { replace: true })
+    if (mounted.current) navigate('/onboarding', { replace: true })
     setRegistrationStatus('idle')
   }
 

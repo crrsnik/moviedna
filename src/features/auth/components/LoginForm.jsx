@@ -53,7 +53,7 @@ function LoginForm() {
       if (mounted.current) setIsSubmitting(false)
     }
     // The existing Auth subscription may already have redirected GuestOnlyRoute.
-    if (mounted.current) navigate('/', { replace: true })
+    if (mounted.current) navigate('/onboarding', { replace: true })
   }
 
   return (

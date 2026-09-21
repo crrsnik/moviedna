@@ -6,7 +6,7 @@ function GuestOnlyRoute() {
   // Auth signs in before the profile transaction completes. Keep its form mounted,
   // including a rollback failure message if the new session could not be cleared.
   if (isAuthenticated && registrationStatus === 'idle') {
-    return <Navigate to="/" replace />
+    return <Navigate to="/onboarding" replace />
   }
   return <Outlet />
 }
