@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { getTmdbPosterUrl } from '../services/tmdbImages.js'
 
-function MediaCard({ media }) {
+function MediaCard({ media, fluid = false, showType = false }) {
   const posterUrl = getTmdbPosterUrl(media.posterPath)
   const [failedUrl, setFailedUrl] = useState(null)
   const showPoster = posterUrl && failedUrl !== posterUrl
@@ -9,7 +9,7 @@ function MediaCard({ media }) {
   const showRating = media.voteAverage !== null && media.voteCount > 0
 
   return (
-    <article className="w-36 space-y-3 sm:w-44">
+    <article className={`min-w-0 space-y-3 ${fluid ? 'w-full' : 'w-36 sm:w-44'}`}>
       <div className="flex aspect-2/3 items-center justify-center overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900">
         {showPoster ? (
           <img src={posterUrl} alt={`${media.title} poster`} width="342" height="513" loading="lazy" onError={() => setFailedUrl(posterUrl)} className="h-full w-full object-cover" />
@@ -17,6 +17,7 @@ function MediaCard({ media }) {
           <span className="px-4 text-center text-sm text-zinc-500">No poster available</span>
         )}
       </div>
+      {showType && <span className="text-xs text-zinc-400">{media.mediaType === 'movie' ? 'Movie' : 'TV'}</span>}
       <h3 className="line-clamp-2 break-words text-sm font-medium text-zinc-100">{media.title}</h3>
       <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-400">
         {year && <span>{year}</span>}

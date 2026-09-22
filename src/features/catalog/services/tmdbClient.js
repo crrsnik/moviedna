@@ -1,13 +1,21 @@
 import { TMDB_BASE_PATH, TMDB_DEFAULT_LANGUAGE } from '../../../shared/config/tmdb.js'
 import { isTmdbAbort, TmdbError } from './tmdbErrors.js'
 
+const searchEndpoints = new Set(['/search/multi', '/search/movie', '/search/tv', '/search/person'])
 const endpoints = new Set(['/trending/movie/day', '/trending/tv/day'])
 
-export async function getTmdb(path, { language = TMDB_DEFAULT_LANGUAGE, signal } = {}) {
-  if (!endpoints.has(path) || typeof language !== 'string' || !/^[a-z]{2}-[A-Z]{2}$/.test(language)) {
+export async function getTmdb(path, { language = TMDB_DEFAULT_LANGUAGE, signal, search } = {}) {
+  if ((!endpoints.has(path) && !searchEndpoints.has(path)) || typeof language !== 'string' || !/^[a-z]{2}-[A-Z]{2}$/.test(language)) {
     throw new TmdbError('request')
   }
   const query = new URLSearchParams({ language })
+  if (searchEndpoints.has(path)) {
+    if (!search || typeof search.query !== 'string' || search.query.length < 2 || search.query.length > 100
+      || !Number.isSafeInteger(search.page) || search.page < 1 || search.page > 500) throw new TmdbError('request')
+    query.set('query', search.query)
+    query.set('page', String(search.page))
+    query.set('include_adult', 'false')
+  }
   try {
     signal?.throwIfAborted()
     const response = await fetch(`${TMDB_BASE_PATH}${path}?${query}`, {

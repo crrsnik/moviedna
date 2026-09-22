@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 3 — onboarding experience.
+Stage 4 — catalog search.
 
 ## Стек
 
@@ -330,3 +330,19 @@ Firestore getDocsFromServer нельзя отменить AbortSignal: уста�
 
 Минимум 5 like/dislike — клиентская гарантия качества, не отдельное ограничение Rules.
 Подробные границы, включая конкуренцию вкладок, описаны в [модели](docs/firestore-data-model.md).
+
+## Public catalog search
+
+`/search?q=inception&type=all&page=1` is public, including for guests and users
+who have not completed onboarding. Submit the reusable form on Home or Search;
+there is no live search. URL parameters preserve reload and Back/Forward navigation.
+All, Movies, TV Shows and People use the corresponding TMDB search endpoints.
+Queries are trimmed with collapsed whitespace (2–100 characters), pages are bounded
+to 1–500 and available results. Changing query/type resets the page. Adult content
+is always disabled (`include_adult=false`); language is `en-US`.
+
+Responses are normalized into movie/TV/person cards; malformed and unknown items
+are discarded. Search does not store results in Firebase and cards have no detail
+links yet. Requests use only `/api/tmdb`; the private token remains in the Vite
+server proxy. Static production deployment still requires a backend/serverless
+`/api/tmdb` implementation with equivalent endpoint and parameter restrictions.

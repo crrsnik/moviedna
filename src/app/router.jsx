@@ -1,3 +1,4 @@
+import SearchPage from '../pages/SearchPage.jsx'
 import { createBrowserRouter } from 'react-router-dom'
 import GuestOnlyRoute from '../features/auth/components/GuestOnlyRoute.jsx'
 import ProtectedRoute from '../features/auth/components/ProtectedRoute.jsx'
@@ -19,6 +20,7 @@ const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <HomePage /> },
+      { path: 'search', element: <SearchPage /> },
       { path: 'movies', element: <MoviesPage /> },
       { path: 'tv', element: <TvShowsPage /> },
       { path: 'actors', element: <ActorsPage /> },

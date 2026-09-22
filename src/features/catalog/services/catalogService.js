@@ -8,7 +8,7 @@ function validDate(value) {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value ? value : null
 }
 
-function normalizeMedia(item, mediaType) {
+export function normalizeMedia(item, mediaType) {
   if (!item || !Number.isSafeInteger(item.id) || item.id <= 0
     || (item.media_type !== undefined && item.media_type !== mediaType)) return null
   const title = mediaType === 'movie' ? item.title : item.name
