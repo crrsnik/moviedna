@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 3 — onboarding security foundation.
+Stage 3 — onboarding experience.
 
 ## Стек
 
@@ -245,10 +245,10 @@ UserProfileProvider внутри AuthProvider связывает Firebase Auth u
 сообщением с предложением обновить страницу; документы автоматически не создаются.
 
 `/onboarding` защищён: гость переходит на `/login`, авторизованный пользователь
-ожидает свой профиль. При `onboardingCompleted: false` показывается заглушка,
+ожидает свой профиль. При `onboardingCompleted: false` показывается интерфейс оценки фильмов,
 при `true` — переход на `/`. Header и logout доступны при ошибке профиля.
-Главная, Movies, TV Shows и Actors остаются открытыми. Выбор фильмов и обновление
-профиля пока не реализованы. Unit tests профиля используют подмену подписки Firebase.
+Главная, Movies, TV Shows и Actors остаются открытыми. Общее редактирование
+профиля пока не реализовано. Unit tests профиля используют подмену подписки Firebase.
 
 ## Локальный каталог TMDB
 
@@ -304,4 +304,29 @@ Rules этапа 3.3a развёрнуты в production только как `fi
 прохождения 208 Rules tests (63 прежних + 145 новых), 209 unit tests и чистого
 production audit. Автоматические тесты выполняются только в локальном Emulator;
 production documents/users не читались и не изменялись, indexes не разворачивались.
-Frontend onboarding service и swipe UI на этапе 3.3a не добавлены.
+На этапе 3.3a были подготовлены Rules; клиентский flow добавлен в этапе 3.3b.
+
+## Onboarding experience
+
+`/onboarding` загружает до 20 уникальных trending movies через существующий TMDB proxy
+и собственные сохранённые responses из Firestore. Уже оценённые фильмы исключаются;
+после обновления страницы прогресс восстанавливается с сервера.
+
+Like / Dislike / Skip доступны кнопками. Карточку можно свайпнуть горизонтально
+или сфокусировать и использовать ← / → / ↓. Вертикальный touch scroll сохраняется,
+учитывается reduced motion. Следующая карточка появляется только после подтверждения
+transaction; повторные действия блокируются, при ошибке текущая карточка остаётся.
+
+Finish доступен при 10–30 responses и минимум 5 like/dislike. Сервис повторно читает
+responses с сервера, валидирует документы и пересчитывает counts, затем одним batch
+создаёт summary и завершает профиль. TMDB metadata не записываются. Автоматического
+завершения нет. Существующий OnboardingRoute перенаправляет на `/` после подтверждённого
+snapshot профиля; локальные snapshots с hasPendingWrites игнорируются.
+
+Firestore getDocsFromServer нельзя отменить AbortSignal: устаревшие результаты
+игнорируются после cleanup. TMDB-запрос отменяется AbortController. Unit tests
+используют синтетические данные и подмену Firebase, Rules tests — только Emulator.
+Гостевая dev-проверка не выполняет вход и не читает/изменяет production onboarding.
+
+Минимум 5 like/dislike — клиентская гарантия качества, не отдельное ограничение Rules.
+Подробные границы, включая конкуренцию вкладок, описаны в [модели](docs/firestore-data-model.md).

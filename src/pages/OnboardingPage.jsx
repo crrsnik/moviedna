@@ -1,7 +1,10 @@
-import PagePlaceholder from '../shared/components/PagePlaceholder.jsx'
+import OnboardingExperience from '../features/onboarding/components/OnboardingExperience.jsx'
+import { useAuth } from '../features/auth/hooks/useAuth.js'
 
 function OnboardingPage() {
-  return <PagePlaceholder title="Welcome to MovieDNA" subtitle="Soon you'll choose movies to help us discover your movie identity." />
+  const { user } = useAuth()
+  // Never reuse a previous account's deck, progress or pending action state.
+  return <OnboardingExperience key={user?.uid} />
 }
 
 export default OnboardingPage

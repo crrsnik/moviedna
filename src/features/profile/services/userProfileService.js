@@ -8,7 +8,9 @@ export function subscribeToUserProfile(uid, onChange) {
   try {
     // Accept one document ID, never a path or a collection query.
     if (typeof uid !== 'string' || !uid || uid.includes('/')) throw new Error('Invalid user ID')
-    return onSnapshot(doc(db, 'users', uid), (snapshot) => {
+    return onSnapshot(doc(db, 'users', uid), { includeMetadataChanges: true }, (snapshot) => {
+      // Do not navigate on a local optimistic completion before the server confirms it.
+      if (snapshot.metadata?.hasPendingWrites) return
       let result
       try {
         result = normalizeUserProfile(snapshot)

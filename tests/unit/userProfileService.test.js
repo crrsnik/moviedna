@@ -11,7 +11,8 @@ const unsubscribe = () => { stopped++ }
 const stubs = {
   db, Timestamp,
   doc(...args) { calls.push(args); return 'mock-document' },
-  onSnapshot(reference, onNext, onError) {
+  onSnapshot(reference, options, onNext, onError) {
+    assert.deepEqual(options, { includeMetadataChanges: true })
     assert.equal(reference, 'mock-document')
     if (setupError) throw setupError
     next = onNext; fail = onError
@@ -59,6 +60,17 @@ describe('Profile subscription with mocked Firebase', { concurrency: false }, ()
     const data = { username: 'demo_fan', displayName: 'Demo', bio: '', photoURL: null, onboardingCompleted: false, createdAt: new Timestamp(1, 0), updatedAt: new Timestamp(1, 0) }
     next({ id: 'demo-user', exists: () => true, data: () => ({ ...data, role: 'ignored' }) })
     assert.deepEqual(results[1], { profile: { id: 'demo-user', ...data }, profileError: null })
+  })
+  it('ignores pending writes and publishes the confirmed metadata event', () => {
+    const results = []
+    subscribe('demo-user', (value) => results.push(value))
+    const data = { username: 'demo_fan', displayName: 'Demo', bio: '', photoURL: null, onboardingCompleted: true, createdAt: new Timestamp(1, 0), updatedAt: new Timestamp(2, 0) }
+    const snapshot = { id: 'demo-user', exists: () => true, data: () => data }
+    next({ ...snapshot, metadata: { hasPendingWrites: true } })
+    assert.equal(results.length, 0)
+    next({ ...snapshot, metadata: { hasPendingWrites: false } })
+    assert.equal(results.length, 1)
+    assert.equal(results[0].profile.onboardingCompleted, true)
   })
   it('reports a missing document and remains subscribed for later snapshots', () => {
     const results = []

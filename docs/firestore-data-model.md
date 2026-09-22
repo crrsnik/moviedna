@@ -104,7 +104,7 @@ Rules обеспечивают authentication, ownership, точные поля,
 - реальное количество response-документов и соответствие counts сохранённым реакциям;
 - общий предел количества response-документов в subcollection.
 
-Следующий клиентский сервис должен нормализовать integer genreIds и сверять реальные
+Клиентский сервис этапа 3.3b нормализует integer genreIds и сверяет реальные
 responses/counts перед завершением. Клиентские проверки обходятся недоверенным клиентом:
 они не дают серверной гарантии достоверности статистики. Тесты явно показывают, что
 синтаксически корректный summary может быть принят даже без responses, а genreIds
@@ -127,3 +127,30 @@ get конкретных документов и list собственного s
 [ограничения полей](https://firebase.google.com/docs/firestore/security/rules-fields),
 [Rules unit testing](https://firebase.google.com/docs/rules/unit-tests),
 [batched writes](https://firebase.google.com/docs/firestore/manage-data/transactions).
+
+## Клиентский flow этапа 3.3b
+
+Модель документов и Rules не меняются. Service проверяет текущего Auth user, UID,
+positive safe integer tmdbId в допустимом 12-значном диапазоне, mediaType movie,
+reaction и массив positive safe integer genreIds (до 10, дубликаты удаляются).
+Повреждённые сохранённые документы отклоняются целиком без вывода содержимого.
+
+Каждая реакция сохраняется transaction: существующий response обновляет только
+reaction/genreIds/updatedAt, новый получает createdAt и updatedAt через serverTimestamp.
+После подтверждения записи UI переходит к следующему фильму. Ошибки не двигают колоду.
+
+Перед Finish сервис заново выполняет getDocsFromServer собственного subcollection,
+проверяет точные поля, ID/tmdbId и timestamps, вычисляет counts. Требуются 10–30 responses
+и **минимум 5 содержательных реакций (like + dislike)**. Дополнительно проверяется,
+что профиль ещё не завершён и summary отсутствует. Один WriteBatch без merge создаёт
+summary и обновляет только onboardingCompleted и updatedAt. Повторное завершение
+даёт безопасную ошибку. Редирект выполняется существующим guard по подтверждённому
+профилю, не оптимистически по локальному pending-write snapshot.
+
+Rules проверяют 10–30 total и арифметическую сумму, но **не гарантируют минимум 5
+like/dislike** и достоверность counts. Это клиентское ограничение обходится изменённым
+клиентом. Чтение responses и последующий WriteBatch не образуют транзакционную блокировку
+всей коллекции: другая вкладка может изменить реакции между чтением и commit.
+В этой модели нельзя обещать серверную согласованность counts с коллекцией при такой
+конкуренции. Rules всё равно запрещают любые response writes после завершения,
+повторный summary и изменение остальных полей профиля.
