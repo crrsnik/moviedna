@@ -1,12 +1,9 @@
-import PagePlaceholder from '../shared/components/PagePlaceholder.jsx'
+import CatalogPageHeader from '../features/catalog/components/CatalogPageHeader.jsx'
+import CatalogBrowser from '../features/catalog/components/CatalogBrowser.jsx'
 
-function TvShowsPage() {
-  return (
-    <PagePlaceholder
-      title="TV Shows"
-      subtitle="Your next series discovery starts here."
-    />
-  )
+export default function TvShowsPage() {
+  return <section className="w-full min-w-0 space-y-8">
+    <CatalogPageHeader title="TV Shows" description="Find popular series, top-rated shows and what is airing now." />
+    <CatalogBrowser type="tv" />
+  </section>
 }
-
-export default TvShowsPage

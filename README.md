@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 4 — catalog search.
+Stage 5 — catalog browsing.
 
 ## Стек
 
@@ -346,3 +346,24 @@ are discarded. Search does not store results in Firebase and cards have no detai
 links yet. Requests use only `/api/tmdb`; the private token remains in the Vite
 server proxy. Static production deployment still requires a backend/serverless
 `/api/tmdb` implementation with equivalent endpoint and parameter restrictions.
+
+## Public catalogs
+
+Movies (`/movies`) supports Popular, Top Rated, Now Playing and Upcoming.
+TV Shows (`/tv`) supports Popular, Top Rated, Airing Today and On The Air.
+Actors (`/actors`) supports Popular and Trending This Week. All routes are public,
+including before onboarding completion. Cards are not links; detail pages are not implemented.
+
+Views use `?view=popular&page=1`. Movies/TV genres use `?genre=28&page=1`
+with their respective genre lists and discover endpoints. Selecting a view clears
+the genre; changing either resets page to 1. All genres returns to Popular.
+Unknown genres are cleared after the genre list loads. URL state supports reload
+and Back/Forward. Pagination preserves the selected mode and is bounded to available
+pages (maximum 500). Genre loading/retry is independent of the main catalog.
+
+Discover uses `sort_by=popularity.desc`, `include_adult=false`, and disables videos
+for movies or missing first-air dates for TV. List endpoints receive only language
+and page; they do not support the discover filters. Returned adult items are discarded
+by the shared normalizer. Genres receive only language. All requests use `en-US` and
+`/api/tmdb`; static production still needs a backend/serverless proxy. No Firebase
+reads or writes are added by browsing. No new dependencies are required.

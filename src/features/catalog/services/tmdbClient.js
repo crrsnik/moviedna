@@ -1,11 +1,12 @@
+import { isBrowsePath, isAllowedBrowseRequest } from '../validation/browseValidation.js'
 import { TMDB_BASE_PATH, TMDB_DEFAULT_LANGUAGE } from '../../../shared/config/tmdb.js'
 import { isTmdbAbort, TmdbError } from './tmdbErrors.js'
 
 const searchEndpoints = new Set(['/search/multi', '/search/movie', '/search/tv', '/search/person'])
 const endpoints = new Set(['/trending/movie/day', '/trending/tv/day'])
 
-export async function getTmdb(path, { language = TMDB_DEFAULT_LANGUAGE, signal, search } = {}) {
-  if ((!endpoints.has(path) && !searchEndpoints.has(path)) || typeof language !== 'string' || !/^[a-z]{2}-[A-Z]{2}$/.test(language)) {
+export async function getTmdb(path, { language = TMDB_DEFAULT_LANGUAGE, signal, search, browse } = {}) {
+  if ((!endpoints.has(path) && !searchEndpoints.has(path) && !isBrowsePath(path)) || typeof language !== 'string' || !/^[a-z]{2}-[A-Z]{2}$/.test(language)) {
     throw new TmdbError('request')
   }
   const query = new URLSearchParams({ language })
@@ -15,6 +16,10 @@ export async function getTmdb(path, { language = TMDB_DEFAULT_LANGUAGE, signal, 
     query.set('query', search.query)
     query.set('page', String(search.page))
     query.set('include_adult', 'false')
+  }
+  if (isBrowsePath(path)) {
+    for (const [key, value] of Object.entries(browse ?? {})) query.append(key, value)
+    if (!isAllowedBrowseRequest(new URL(`${TMDB_BASE_PATH}${path}?${query}`, 'http://localhost'))) throw new TmdbError('request')
   }
   try {
     signal?.throwIfAborted()
