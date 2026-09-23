@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 6.3 — person details and media links.
+Stage 7.1 — media library data model and security.
 
 ## Стек
 
@@ -429,3 +429,19 @@ popularity, then vote count, with deterministic ties. Filmography starts with 12
 rows per section and accessible Show all / Show less controls. Movie/TV links use
 existing detail routes. Shared loading, errors, 404, Retry, abort/stale protection,
 title cleanup and scroll behavior are retained. No Firebase data is read or written.
+
+
+## Media library data model (Stage 7.1)
+
+Firestore Rules добавляют приватные `users/{uid}/lists/{listId}` и
+`users/{uid}/savedMedia/{mediaKey}`. Favorites/To Watch — виртуальные разделы;
+один movie/TV document содержит flags и memberships в custom lists. Rules проверяют
+владельца, точные поля, timestamps, immutable identity, mediaKey и отсутствие
+дубликатов listIds. Тип/существование отдельных listIds и cleanup dangling references
+остаются явными integrity boundaries будущего client service.
+
+Схемы, запланированные запросы без новых composite indexes и удаление списка описаны
+в [Firestore data model](docs/firestore-data-model.md#медиатека--stage-71).
+Rules успешно развёрнуты только как `firestore:rules` в базе `(default)` после
+445 Rules tests (208 прежних + 237 новых) и 742 unit tests. Frontend и library service
+не добавлены; production documents/users не читались и не изменялись.

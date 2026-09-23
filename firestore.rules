@@ -56,6 +56,49 @@ service cloud.firestore {
         && data.completedAt == request.time && data.updatedAt == request.time;
     }
 
+    function hasLibraryText(value, maximum) {
+      return value is string && value.size() >= 1 && value.size() <= maximum
+        && !value.matches('^[\\s\\p{Z}\\x{000B}\\x{FEFF}]*$');
+    }
+
+    function hasLibraryTimestamps(data) {
+      return data.createdAt is timestamp && data.updatedAt is timestamp
+        && data.updatedAt == request.time;
+    }
+
+    function isValidCustomList(data, listId) {
+      let fields = ['name', 'description', 'createdAt', 'updatedAt'];
+      return listId.matches('^[A-Za-z0-9]{20}$')
+        && data.keys().hasAll(fields) && data.keys().hasOnly(fields)
+        && hasLibraryText(data.name, 60)
+        && data.description is string && data.description.size() <= 300
+        && hasLibraryTimestamps(data);
+    }
+
+    function isLibraryPoster(path) {
+      return path == null || (path is string && path.size() <= 200
+        && path.matches('^/[A-Za-z0-9_./-]+$') && !path.matches('.*[.][.].*'));
+    }
+
+    function isValidSavedMedia(data, mediaKey) {
+      let fields = ['tmdbId', 'mediaType', 'title', 'posterPath', 'releaseYear',
+                    'favorite', 'watchlist', 'listIds', 'createdAt', 'updatedAt'];
+      return data.keys().hasAll(fields) && data.keys().hasOnly(fields)
+        && mediaKey.matches('^(movie|tv)_[1-9][0-9]{0,11}$')
+        && data.tmdbId is int && data.tmdbId >= 1 && data.tmdbId <= 999999999999
+        && data.mediaType in ['movie', 'tv']
+        && mediaKey == data.mediaType + '_' + string(data.tmdbId)
+        && hasLibraryText(data.title, 200) && isLibraryPoster(data.posterPath)
+        && (data.releaseYear == null || (data.releaseYear is int
+          && data.releaseYear >= 1800 && data.releaseYear <= 2200))
+        && data.favorite is bool && data.watchlist is bool
+        // No iteration/existence guarantee for individual list IDs; see data model.
+        && data.listIds is list && data.listIds.size() <= 20
+        && data.listIds.toSet().size() == data.listIds.size()
+        && (data.favorite || data.watchlist || data.listIds.size() > 0)
+        && hasLibraryTimestamps(data);
+    }
+
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list, delete: if false;
@@ -80,6 +123,24 @@ service cloud.firestore {
         // Reservation must be new in this atomic operation, not pre-existing.
         && !exists(/databases/$(database)/documents/usernames/$(request.resource.data.username))
         && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.username)).data.userId == userId;
+
+      match /lists/{listId} {
+        allow get, list, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidCustomList(request.resource.data, listId)
+          && request.resource.data.createdAt == request.time;
+        allow update: if isOwner(userId) && isValidCustomList(request.resource.data, listId)
+          && request.resource.data.createdAt == resource.data.createdAt;
+      }
+
+      match /savedMedia/{mediaKey} {
+        allow get, list, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidSavedMedia(request.resource.data, mediaKey)
+          && request.resource.data.createdAt == request.time;
+        allow update: if isOwner(userId) && isValidSavedMedia(request.resource.data, mediaKey)
+          && request.resource.data.tmdbId == resource.data.tmdbId
+          && request.resource.data.mediaType == resource.data.mediaType
+          && request.resource.data.createdAt == resource.data.createdAt;
+      }
 
       match /onboardingResponses/{responseId} {
         allow get, list: if isOwner(userId);

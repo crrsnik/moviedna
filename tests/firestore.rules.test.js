@@ -4,7 +4,7 @@ import { after, before, beforeEach, describe, it } from 'node:test'
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing'
 import {
   collection, collectionGroup, deleteDoc, deleteField, doc, getDoc, getDocs, serverTimestamp,
-  setDoc, Timestamp, updateDoc, writeBatch,
+  setDoc, Timestamp, updateDoc, writeBatch, query, where,
 } from 'firebase/firestore'
 
 // Refuse direct runs or remote endpoints. Never import the app's Firebase config.
@@ -554,4 +554,131 @@ describe('Onboarding security rules', { concurrency: false }, () => {
       })
     }
   })
+})
+
+// Stage 7.1: isolated demo-only library suite. Earlier 208 cases are unchanged.
+const listId = 'AbCdEf0123456789GhIj'
+const libraryList = (patch = {}) => ({ name: 'Synthetic list', description: '', createdAt: serverTimestamp(), updatedAt: serverTimestamp(), ...patch })
+const savedMedia = (patch = {}) => ({ tmdbId: 123, mediaType: 'movie', title: 'Synthetic movie', posterPath: null, releaseYear: null, favorite: true, watchlist: false, listIds: [], createdAt: serverTimestamp(), updatedAt: serverTimestamp(), ...patch })
+
+describe('Media library security rules', { concurrency: false }, () => {
+  before(async () => {
+    testEnv = await initializeTestEnvironment({ projectId, firestore: { host: '127.0.0.1', port: 8080, rules: await readFile(new URL('../firestore.rules', import.meta.url), 'utf8') } })
+  })
+  beforeEach(async () => { await testEnv.clearFirestore() })
+  after(async () => { await testEnv?.cleanup() })
+
+  for (const [collectionName, id, make] of [['lists', listId, libraryList], ['savedMedia', 'movie_123', savedMedia]]) {
+    const ref = (db, key = id) => doc(db, 'users', 'alice', collectionName, key)
+    it(`${collectionName}: owner lifecycle, timestamps and no profile prerequisite`, async () => {
+      const db = userDb(), target = ref(db)
+      await assertSucceeds(setDoc(target, make()))
+      const initial = (await assertSucceeds(getDoc(target))).data()
+      assert.ok(initial.createdAt instanceof Timestamp)
+      assert.ok(initial.createdAt.isEqual(initial.updatedAt))
+      assert.equal((await assertSucceeds(getDocs(collection(db, 'users/alice/' + collectionName)))).size, 1)
+      await assertSucceeds(updateDoc(target, { ...(collectionName === 'lists' ? { name: 'Renamed', description: 'Description' } : { favorite: false, watchlist: true, title: 'Updated', posterPath: '/poster.jpg', releaseYear: 2020 }), updatedAt: serverTimestamp() }))
+      assert.ok((await getDoc(target)).data().createdAt.isEqual(initial.createdAt))
+      await assertSucceeds(deleteDoc(target))
+    })
+    for (const identity of ['guest', 'bob']) for (const operation of ['get', 'list', 'create', 'update', 'delete']) {
+      it(`${collectionName}: denies ${identity} ${operation}`, async () => {
+        if (operation !== 'create') await setDoc(ref(userDb()), make())
+        const db = identity === 'guest' ? testEnv.unauthenticatedContext().firestore() : userDb('bob')
+        const actions = { get: () => getDoc(ref(db)), list: () => getDocs(collection(db, 'users/alice/' + collectionName)), create: () => setDoc(ref(db), make()), update: () => updateDoc(ref(db), { updatedAt: serverTimestamp() }), delete: () => deleteDoc(ref(db)) }
+        await assertFails(actions[operation]())
+      })
+    }
+    it(`${collectionName}: denies cross-user collection group`, async () => {
+      await setDoc(ref(userDb()), make())
+      await testEnv.withSecurityRulesDisabled(async c => setDoc(doc(c.firestore(), 'users', 'bob', collectionName, id), make()))
+      await assertFails(getDocs(collectionGroup(userDb(), collectionName)))
+    })
+    for (const field of Object.keys(make())) for (const action of ['create', 'update']) {
+      it(`${collectionName}: denies ${action} missing ${field}`, async () => {
+        const target = ref(userDb())
+        if (action === 'create') { const data = make(); delete data[field]; await assertFails(setDoc(target, data)) }
+        else { await setDoc(target, make()); await assertFails(updateDoc(target, { [field]: deleteField(), ...(field === 'updatedAt' ? {} : { updatedAt: serverTimestamp() }) })) }
+      })
+    }
+    for (const patch of [{ extra: true }, { createdAt: Timestamp.fromMillis(0) }, { updatedAt: Timestamp.fromMillis(0) }, { createdAt: 'bad' }, { updatedAt: null }]) {
+      for (const action of ['create', 'update']) it(`${collectionName}: denies ${action} ${JSON.stringify(patch)}`, async () => {
+        const target = ref(userDb())
+        if (action === 'create') await assertFails(setDoc(target, make(patch)))
+        else { await setDoc(target, make()); await assertFails(updateDoc(target, { updatedAt: serverTimestamp(), ...patch })) }
+      })
+    }
+    it(`${collectionName}: denies unchanged stale updatedAt`, async () => {
+      const target = ref(userDb()); await setDoc(target, make())
+      await assertFails(updateDoc(target, collectionName === 'lists' ? { name: 'New' } : { watchlist: true }))
+    })
+    it(`${collectionName}: nested paths remain deny-all`, async () => {
+      const target = doc(userDb(), 'users', 'alice', collectionName, id, 'private', 'data')
+      await assertFails(setDoc(target, { value: true })); await assertFails(getDoc(target))
+    })
+  }
+
+  for (const id of ['short', 'a'.repeat(19), 'a'.repeat(21), 'a'.repeat(19) + '_', 'é'.repeat(20), ' '.repeat(20)]) it(`lists: invalid ID ${JSON.stringify(id)}`, async () => {
+    await assertFails(setDoc(doc(userDb(), 'users/alice/lists', id), libraryList()))
+  })
+  for (const patch of [{ name: '' }, { name: ' \t\n' }, { name: '\u00a0\u2003' }, { name: '\v\ufeff' }, { name: 42 }, { name: null }, { name: 'a'.repeat(61) }, { description: 42 }, { description: null }, { description: 'a'.repeat(301) }]) {
+    for (const action of ['create', 'update']) it(`lists: ${action} invalid ${JSON.stringify(patch)}`, async () => {
+      const target = doc(userDb(), 'users/alice/lists', listId)
+      if (action === 'create') await assertFails(setDoc(target, libraryList(patch)))
+      else { await setDoc(target, libraryList()); await assertFails(updateDoc(target, { ...patch, updatedAt: serverTimestamp() })) }
+    })
+  }
+  for (const name of ['A', 'a'.repeat(60), '\n A \n', 'Кино']) it(`lists: valid name length ${name.length}`, async () => {
+    await assertSucceeds(setDoc(doc(userDb(), 'users/alice/lists', listId), libraryList({ name, description: 'a'.repeat(300) })))
+  })
+  for (const [key, patch] of [['movie_1', { tmdbId: 1 }], ['tv_1396', { tmdbId: 1396, mediaType: 'tv' }], ['movie_999999999999', { tmdbId: 999999999999 }]]) it(`savedMedia: valid ${key}`, async () => {
+    await assertSucceeds(setDoc(doc(userDb(), 'users/alice/savedMedia', key), savedMedia(patch)))
+  })
+  for (const key of ['movie_0', 'movie_0123', 'movie_1000000000000', 'person_123', 'Movie_123', 'movie_-1', 'movie_1.5', 'movie_1e3', 'movie_123 ', 'movie_１２３', 'tv_123', 'movie_124']) it(`savedMedia: invalid/mismatched key ${key}`, async () => {
+    await assertFails(setDoc(doc(userDb(), 'users/alice/savedMedia', key), savedMedia()))
+  })
+  const invalidMedia = [
+    ...[0, -1, 1.5, 1000000000000, '123', null].map(tmdbId => ({ tmdbId })),
+    ...['person', '', 'Movie', null, 3].map(mediaType => ({ mediaType })),
+    ...['', ' \n\t', '\u00a0', 'a'.repeat(201), 42, null].map(title => ({ title })),
+    ...['https://example.invalid/p.jpg', '//example.invalid/p?x', '/p.jpg?q=1', '/p.jpg#fragment', '/p\\x.jpg', '/p x.jpg', '/p\nx.jpg', '/p\tx.jpg', '/p\u00a0x.jpg', 'p.jpg', '/', '/../p.jpg', '/' + 'a'.repeat(200), 42, false].map(posterPath => ({ posterPath })),
+    ...[1799, 2201, 2000.5, '2000', false].map(releaseYear => ({ releaseYear })),
+    ...[null, 0, 'true'].flatMap(value => [{ favorite: value }, { watchlist: value }]),
+    ...[null, {}, 'list', 42, Array.from({ length: 21 }, (_, i) => String(i)), [listId, listId]].map(listIds => ({ listIds })),
+    { favorite: false, watchlist: false, listIds: [] },
+  ]
+  for (const patch of invalidMedia) for (const action of ['create', 'update']) it(`savedMedia: rejects ${action} ${JSON.stringify(patch)}`, async () => {
+    const target = doc(userDb(), 'users/alice/savedMedia/movie_123')
+    if (action === 'create') await assertFails(setDoc(target, savedMedia(patch)))
+    else { await setDoc(target, savedMedia()); await assertFails(updateDoc(target, { ...patch, updatedAt: serverTimestamp() })) }
+  })
+  for (const patch of [{ posterPath: null }, { posterPath: '/poster-123_test.jpg' }, { posterPath: '/' + 'a'.repeat(199) }, { releaseYear: 1800 }, { releaseYear: 2200 }, { title: 'a'.repeat(200) }, { favorite: false, watchlist: true }, { favorite: false, listIds: [listId] }, { listIds: Array.from({ length: 20 }, (_, i) => String(i).padStart(20, 'a')) }]) it(`savedMedia: accepts boundary ${JSON.stringify(patch)}`, async () => {
+    await assertSucceeds(setDoc(doc(userDb(), 'users/alice/savedMedia/movie_123'), savedMedia(patch)))
+  })
+  it('savedMedia: identity remains immutable during update', async () => {
+    const target = doc(userDb(), 'users/alice/savedMedia/movie_123'); await setDoc(target, savedMedia())
+    for (const patch of [{ tmdbId: 124 }, { mediaType: 'tv' }, { createdAt: serverTimestamp() }]) await assertFails(updateDoc(target, { ...patch, updatedAt: serverTimestamp() }))
+  })
+  it('savedMedia: accepts multiple memberships then removes them without deleting others', async () => {
+    const target = doc(userDb(), 'users/alice/savedMedia/movie_123'); await setDoc(target, savedMedia())
+    await assertSucceeds(updateDoc(target, { favorite: true, watchlist: true, listIds: [listId], updatedAt: serverTimestamp() }))
+    await assertSucceeds(updateDoc(target, { favorite: false, watchlist: false, updatedAt: serverTimestamp() }))
+    await assertFails(updateDoc(target, { listIds: [], updatedAt: serverTimestamp() }))
+    await assertSucceeds(deleteDoc(target))
+  })
+  it('boundary: listIds element format/type/existence is not guaranteed', async () => {
+    await assertSucceeds(setDoc(doc(userDb(), 'users/alice/savedMedia/movie_123'), savedMedia({ favorite: false, listIds: [123, 'not-an-auto-id', null] })))
+  })
+  it('boundary: deleting a list does not cascade or prevent dangling IDs', async () => {
+    const db = userDb(), target = doc(db, 'users/alice/lists', listId), media = doc(db, 'users/alice/savedMedia/movie_123')
+    await setDoc(target, libraryList()); await setDoc(media, savedMedia({ listIds: [listId] }))
+    await assertSucceeds(deleteDoc(target)); assert.deepEqual((await getDoc(media)).data().listIds, [listId])
+  })
+  for (const [field, operator, value] of [['favorite', '==', true], ['watchlist', '==', true], ['listIds', 'array-contains', listId]]) it(`owner planned query ${field}`, async () => {
+    const db = userDb()
+    await setDoc(doc(db, 'users/alice/savedMedia/movie_123'), savedMedia({ watchlist: true, listIds: [listId] }))
+    assert.equal((await assertSucceeds(getDocs(query(collection(db, 'users/alice/savedMedia'), where(field, operator, value))))).size, 1)
+    await assertFails(getDocs(query(collection(userDb('bob'), 'users/alice/savedMedia'), where(field, operator, value))))
+  })
+
 })

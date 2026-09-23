@@ -1,6 +1,6 @@
-# Firestore data model — Stage 3.3a
+# Firestore data model — Stage 7.1
 
-Модель onboarding этапа 3.3a. Rules развёрнуты в production только как
+История: модель onboarding этапа 3.3a. Её Rules развёрнуты в production только как
 `firestore:rules` после 208 успешных Rules tests (63 прежних + 145 новых),
 209 unit tests и чистого production audit. Indexes и другие ресурсы не разворачивались.
 Все пути ниже используют UID текущего Firebase Auth user; реальные данные здесь не приводятся.
@@ -154,3 +154,124 @@ like/dislike** и достоверность counts. Это клиентское
 В этой модели нельзя обещать серверную согласованность counts с коллекцией при такой
 конкуренции. Rules всё равно запрещают любые response writes после завершения,
 повторный summary и изменение остальных полей профиля.
+
+## Медиатека — Stage 7.1
+
+Rules успешно скомпилированы и опубликованы только как `firestore:rules` в `(default)`.
+Проверки: 208 прежних + 237 новых Rules tests, 742 unit tests; production audit чистый.
+Production documents/users не читались и не изменялись; indexes и другие сервисы не разворачивались.
+
+Favorites и To Watch — виртуальные разделы, а не list documents. Один документ
+`users/{uid}/savedMedia/{mediaKey}` представляет один фильм или сериал и может
+одновременно входить в оба раздела и несколько custom lists. Списки приватны;
+публичного sharing и collection-group доступа нет.
+
+### Custom lists
+
+`users/{uid}/lists/{listId}`. ID соответствует `^[A-Za-z0-9]{20}$` (формат Firestore
+auto-ID; случайность генерации Rules не доказывают). Точные поля:
+
+| Поле | Rules |
+| --- | --- |
+| name | string 1–60, не только пробельные символы |
+| description | string 0–300 |
+| createdAt | timestamp, request.time при create; неизменяем при update |
+| updatedAt | timestamp, request.time при create/update |
+
+Get/list/create/update/delete только при `request.auth.uid == uid`. Неизвестные
+поля запрещены, update повторно проверяет весь итоговый документ. Имена не уникальны.
+Право на собственную медиатеку не зависит от существования профиля или completion
+onboarding: дополнительные ограничения этого этапа не вводятся.
+
+### Saved media
+
+`users/{uid}/savedMedia/{mediaKey}`. Точный набор:
+
+| Поле | Rules |
+| --- | --- |
+| tmdbId | int 1–999999999999, неизменяем |
+| mediaType | movie или tv, неизменяем |
+| title | string 1–200, не только пробельные символы |
+| posterPath | null или относительный путь до 200 символов, подробнее ниже |
+| releaseYear | null или int 1800–2200 |
+| favorite | bool |
+| watchlist | bool |
+| listIds | list, 0–20 элементов, без дубликатов по семантике Rules Set |
+| createdAt | timestamp, request.time при create; неизменяем |
+| updatedAt | timestamp, request.time при create/update |
+
+Ключ проходит `^(movie|tv)_[1-9][0-9]{0,11}$` **и** равен
+`mediaType + '_' + string(tmdbId)`. Встроенное преобразование ограниченного integer
+даёт канонический десятичный ID; несовпадающие тип/число, leading zero и 13 цифр
+покрыты отрицательными Emulator tests. Эта связь гарантируется Rules, а не клиентом.
+
+Хотя бы одна membership обязательна: favorite, watchlist или непустой listIds.
+Удаление последней membership через update отклоняется; следует удалить документ.
+Все поля повторно валидируются при update. Get/list/create/update/delete доступны
+только владельцу. Родительские profiles/usernames и onboarding Rules не изменены;
+неизвестные и более глубокие вложенные пути остаются deny-all.
+
+Poster использует намеренно узкий набор ASCII-символов: `/`, буквы, цифры, `_`, `.`,
+`-`; начинается с `/`, содержит ещё хотя бы один символ и не содержит `..`.
+Протоколы, query, fragment, backslash, whitespace и произвольные внешние URL запрещены.
+Это проверка формы пути, а не существования изображения в TMDB.
+
+Храним только минимальный display snapshot: title, posterPath, releaseYear. Он
+позволяет показать сохранённое media без detail-запроса на каждую строку, но может
+устареть или быть подделан владельцем. Cast, overview, ratings, videos и остальные
+подробности продолжают загружаться из TMDB. Rules не проверяют TMDB existence или
+достоверность snapshot; разрешены только movie/TV, не person.
+
+### Integrity boundaries
+
+`listIds.toSet().size() == listIds.size()` исключает дубликаты. Rules не предоставляют
+общего цикла/предиката для проверки каждого динамического элемента списка.
+Технически можно вручную развернуть проверки всех 20 позиций; здесь это намеренно
+не делается, чтобы не создавать громоздкие правила. **Тип/regex отдельного listId и
+существование custom list не гарантируются.** Тест явно подтверждает принятие
+списка с числом, null и невалидной строкой; это не обещание будущего клиентского API.
+Клиентский service должен проверять каждый ID, существование собственных списков,
+дедупликацию и корректность snapshot. Такой service на этапе 7.1 не реализуется.
+
+Rules не сканируют коллекции и не гарантируют отсутствие dangling references после
+удаления списка. Все эти документы всё равно доступны только владельцу: ссылка на
+чужой/несуществующий ID не даёт доступа к чужим данным. Owner-only — security
+boundary; корректность содержимого/ссылок сверх проверенной схемы — integrity boundary.
+Нет гарантии количества списков/документов, уникальности имён или актуальности TMDB.
+
+### Будущие запросы и индексы
+
+Все запросы направлены в конкретный собственный subcollection:
+
+- Favorites: `users/{uid}/savedMedia`, `where('favorite', '==', true)`.
+- To Watch: тот же путь, `where('watchlist', '==', true)`.
+- Custom list: тот же путь, `where('listIds', 'array-contains', listId)`.
+- Custom lists: `users/{uid}/lists`.
+
+Сортировка по updatedAt/createdAt будет клиентской, без серверного orderBy.
+При стандартной автоматической индексации Firestore Standard эти одиночные фильтры
+используют single-field indexes (включая array-contains). Новые composite indexes
+не нужны; `firestore.indexes.json` не изменён и не содержит fieldOverrides.
+Emulator подтверждает разрешение запросов Rules, но не служит доказательством
+production index coverage — вывод основан на документированных типах индексов.
+
+### Будущее удаление custom list
+
+1. Запросить собственные savedMedia с `array-contains listId`.
+2. Убрать ID из каждого документа, сохранив другие memberships.
+3. Если favorite/watchlist false и listIds пуст, удалить savedMedia вместо update.
+4. Удалить metadata document списка.
+
+Для небольшого набора возможен один batch. Нужно учитывать технические лимиты
+Firestore/SDK, размер запроса (10 MiB), количество операций и ограничения Rules
+на document-access calls, если будущие правила начнут делать get/exists.
+Для больших списков нужны несколько batches либо будущая server-side cleanup.
+Несколько batches не атомарны как целое; между query и записью другой клиент может
+добавить membership. Нужны повторяемая очистка и работа с конкурирующими изменениями.
+Rules не обеспечивают каскадное удаление и не блокируют dangling references.
+UI, library service и cleanup на этом этапе отсутствуют.
+
+Источники: [Rules field/type validation](https://firebase.google.com/docs/firestore/security/rules-fields),
+[List.toSet](https://firebase.google.com/docs/reference/rules/rules.List),
+[automatic single-field indexes](https://firebase.google.com/docs/firestore/query-data/index-overview),
+[batched writes and limits](https://firebase.google.com/docs/firestore/manage-data/transactions).
