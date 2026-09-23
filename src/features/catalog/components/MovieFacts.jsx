@@ -1,8 +1,9 @@
+import { PersonNames } from './PersonLink.jsx'
 import { formatMoney } from '../services/normalizeMovieDetails.js'
 export default function MovieFacts({ movie }) {
   const names = (items) => items.map((item) => item.name).join(', ')
   const facts = [
-    ['Original title', movie.originalTitle], ['Directors', names(movie.directors)], ['Writers', names(movie.writers)],
+    ['Original title', movie.originalTitle], ['Directors', movie.directors.length > 0 && <PersonNames key="directors" people={movie.directors} />], ['Writers', movie.writers.length > 0 && <PersonNames key="writers" people={movie.writers} />],
     ['Status', movie.status], ['Original language', movie.originalLanguage], ['Production countries', names(movie.productionCountries)],
     ['Production companies', names(movie.productionCompanies)], ['Budget', formatMoney(movie.budget)], ['Revenue', formatMoney(movie.revenue)],
   ].filter(([, value]) => value)

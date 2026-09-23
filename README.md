@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 6.2 — TV show details.
+Stage 6.3 — person details and media links.
 
 ## Стек
 
@@ -351,7 +351,7 @@ server proxy. Static production deployment still requires a backend/serverless
 Movies (`/movies`) supports Popular, Top Rated, Now Playing and Upcoming.
 TV Shows (`/tv`) supports Popular, Top Rated, Airing Today and On The Air.
 Actors (`/actors`) supports Popular and Trending This Week. All routes are public,
-including before onboarding completion. Movie cards link to public detail pages; TV cards also link to details; person cards remain non-interactive.
+including before onboarding completion. Movie cards link to public detail pages; TV and person cards also link to their public detail pages.
 
 Views use `?view=popular&page=1`. Movies/TV genres use `?genre=28&page=1`
 with their respective genre lists and discover endpoints. Selecting a view clears
@@ -392,7 +392,7 @@ Movie links work on Home, search, catalog and recommendations. Attribution is re
 ## TV show details
 
 `/tv/:seriesId` is public. TV cards link here from Home, catalogs, search and TV
-recommendations; movie links retain `/movies/:movieId`, people remain unlinked.
+recommendations; movie links retain `/movies/:movieId`, people link to `/actors/:personId`.
 One `/api/tmdb/tv/{id}` request uses `language=en-US` and exactly
 `append_to_response=aggregate_credits,videos,content_ratings,recommendations`.
 The existing proxy/client restrict this contract and never expose the private token.
@@ -409,5 +409,23 @@ with the most episodes, then alphabetical order. Specials (season 0) are allowed
 seasons are ordered by number in a horizontal lane so long-running shows do not
 create an excessively tall page. Last/next episode summaries and seasons have no
 links. Recommendations use the existing TV card model and the first page only.
-No season, episode or person detail routes, Firebase operations or new dependencies
-are added. Static production still requires a backend/serverless `/api/tmdb` proxy.
+Stage 6.2 added no season, episode or person detail routes, Firebase operations or new dependencies. Static production still requires a backend/serverless `/api/tmdb` proxy.
+
+
+## Person details and media links
+
+`/actors/:personId` is public. Actors/search cards, movie/TV cast, movie directors
+and writers and TV creators link to person details when a valid ID is available.
+The existing server proxy makes one `/person/{id}` request with `language=en-US`
+and exactly `append_to_response=combined_credits,images,external_ids`.
+Credentials stay server-side; static production still needs a backend/serverless
+`/api/tmdb` implementation.
+
+Person details include biography, dates (no inferred age), aliases, safe external
+links, up to eight extra photos, Known For and separate Acting/Crew filmographies.
+Credits exclude adult and unknown media types, merge roles by media type + ID,
+and sort by date with undated works last. Known For ranks up to 12 unique works by
+popularity, then vote count, with deterministic ties. Filmography starts with 12
+rows per section and accessible Show all / Show less controls. Movie/TV links use
+existing detail routes. Shared loading, errors, 404, Retry, abort/stale protection,
+title cleanup and scroll behavior are retained. No Firebase data is read or written.

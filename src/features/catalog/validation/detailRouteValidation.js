@@ -27,3 +27,19 @@ export function isAllowedTvDetailRequest(url) {
     && [...p].length === 2 && p.getAll('language').length === 1 && p.get('language') === 'en-US'
     && p.getAll('append_to_response').length === 1 && p.get('append_to_response') === TV_DETAIL_APPEND
 }
+
+export const isValidPersonId = isValidDetailId
+export const PERSON_DETAIL_APPEND = 'combined_credits,images,external_ids'
+export function isPersonDetailPath(path) {
+  return typeof path === 'string' && /^\/person\/[1-9]\d*$/.test(path) && isValidPersonId(path.slice(8))
+}
+export function isAllowedPersonDetailRequest(url) {
+  const p = url.searchParams
+  return url.pathname.startsWith('/api/tmdb/') && isPersonDetailPath(url.pathname.slice(9))
+    && [...p].length === 2 && p.getAll('language').length === 1 && p.get('language') === 'en-US'
+    && p.getAll('append_to_response').length === 1 && p.get('append_to_response') === PERSON_DETAIL_APPEND
+}
+export function getMediaDetailPath(media) {
+  if (!isValidDetailId(media?.id) || !['movie', 'tv'].includes(media.mediaType)) return null
+  return `/${media.mediaType === 'movie' ? 'movies' : 'tv'}/${media.id}`
+}

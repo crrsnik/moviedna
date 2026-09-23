@@ -1,7 +1,8 @@
+import { PersonNames } from './PersonLink.jsx'
 export default function TvShowFacts({ series }) {
   const names = (items) => items.map((item) => item.name).join(', ')
   const facts = [
-    ['Original name', series.originalName], ['Creators', names(series.creators)], ['Status', series.status], ['Type', series.type],
+    ['Original name', series.originalName], ['Creators', series.creators.length > 0 && <PersonNames key="creators" people={series.creators} />], ['Status', series.status], ['Type', series.type],
     ['Original language', series.originalLanguage], ['Origin countries', series.originCountries.join(', ')], ['Networks', names(series.networks)],
     ['Production companies', names(series.productionCompanies)], ['Seasons', series.numberOfSeasons], ['Episodes', series.numberOfEpisodes],
   ].filter(([, value]) => value)

@@ -1,3 +1,4 @@
+import PersonDetailPage from '../pages/PersonDetailPage.jsx'
 import TvShowDetailPage from '../pages/TvShowDetailPage.jsx'
 import MovieDetailPage from '../pages/MovieDetailPage.jsx'
 import SearchPage from '../pages/SearchPage.jsx'
@@ -28,6 +29,7 @@ const router = createBrowserRouter([
       { path: 'tv', element: <TvShowsPage /> },
       { path: 'tv/:seriesId', element: <TvShowDetailPage /> },
       { path: 'actors', element: <ActorsPage /> },
+      { path: 'actors/:personId', element: <PersonDetailPage /> },
       {
         element: <GuestOnlyRoute />,
         children: [
