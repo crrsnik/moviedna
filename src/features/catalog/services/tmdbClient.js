@@ -1,3 +1,4 @@
+import { isMovieDetailPath, MOVIE_DETAIL_APPEND } from '../validation/detailRouteValidation.js'
 import { isBrowsePath, isAllowedBrowseRequest } from '../validation/browseValidation.js'
 import { TMDB_BASE_PATH, TMDB_DEFAULT_LANGUAGE } from '../../../shared/config/tmdb.js'
 import { isTmdbAbort, TmdbError } from './tmdbErrors.js'
@@ -5,8 +6,8 @@ import { isTmdbAbort, TmdbError } from './tmdbErrors.js'
 const searchEndpoints = new Set(['/search/multi', '/search/movie', '/search/tv', '/search/person'])
 const endpoints = new Set(['/trending/movie/day', '/trending/tv/day'])
 
-export async function getTmdb(path, { language = TMDB_DEFAULT_LANGUAGE, signal, search, browse } = {}) {
-  if ((!endpoints.has(path) && !searchEndpoints.has(path) && !isBrowsePath(path)) || typeof language !== 'string' || !/^[a-z]{2}-[A-Z]{2}$/.test(language)) {
+export async function getTmdb(path, { language = TMDB_DEFAULT_LANGUAGE, signal, search, browse, details = false } = {}) {
+  if ((!endpoints.has(path) && !searchEndpoints.has(path) && !(details && isMovieDetailPath(path)) && !isBrowsePath(path)) || typeof language !== 'string' || !/^[a-z]{2}-[A-Z]{2}$/.test(language)) {
     throw new TmdbError('request')
   }
   const query = new URLSearchParams({ language })
@@ -20,6 +21,10 @@ export async function getTmdb(path, { language = TMDB_DEFAULT_LANGUAGE, signal, 
   if (isBrowsePath(path)) {
     for (const [key, value] of Object.entries(browse ?? {})) query.append(key, value)
     if (!isAllowedBrowseRequest(new URL(`${TMDB_BASE_PATH}${path}?${query}`, 'http://localhost'))) throw new TmdbError('request')
+  }
+  if (details) {
+    if (!isMovieDetailPath(path) || language !== 'en-US') throw new TmdbError('request')
+    query.set('append_to_response', MOVIE_DETAIL_APPEND)
   }
   try {
     signal?.throwIfAborted()

@@ -13,3 +13,8 @@ export function getTmdbProfileUrl(path, size = 'w185') {
   if (!isTmdbImagePath(path) || !['w45', 'w185', 'h632', 'original'].includes(size)) return null
   return `${TMDB_IMAGE_BASE_URL}/${size}${path}`
 }
+
+export function getTmdbBackdropUrl(path, size = 'w1280') {
+  if (!isTmdbImagePath(path) || !['w300', 'w780', 'w1280', 'original'].includes(size)) return null
+  return `${TMDB_IMAGE_BASE_URL}/${size}${path}`
+}

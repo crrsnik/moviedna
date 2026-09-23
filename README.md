@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 5 — catalog browsing.
+Stage 6.1 — movie details.
 
 ## Стек
 
@@ -342,8 +342,7 @@ to 1–500 and available results. Changing query/type resets the page. Adult con
 is always disabled (`include_adult=false`); language is `en-US`.
 
 Responses are normalized into movie/TV/person cards; malformed and unknown items
-are discarded. Search does not store results in Firebase and cards have no detail
-links yet. Requests use only `/api/tmdb`; the private token remains in the Vite
+are discarded. Search does not store results in Firebase and movie cards link to their detail pages. Requests use only `/api/tmdb`; the private token remains in the Vite
 server proxy. Static production deployment still requires a backend/serverless
 `/api/tmdb` implementation with equivalent endpoint and parameter restrictions.
 
@@ -352,7 +351,7 @@ server proxy. Static production deployment still requires a backend/serverless
 Movies (`/movies`) supports Popular, Top Rated, Now Playing and Upcoming.
 TV Shows (`/tv`) supports Popular, Top Rated, Airing Today and On The Air.
 Actors (`/actors`) supports Popular and Trending This Week. All routes are public,
-including before onboarding completion. Cards are not links; detail pages are not implemented.
+including before onboarding completion. Movie cards link to public detail pages; TV/person cards remain non-interactive.
 
 Views use `?view=popular&page=1`. Movies/TV genres use `?genre=28&page=1`
 with their respective genre lists and discover endpoints. Selecting a view clears
@@ -367,3 +366,25 @@ and page; they do not support the discover filters. Returned adult items are dis
 by the shared normalizer. Genres receive only language. All requests use `en-US` and
 `/api/tmdb`; static production still needs a backend/serverless proxy. No Firebase
 reads or writes are added by browsing. No new dependencies are required.
+
+## Movie details
+
+`/movies/:movieId` is public. Canonical positive safe integer IDs are validated
+before requests; invalid IDs and TMDB 404s show Movie not found without Retry.
+Network/server/invalid-response errors show safe messages and Retry. A keyed,
+abortable request prevents stale content during fast navigation. Document titles
+follow the loaded movie and reset on navigation; movie changes scroll to the top.
+
+One `/api/tmdb/movie/{id}` request uses `language=en-US` and exactly
+`append_to_response=credits,videos,release_dates,recommendations`. The proxy allowlist
+requires these parameters; credentials remain server-side. This stage adds no
+Firebase operations, dependencies, TV/person detail pages or persistent TMDB data.
+Static production still requires the backend/serverless `/api/tmdb` proxy.
+
+The detail model validates optional metadata, filters malformed fields, orders and
+limits cast to 12, deduplicates directors/writers, prefers US theatrical certification,
+and chooses a safe YouTube video (official trailer, trailer, then teaser; key order
+breaks ties). Homepage links accept only HTTP(S) without embedded credentials.
+Recommendations reuse movie-card normalization and only the first page (at most 20).
+Missing images have placeholders; zero/unknown monetary amounts are hidden.
+Movie links work on Home, search, catalog and recommendations. Attribution is retained.

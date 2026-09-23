@@ -1,3 +1,4 @@
+import MovieDetailPage from '../pages/MovieDetailPage.jsx'
 import SearchPage from '../pages/SearchPage.jsx'
 import { createBrowserRouter } from 'react-router-dom'
 import GuestOnlyRoute from '../features/auth/components/GuestOnlyRoute.jsx'
@@ -22,6 +23,7 @@ const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'search', element: <SearchPage /> },
       { path: 'movies', element: <MoviesPage /> },
+      { path: 'movies/:movieId', element: <MovieDetailPage /> },
       { path: 'tv', element: <TvShowsPage /> },
       { path: 'actors', element: <ActorsPage /> },
       {

@@ -1,3 +1,4 @@
+import { normalizeNamedItems } from './normalizeNamedItems.js'
 import { getTmdb } from './tmdbClient.js'
 import { normalizeCatalog } from './normalizeCatalog.js'
 import { TmdbError } from './tmdbErrors.js'
@@ -6,12 +7,7 @@ import { BROWSE_ENDPOINTS, normalizeBrowse } from '../validation/browseValidatio
 async function getGenres(type, { language = 'en-US', signal } = {}) {
   const data = await getTmdb(`/genre/${type}/list`, { language, signal, browse: {} })
   if (!data || !Array.isArray(data.genres)) throw new TmdbError('invalid')
-  const seen = new Set()
-  return data.genres.filter((item) => {
-    if (!item || !Number.isSafeInteger(item.id) || item.id <= 0 || typeof item.name !== 'string' || !item.name.trim() || seen.has(item.id)) return false
-    seen.add(item.id)
-    return true
-  }).map(({ id, name }) => ({ id, name: name.trim() }))
+  return normalizeNamedItems(data.genres)
 }
 async function browse(type, { language = 'en-US', signal, ...options } = {}) {
   const { view, genre, page } = normalizeBrowse(type, options)

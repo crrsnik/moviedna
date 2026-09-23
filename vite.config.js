@@ -1,3 +1,4 @@
+import { isAllowedMovieDetailRequest } from './src/features/catalog/validation/detailRouteValidation.js'
 import { isAllowedBrowseRequest } from './src/features/catalog/validation/browseValidation.js'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -24,7 +25,7 @@ export default defineConfig(({ command, mode, isPreview }) => {
           const url = new URL(req.url, 'http://localhost')
           const allowedPath = /^\/api\/tmdb\/trending\/(movie|tv)\/day$/.test(url.pathname)
           const allowedQuery = [...url.searchParams].every(([key, value]) => key === 'language' && /^[a-z]{2}-[A-Z]{2}$/.test(value))
-          if (req.method !== 'GET' || !((allowedPath && allowedQuery) || isAllowedSearchRequest(url) || isAllowedBrowseRequest(url))) {
+          if (req.method !== 'GET' || !((allowedPath && allowedQuery) || isAllowedSearchRequest(url) || isAllowedBrowseRequest(url) || isAllowedMovieDetailRequest(url))) {
             res.writeHead(400, { 'Content-Type': 'application/json' })
             res.end(JSON.stringify({ error: 'Unsupported catalog request' }))
             return false
