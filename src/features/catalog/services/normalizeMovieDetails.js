@@ -1,3 +1,5 @@
+import { safeHomepage, selectTrailer } from './detailHelpers.js'
+export { safeHomepage, selectTrailer, formatRuntime } from './detailHelpers.js'
 import { normalizeMedia } from './catalogService.js'
 import { normalizeCatalog } from './normalizeCatalog.js'
 import { normalizeNamedItems } from './normalizeNamedItems.js'
@@ -7,21 +9,6 @@ import { TmdbError } from './tmdbErrors.js'
 const list = (value) => Array.isArray(value) ? value : []
 const text = (value) => typeof value === 'string' ? value.trim() : ''
 const positive = (value) => Number.isSafeInteger(value) && value > 0 ? value : null
-export function safeHomepage(value) {
-  if (typeof value !== 'string' || !/^https?:\/\//i.test(value.trim()) || [...value.trim()].some((char) => char.charCodeAt(0) <= 32 || char.charCodeAt(0) === 127)) return null
-  try {
-    const url = new URL(value.trim())
-    return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password ? url.href : null
-  } catch { return null }
-}
-export function selectTrailer(videos) {
-  const eligible = list(videos).filter((video) => video?.site === 'YouTube' && ['Trailer', 'Teaser'].includes(video.type)
-    && typeof video.key === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(video.key))
-  const priority = (video) => video.type === 'Trailer' ? video.official === true ? 0 : 1 : 2
-  eligible.sort((a, b) => priority(a) - priority(b) || a.key.localeCompare(b.key, 'en'))
-  const video = eligible[0]
-  return video ? { url: `https://www.youtube.com/watch?v=${video.key}`, type: video.type } : null
-}
 export function selectCertification(releaseDates) {
   const releases = list(releaseDates).filter((country) => country?.iso_3166_1 === 'US')
     .flatMap((country) => list(country.release_dates))
@@ -61,11 +48,6 @@ export function normalizeMovieDetails(raw) {
     writers: normalizeNamedItems(crew.filter((person) => ['Writer', 'Screenplay', 'Story'].includes(person?.job))),
     cast, trailer: selectTrailer(raw.videos?.results), recommendations,
   }
-}
-export function formatRuntime(minutes) {
-  if (!positive(minutes)) return null
-  const hours = Math.floor(minutes / 60), remainder = minutes % 60
-  return [hours ? `${hours}h` : '', remainder ? `${remainder}m` : ''].filter(Boolean).join(' ')
 }
 export function formatMoney(value) {
   return positive(value) ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value) : null

@@ -1,3 +1,4 @@
+import TvShowDetailPage from '../pages/TvShowDetailPage.jsx'
 import MovieDetailPage from '../pages/MovieDetailPage.jsx'
 import SearchPage from '../pages/SearchPage.jsx'
 import { createBrowserRouter } from 'react-router-dom'
@@ -25,6 +26,7 @@ const router = createBrowserRouter([
       { path: 'movies', element: <MoviesPage /> },
       { path: 'movies/:movieId', element: <MovieDetailPage /> },
       { path: 'tv', element: <TvShowsPage /> },
+      { path: 'tv/:seriesId', element: <TvShowDetailPage /> },
       { path: 'actors', element: <ActorsPage /> },
       {
         element: <GuestOnlyRoute />,

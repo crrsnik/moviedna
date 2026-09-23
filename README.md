@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 6.1 — movie details.
+Stage 6.2 — TV show details.
 
 ## Стек
 
@@ -351,7 +351,7 @@ server proxy. Static production deployment still requires a backend/serverless
 Movies (`/movies`) supports Popular, Top Rated, Now Playing and Upcoming.
 TV Shows (`/tv`) supports Popular, Top Rated, Airing Today and On The Air.
 Actors (`/actors`) supports Popular and Trending This Week. All routes are public,
-including before onboarding completion. Movie cards link to public detail pages; TV/person cards remain non-interactive.
+including before onboarding completion. Movie cards link to public detail pages; TV cards also link to details; person cards remain non-interactive.
 
 Views use `?view=popular&page=1`. Movies/TV genres use `?genre=28&page=1`
 with their respective genre lists and discover endpoints. Selecting a view clears
@@ -377,7 +377,7 @@ follow the loaded movie and reset on navigation; movie changes scroll to the top
 
 One `/api/tmdb/movie/{id}` request uses `language=en-US` and exactly
 `append_to_response=credits,videos,release_dates,recommendations`. The proxy allowlist
-requires these parameters; credentials remain server-side. This stage adds no
+requires these parameters; credentials remain server-side. Stage 6.1 added no
 Firebase operations, dependencies, TV/person detail pages or persistent TMDB data.
 Static production still requires the backend/serverless `/api/tmdb` proxy.
 
@@ -388,3 +388,26 @@ breaks ties). Homepage links accept only HTTP(S) without embedded credentials.
 Recommendations reuse movie-card normalization and only the first page (at most 20).
 Missing images have placeholders; zero/unknown monetary amounts are hidden.
 Movie links work on Home, search, catalog and recommendations. Attribution is retained.
+
+## TV show details
+
+`/tv/:seriesId` is public. TV cards link here from Home, catalogs, search and TV
+recommendations; movie links retain `/movies/:movieId`, people remain unlinked.
+One `/api/tmdb/tv/{id}` request uses `language=en-US` and exactly
+`append_to_response=aggregate_credits,videos,content_ratings,recommendations`.
+The existing proxy/client restrict this contract and never expose the private token.
+
+Movie and TV share ID validation, safe trailer/homepage helpers, detail loading,
+404/error/Retry, title cleanup, scroll-to-top, image fallback and stale-response
+protection. Movie behavior is retained. TV normalization includes US content rating,
+deduplicated creators/networks/companies/countries, first–last years for finished
+shows and first–present for returning shows. Runtime uses the first valid declared
+runtime, then the last episode's runtime when needed.
+
+Aggregate cast is ordered and limited to 12; character selection prefers the role
+with the most episodes, then alphabetical order. Specials (season 0) are allowed;
+seasons are ordered by number in a horizontal lane so long-running shows do not
+create an excessively tall page. Last/next episode summaries and seasons have no
+links. Recommendations use the existing TV card model and the first page only.
+No season, episode or person detail routes, Firebase operations or new dependencies
+are added. Static production still requires a backend/serverless `/api/tmdb` proxy.
