@@ -47,6 +47,7 @@ function Header() {
             <span role="status" className="text-sm text-zinc-400">Creating account…</span>
           ) : isAuthenticated ? (
             <>
+              <NavLink className={linkClasses} to="/library">Library</NavLink>
               <span className="max-w-48 break-words text-sm text-zinc-300">{user.displayName || user.email || 'Account'}</span>
               <button
                 type="button"

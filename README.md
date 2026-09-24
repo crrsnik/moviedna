@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 7.1 — media library data model and security.
+Stage 7.2 — favorites and watchlist.
 
 ## Стек
 
@@ -445,3 +445,23 @@ Firestore Rules добавляют приватные `users/{uid}/lists/{listId
 Rules успешно развёрнуты только как `firestore:rules` в базе `(default)` после
 445 Rules tests (208 прежних + 237 новых) и 742 unit tests. Frontend и library service
 не добавлены; production documents/users не читались и не изменялись.
+
+
+## Favorites and To Watch (Stage 7.2)
+
+Movie/TV detail pages expose Favorites and Watchlist actions to signed-in users.
+Guests see Log in to save and create no library subscriptions. `/library?view=favorites`
+and `/library?view=watchlist` require authentication and a valid completed onboarding
+profile; Library appears in the authenticated Header. Tabs, reload and history use URL state.
+
+Membership changes use a transaction with a per-user/media lock. Other memberships
+and createdAt are preserved; the last membership removal deletes the document.
+Subscriptions show server-confirmed snapshots, ignore pending/cache-only data and
+reattach after a transaction to avoid optimistic query removals. Errors remain local
+to library UI; Retry restarts a subscription and never repeats a mutation.
+
+Queries use one owner subcollection and one flag filter, with client-side timestamp/title
+sorting. Corrupted documents are filtered; detail actions refuse corrupt saved state.
+Custom-list UI, new dependencies, Rules/index changes and deployment are outside this stage.
+Validation uses injected Firebase dependencies and an isolated browser fixture; no real
+production user or savedMedia data is used by automated checks.

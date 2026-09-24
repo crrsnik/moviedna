@@ -1,3 +1,4 @@
+import LibraryPage from '../pages/LibraryPage.jsx'
 import PersonDetailPage from '../pages/PersonDetailPage.jsx'
 import TvShowDetailPage from '../pages/TvShowDetailPage.jsx'
 import MovieDetailPage from '../pages/MovieDetailPage.jsx'
@@ -43,6 +44,9 @@ const router = createBrowserRouter([
         children: [{
           element: <OnboardingRoute />,
           children: [{ path: 'onboarding', element: <OnboardingPage /> }],
+        }, {
+          element: <OnboardingRoute requireCompleted />,
+          children: [{ path: 'library', element: <LibraryPage /> }],
         }],
       },
       { path: '*', element: <NotFoundPage /> },

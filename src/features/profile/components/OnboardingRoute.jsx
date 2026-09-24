@@ -2,7 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { useUserProfile } from '../hooks/useUserProfile.js'
 import { getProfileErrorMessage } from '../services/profileErrors.js'
 
-function OnboardingRoute() {
+function OnboardingRoute({ requireCompleted = false }) {
   const { profile, isProfileLoading, profileError, hasCompletedOnboarding } = useUserProfile()
   if (isProfileLoading) return <p role="status" aria-live="polite" className="text-zinc-400">Loading your profile…</p>
   if (profileError || !profile) {
@@ -15,6 +15,7 @@ function OnboardingRoute() {
       </div>
     )
   }
+  if (requireCompleted) return hasCompletedOnboarding ? <Outlet /> : <Navigate to="/onboarding" replace />
   return hasCompletedOnboarding ? <Navigate to="/" replace /> : <Outlet />
 }
 

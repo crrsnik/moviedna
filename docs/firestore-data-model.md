@@ -275,3 +275,37 @@ UI, library service и cleanup на этом этапе отсутствуют.
 [List.toSet](https://firebase.google.com/docs/reference/rules/rules.List),
 [automatic single-field indexes](https://firebase.google.com/docs/firestore/query-data/index-overview),
 [batched writes and limits](https://firebase.google.com/docs/firestore/manage-data/transactions).
+
+
+## Реализованный client flow — Stage 7.2
+
+Schema и Rules этапа 7.1 не изменены. Сервис формирует канонический mediaKey и сохраняет
+только tmdbId/mediaType/title/posterPath/releaseYear плюс membership flags/listIds/timestamps.
+Перед любым Firestore-доступом проверяются UID текущей Auth-сессии и media identity.
+`runTransaction` читает один savedMedia document, повторно проверяет сессию и
+валидирует существующий документ. Новый получает второй flag false, пустой listIds
+и два serverTimestamp. Update меняет только выбранный flag, актуальные display-поля
+и updatedAt; другой flag, listIds и createdAt сохраняются. При отсутствии memberships
+выполняется delete. Remove из library задаёт false явно: повторное удаление не добавляет
+документ обратно. Transaction retries используют последний прочитанный документ.
+
+Клиент проверяет тип/формат каждого listId и не изменяет listIds на этом этапе;
+существование списков не проверяется, dangling references не очищаются. Повреждённые
+savedMedia запрещены для toggle и пропускаются при отображении коллекции.
+Между завершением Auth-сессии и уже отправленным commit нет механизма отмены Firebase:
+проверки до/после чтения и после commit предотвращают продолжение в новой сессии и
+stale UI, но не обещают rollback уже принятой сервером записи. При logout подписки
+отключаются, предыдущие данные немедленно скрываются по UID.
+
+Один lock на UID/mediaKey и UI lock блокируют повторные/конфликтующие нажатия.
+Локальные pending writes и cache-only snapshots не считаются подтверждением сервера.
+На время transaction подписки этого UID удерживают прежнее состояние; после её
+завершения подписки пересоздаются для подтверждённого server snapshot. Это важно для
+query removals: удалённый локально документ уже может отсутствовать в result set,
+поэтому одного hasPendingWrites у query недостаточно. Retry только переподписывается.
+В offline-режиме начальная подписка может оставаться в loading до связи с сервером;
+медиатека не выдаёт cache за подтверждённое состояние.
+
+Favorites/Watchlist queries не используют orderBy. Сортировка идёт по updatedAt,
+createdAt (с сохранением nanoseconds), затем title и mediaKey. UI custom lists и
+каскадное удаление списка по-прежнему не реализованы.

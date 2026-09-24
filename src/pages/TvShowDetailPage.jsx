@@ -1,3 +1,4 @@
+import MediaLibraryActions from '../features/library/components/MediaLibraryActions.jsx'
 import { useParams } from 'react-router-dom'
 import { useTvShowDetails } from '../features/catalog/hooks/useTvShowDetails.js'
 import { useDetailPageMetadata } from '../features/catalog/hooks/useDetailPageMetadata.js'
@@ -15,6 +16,7 @@ export default function TvShowDetailPage() {
   if (!data) return <DetailStatus loading={loading} notFound={notFound} error={error} retry={retry} noun="TV show" backTo="/tv" backLabel="Back to TV Shows" />
   return <div className="w-full min-w-0 self-start space-y-10">
     <TvShowDetailHero series={data} />
+    <MediaLibraryActions mediaType="tv" detail={data} />
     <TvShowFacts series={data} />
     <TvShowEpisodes lastEpisode={data.lastEpisode} nextEpisode={data.nextEpisode} />
     <DetailCredits cast={data.cast} headingId="tv-cast" />
