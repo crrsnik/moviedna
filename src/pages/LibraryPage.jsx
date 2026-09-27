@@ -1,3 +1,4 @@
+import UserRatings from '../features/ratings/components/UserRatings.jsx'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../features/auth/hooks/useAuth.js'
@@ -24,7 +25,7 @@ function Library({ uid }) {
       <div className="space-y-3"><h2 className="break-words text-2xl font-semibold">{selected.name}</h2>{selected.description && <p className="whitespace-pre-wrap break-words text-zinc-300">{selected.description}</p>}<div className="flex flex-wrap gap-3"><button type="button" className={libraryButton} onClick={() => setDialog({ type: 'edit', list: selected })}>Edit list</button><button type="button" className={libraryButton} onClick={() => setDialog({ type: 'delete', list: selected })}>Delete list</button></div></div>
       <LibraryItems key={selection.listId} uid={uid} {...selection} />
     </> : !lists.loading && !lists.error && <div><h2 className="text-xl">List not found</h2><Link to="?view=favorites" className="underline focus-visible:outline-2">Return to Favorites</Link></div>
-      : <LibraryItems key={selection.view} uid={uid} {...selection} />}
+      : selection.view === 'ratings' ? <UserRatings uid={uid} /> : <LibraryItems key={selection.view} uid={uid} {...selection} />}
     {dialog?.type === 'delete' ? <DeleteListDialog uid={uid} list={dialog.list} onClose={close} onDeleted={() => { close(); setParams({ view: 'favorites' }) }} /> : dialog && <CustomListForm uid={uid} list={dialog.list} onClose={close} onSaved={id => { close(); if (dialog.type === 'create') setParams(librarySelectionParams({ view: 'list', listId: id })) }} />}
   </section>
 }

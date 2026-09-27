@@ -1,3 +1,4 @@
+import MediaRatingControl from '../features/ratings/components/MediaRatingControl.jsx'
 import MediaLibraryActions from '../features/library/components/MediaLibraryActions.jsx'
 import { useParams } from 'react-router-dom'
 import { useTvShowDetails } from '../features/catalog/hooks/useTvShowDetails.js'
@@ -17,6 +18,7 @@ export default function TvShowDetailPage() {
   return <div className="w-full min-w-0 self-start space-y-10">
     <TvShowDetailHero series={data} />
     <MediaLibraryActions mediaType="tv" detail={data} />
+    <MediaRatingControl mediaType="tv" detail={data} />
     <TvShowFacts series={data} />
     <TvShowEpisodes lastEpisode={data.lastEpisode} nextEpisode={data.nextEpisode} />
     <DetailCredits cast={data.cast} headingId="tv-cast" />

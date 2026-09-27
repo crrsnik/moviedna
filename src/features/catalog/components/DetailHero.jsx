@@ -12,7 +12,7 @@ export default function DetailHero({ media: movie, metadata, backTo, backLabel }
       <div className="min-w-0 space-y-4">
         <h1 className="break-words text-3xl font-semibold sm:text-4xl">{movie.title}</h1>
         <p className="flex flex-wrap gap-3 text-sm text-zinc-300">{metadata.filter(Boolean).map((value, i) => <span key={i}>{value}</span>)}</p>
-        {movie.voteAverage !== null && movie.voteCount > 0 && <p className="text-sm">TMDB {movie.voteAverage.toFixed(1)}/10 · {movie.voteCount.toLocaleString('en-US')} votes</p>}
+        {movie.voteAverage !== null && movie.voteCount > 0 && <p className="text-sm">TMDB rating: {movie.voteAverage.toFixed(1)}/10 · {movie.voteCount.toLocaleString('en-US')} votes</p>}
         {!!movie.genres.length && <ul aria-label="Genres" className="flex flex-wrap gap-2">{movie.genres.map((genre) => <li key={genre.id} className="rounded-full bg-zinc-800 px-3 py-1 text-xs">{genre.name}</li>)}</ul>}
         {movie.tagline && <p className="break-words italic text-zinc-300">{movie.tagline}</p>}
         <p className="break-words leading-relaxed text-zinc-200">{movie.overview || 'No overview available.'}</p>

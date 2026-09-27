@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 8.1 — ratings and comments security model.
+Stage 8.2 — personal movie and TV ratings.
 
 ## Стек
 
@@ -515,3 +515,30 @@ comment text as text, never HTML. [Exact schemas and boundaries](docs/firestore-
 
 Проверки Stage 8.1: **768 Rules tests** (445 прежних + 323 новых), только
 `demo-moviedna`; **935 unit tests**. Локальный Emulator после тестов остановлен.
+
+
+## Personal movie and TV ratings (Stage 8.2)
+
+Completed-profile users can choose a draft score from 1–10 on movie/TV details,
+then explicitly Save rating or Remove rating. TMDB rating stays separate from
+Your rating; no public MovieDNA aggregate is calculated. Guests create no rating
+subscriptions. Errors remain local; Retry only restarts reads, never mutations.
+
+`/library?view=ratings` adds My Ratings alongside Favorites, To Watch and custom
+lists. URL state supports reload and history. Ratings use an owner-only collection
+subscription without orderBy or composite indexes; client sorting uses updatedAt,
+createdAt and title. Invalid documents are discarded and cards link to movie/TV details.
+
+The injected service uses transactions, checks the current session and completed
+profile before saving, preserves identity/createdAt, and refreshes allowed snapshot
+fields with server timestamps. Deletion is idempotent and never changes savedMedia
+or list memberships. Repeated actions are blocked; UI waits for server confirmation.
+Subscriptions ignore cache/pending snapshots and stale callbacks, reattach after
+mutations, and unsubscribe on logout, media/view change or unmount. A transaction
+already dispatched before logout cannot be guaranteed cancelled; its result is not
+reported as success to a different session.
+
+Validation covers 1041 unit tests (935 existing + 106 ratings tests), 768 emulator-only
+Rules tests, and isolated browser fixtures for authenticated flows. Guest regression
+uses a fresh browser session; automated checks do not access production Firestore.
+Rules, indexes and dependencies remain unchanged. Comments UI is a later stage.
