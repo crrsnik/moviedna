@@ -4,7 +4,7 @@ import { after, before, beforeEach, describe, it } from 'node:test'
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing'
 import {
   collection, collectionGroup, deleteDoc, deleteField, doc, getDoc, getDocs, serverTimestamp,
-  setDoc, Timestamp, updateDoc, writeBatch, query, where,
+  setDoc, Timestamp, updateDoc, writeBatch, query, where, orderBy, limit, startAfter,
 } from 'firebase/firestore'
 
 // Refuse direct runs or remote endpoints. Never import the app's Firebase config.
@@ -681,4 +681,254 @@ describe('Media library security rules', { concurrency: false }, () => {
     await assertFails(getDocs(query(collection(userDb('bob'), 'users/alice/savedMedia'), where(field, operator, value))))
   })
 
+})
+
+// Stage 8.1: private ratings and public comments; fixtures are synthetic, demo-only.
+const ratingData = (patch = {}) => ({ tmdbId: 123, mediaType: 'movie', title: 'Synthetic title', posterPath: null, releaseYear: null, score: 7, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), ...patch })
+const commentData = (patch = {}) => ({ tmdbId: 123, mediaType: 'movie', authorUsername: 'alice_123', authorDisplayName: 'Alice', text: 'Synthetic comment', containsSpoiler: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), ...patch })
+const ratingRef = (db, key = 'movie_123', uid = 'alice') => doc(db, 'users', uid, 'ratings', key)
+const commentRef = (db, key = 'movie_123', uid = 'alice') => doc(db, 'mediaComments', key, 'comments', uid)
+const commentsQuery = db => collection(db, 'mediaComments/movie_123/comments')
+async function seedCompletedProfile(patch = {}) {
+  await testEnv.withSecurityRulesDisabled(c => setDoc(doc(c.firestore(), 'users/alice'), profile(undefined, { onboardingCompleted: true, ...patch })))
+}
+
+describe('Ratings and comments security model', { concurrency: false }, () => {
+  before(async () => {
+    testEnv = await initializeTestEnvironment({ projectId, firestore: { host: '127.0.0.1', port: 8080, rules: await readFile(new URL('../firestore.rules', import.meta.url), 'utf8') } })
+  })
+  beforeEach(async () => { await testEnv.clearFirestore(); await seedCompletedProfile() })
+  after(async () => { await testEnv?.cleanup() })
+
+  for (const [kind, make, ref] of [['rating', ratingData, ratingRef], ['comment', commentData, commentRef]]) {
+    describe(`${kind}: schema and identity`, () => {
+      for (const [key, identity] of [['movie_1', { tmdbId: 1 }], ['tv_1396', { mediaType: 'tv', tmdbId: 1396 }], ['movie_999999999999', { tmdbId: 999999999999 }]]) {
+        it(`allows valid ${key} with server timestamps`, async () => {
+          const target = ref(userDb(), key)
+          await assertSucceeds(setDoc(target, make(identity)))
+          const data = (await assertSucceeds(getDoc(target))).data()
+          assert.ok(data.createdAt instanceof Timestamp)
+          assert.ok(data.createdAt.isEqual(data.updatedAt))
+        })
+      }
+      for (const key of ['movie_0', 'movie_0123', 'movie_1000000000000', 'person_123', 'actor_123', 'Movie_123', 'movie_-1', 'movie_1.5', 'movie_1e3', 'movie_123 ', 'movie_１２３', 'tv_123', 'movie_124']) {
+        it(`rejects invalid or mismatched key ${key}`, async () => { await assertFails(setDoc(ref(userDb(), key), make())) })
+      }
+      const invalidIdentity = [
+        ...[0, -1, 1.5, 1000000000000, '123', null, true].map(tmdbId => ({ tmdbId })),
+        ...['person', 'actor', 'Movie', '', null, 42].map(mediaType => ({ mediaType })),
+      ]
+      for (const patch of invalidIdentity) for (const operation of ['create', 'update']) {
+        it(`rejects ${operation} identity ${JSON.stringify(patch)}`, async () => {
+          const target = ref(userDb())
+          if (operation === 'create') await assertFails(setDoc(target, make(patch)))
+          else { await setDoc(target, make()); await assertFails(updateDoc(target, { ...patch, updatedAt: serverTimestamp() })) }
+        })
+      }
+      for (const field of Object.keys(make())) for (const operation of ['create', 'update']) {
+        it(`rejects ${operation} missing ${field}`, async () => {
+          const target = ref(userDb())
+          if (operation === 'create') { const data = make(); delete data[field]; await assertFails(setDoc(target, data)) }
+          else { await setDoc(target, make()); await assertFails(updateDoc(target, { [field]: deleteField(), ...(field === 'updatedAt' ? {} : { updatedAt: serverTimestamp() }) })) }
+        })
+      }
+      for (const patch of [{ extra: true }, { email: 'fixture@example.invalid' }, { createdAt: Timestamp.fromMillis(0) }, { updatedAt: Timestamp.fromMillis(0) }, { createdAt: 'invalid' }, { updatedAt: null }]) {
+        for (const operation of ['create', 'update']) it(`rejects ${operation} fields/timestamps ${JSON.stringify(patch)}`, async () => {
+          const target = ref(userDb())
+          if (operation === 'create') await assertFails(setDoc(target, make(patch)))
+          else { await setDoc(target, make()); await assertFails(updateDoc(target, { updatedAt: serverTimestamp(), ...patch })) }
+        })
+      }
+      for (const patch of [{ tmdbId: 124 }, { mediaType: 'tv' }, { createdAt: serverTimestamp() }]) {
+        it(`preserves immutable ${Object.keys(patch)[0]}`, async () => {
+          const target = ref(userDb()); await setDoc(target, make())
+          await assertFails(updateDoc(target, { ...patch, updatedAt: serverTimestamp() }))
+        })
+      }
+      it('rejects stale updatedAt', async () => {
+        const target = ref(userDb()); await setDoc(target, make())
+        await assertFails(updateDoc(target, kind === 'rating' ? { score: 9 } : { text: 'Edited' }))
+      })
+      for (const state of ['missing', 'incomplete']) it(`rejects create with ${state} profile`, async () => {
+        await testEnv.withSecurityRulesDisabled(async c => {
+          if (state === 'missing') await deleteDoc(doc(c.firestore(), 'users/alice'))
+          else await updateDoc(doc(c.firestore(), 'users/alice'), { onboardingCompleted: false })
+        })
+        await assertFails(setDoc(ref(userDb()), make()))
+      })
+      it('does not accept profile completion in the same batch', async () => {
+        await seedCompletedProfile({ onboardingCompleted: false })
+        const db = userDb(), batch = writeBatch(db)
+        batch.set(summaryRef(db), summaryData()); batch.update(doc(db, 'users/alice'), completionPatch())
+        batch.set(ref(db), make())
+        await assertFails(batch.commit())
+        assert.equal((await getDoc(doc(db, 'users/alice'))).data().onboardingCompleted, false)
+      })
+      for (const identity of ['guest', 'bob']) for (const operation of ['create', 'update', 'delete']) {
+        it(`rejects ${identity} ${operation} for author path`, async () => {
+          if (operation !== 'create') await setDoc(ref(userDb()), make())
+          const db = identity === 'guest' ? testEnv.unauthenticatedContext().firestore() : userDb(identity)
+          const target = ref(db)
+          const actions = { create: () => setDoc(target, make()), update: () => updateDoc(target, { updatedAt: serverTimestamp() }), delete: () => deleteDoc(target) }
+          await assertFails(actions[operation]())
+        })
+      }
+      it('allows only one document per user/media, full replacement is still an update', async () => {
+        const db = userDb(), target = ref(db)
+        await setDoc(target, make())
+        const initial = (await getDoc(target)).data()
+        await assertFails(setDoc(target, make()))
+        await assertSucceeds(setDoc(target, make({ createdAt: initial.createdAt })))
+        const source = kind === 'rating' ? collection(db, 'users/alice/ratings') : commentsQuery(db)
+        assert.equal((await getDocs(query(source, limit(20)))).size, 1)
+      })
+      it('denies nested unknown collection', async () => {
+        const target = doc(ref(userDb()), 'private/data')
+        await assertFails(getDoc(target)); await assertFails(setDoc(target, { synthetic: true }))
+      })
+    })
+  }
+
+  describe('Private ratings', () => {
+    it('allows owner get/list/edit snapshot/score/delete', async () => {
+      const db = userDb(), target = ratingRef(db)
+      await setDoc(target, ratingData())
+      const initial = (await getDoc(target)).data()
+      assert.equal((await assertSucceeds(getDocs(collection(db, 'users/alice/ratings')))).size, 1)
+      await assertSucceeds(updateDoc(target, { score: 10, title: 'Refreshed title', posterPath: '/poster.jpg', releaseYear: 2026, updatedAt: serverTimestamp() }))
+      const updated = (await getDoc(target)).data()
+      assert.equal(updated.score, 10); assert.equal(updated.title, 'Refreshed title')
+      assert.ok(updated.createdAt.isEqual(initial.createdAt))
+      await assertSucceeds(deleteDoc(target))
+    })
+    for (const identity of ['guest', 'bob']) for (const operation of ['get', 'list', 'group']) it(`denies ${identity} rating ${operation}`, async () => {
+      await setDoc(ratingRef(userDb()), ratingData())
+      const db = identity === 'guest' ? testEnv.unauthenticatedContext().firestore() : userDb(identity)
+      await assertFails(operation === 'get' ? getDoc(ratingRef(db)) : getDocs(operation === 'list' ? collection(db, 'users/alice/ratings') : collectionGroup(db, 'ratings')))
+    })
+    it('denies even owner collection-group ratings with a limit', async () => {
+      await setDoc(ratingRef(userDb()), ratingData())
+      await assertFails(getDocs(query(collectionGroup(userDb(), 'ratings'), limit(20))))
+    })
+    for (const state of ['missing', 'incomplete']) it(`denies rating update with ${state} profile but permits owner get/delete`, async () => {
+      const db = userDb(), target = ratingRef(db); await setDoc(target, ratingData())
+      await testEnv.withSecurityRulesDisabled(c => state === 'missing' ? deleteDoc(doc(c.firestore(), 'users/alice')) : updateDoc(doc(c.firestore(), 'users/alice'), { onboardingCompleted: false }))
+      await assertFails(updateDoc(target, { score: 8, updatedAt: serverTimestamp() }))
+      await assertSucceeds(getDoc(target)); await assertSucceeds(deleteDoc(target))
+    })
+    const invalidRating = [
+      ...[0, 11, -1, 1.5, '5', null, true].map(score => ({ score })),
+      ...['', ' \n\t', '\u00a0\u2003', '\v\ufeff', 'a'.repeat(201), 42, null].map(title => ({ title })),
+      ...['https://example.invalid/p.jpg', '//example.invalid/p?x', '/p.jpg?q=1', '/p.jpg#fragment', '/p\\x.jpg', '/p x.jpg', '/p\nx.jpg', '/p\tx.jpg', '/p\u00a0x.jpg', 'p.jpg', '/', '/../p.jpg', '/%2e%2e/p.jpg', '/' + 'a'.repeat(200), 42, false].map(posterPath => ({ posterPath })),
+      ...[1799, 2201, 2000.5, '2000', false].map(releaseYear => ({ releaseYear })),
+    ]
+    for (const patch of invalidRating) for (const operation of ['create', 'update']) it(`rejects ${operation} rating ${JSON.stringify(patch)}`, async () => {
+      const target = ratingRef(userDb())
+      if (operation === 'create') await assertFails(setDoc(target, ratingData(patch)))
+      else { await setDoc(target, ratingData()); await assertFails(updateDoc(target, { ...patch, updatedAt: serverTimestamp() })) }
+    })
+    for (const patch of [{ score: 1 }, { score: 10 }, { posterPath: '/safe-poster_1.jpg' }, { posterPath: '/' + 'a'.repeat(199) }, { releaseYear: 1800 }, { releaseYear: 2200 }, { title: 'a'.repeat(200) }, { title: '\nКино\n' }]) it(`accepts rating boundary ${JSON.stringify(patch)}`, async () => {
+      await assertSucceeds(setDoc(ratingRef(userDb()), ratingData(patch)))
+    })
+  })
+
+  describe('Public comments', () => {
+    it('author edits text and spoiler while preserving snapshot/createdAt, then deletes', async () => {
+      const db = userDb(), target = commentRef(db); await setDoc(target, commentData())
+      const initial = (await getDoc(target)).data()
+      await assertSucceeds(updateDoc(target, { text: 'Edited comment', updatedAt: serverTimestamp() }))
+      await assertSucceeds(updateDoc(target, { containsSpoiler: true, updatedAt: serverTimestamp() }))
+      const updated = (await getDoc(target)).data()
+      assert.equal(updated.text, 'Edited comment'); assert.equal(updated.containsSpoiler, true)
+      assert.ok(updated.createdAt.isEqual(initial.createdAt))
+      assert.equal(updated.authorUsername, initial.authorUsername)
+      await assertSucceeds(deleteDoc(target))
+    })
+    for (const identity of ['guest', 'bob']) {
+      const dbFor = () => identity === 'guest' ? testEnv.unauthenticatedContext().firestore() : userDb(identity)
+      it(`${identity} can get a comment without reading private profile`, async () => {
+        await setDoc(commentRef(userDb()), commentData())
+        await assertSucceeds(getDoc(commentRef(dbFor())))
+        await assertFails(getDoc(doc(dbFor(), 'users/alice')))
+      })
+      for (const count of [1, 20]) it(`${identity} public list with limit ${count}`, async () => {
+        await setDoc(commentRef(userDb()), commentData())
+        const result = await assertSucceeds(getDocs(query(commentsQuery(dbFor()), orderBy('updatedAt', 'desc'), limit(count))))
+        assert.equal(result.size, 1)
+      })
+      for (const count of [undefined, 21]) it(`${identity} denied list limit ${count}`, async () => {
+        await setDoc(commentRef(userDb()), commentData())
+        const constraints = [orderBy('updatedAt', 'desc')]
+        if (count !== undefined) constraints.push(limit(count))
+        await assertFails(getDocs(query(commentsQuery(dbFor()), ...constraints)))
+      })
+      it(`${identity} comments collection-group denied`, async () => {
+        await setDoc(commentRef(userDb()), commentData())
+        await assertFails(getDocs(query(collectionGroup(dbFor(), 'comments'), limit(20))))
+      })
+    }
+    it('denies public REST query with zero limit (SDK normally rejects it before Rules)', async () => {
+      const response = await fetch(`http://127.0.0.1:8080/v1/projects/${projectId}/databases/(default)/documents/mediaComments/movie_123:runQuery`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'comments' }], limit: 0 } }),
+      })
+      assert.equal(response.status, 403)
+    })
+    for (const [label, sort] of [['default', []], ['updatedAt asc', [orderBy('updatedAt', 'asc')]], ['text desc', [orderBy('text', 'desc')]]]) {
+      it(`documents fallback: bounded public query accepts sort variant ${label}`, async () => {
+        await setDoc(commentRef(userDb()), commentData())
+        await assertSucceeds(getDocs(query(commentsQuery(testEnv.unauthenticatedContext().firestore()), ...sort, limit(20))))
+      })
+    }
+    it('two authors can comment on the same media without exposing their profiles', async () => {
+      await testEnv.withSecurityRulesDisabled(c => setDoc(doc(c.firestore(), 'users/bob'), profile('bob_123', { displayName: 'Bob', onboardingCompleted: true })))
+      await assertSucceeds(setDoc(commentRef(userDb()), commentData()))
+      await assertSucceeds(setDoc(commentRef(userDb('bob'), 'movie_123', 'bob'), commentData({ authorUsername: 'bob_123', authorDisplayName: 'Bob' })))
+      const comments = await assertSucceeds(getDocs(query(commentsQuery(testEnv.unauthenticatedContext().firestore()), orderBy('updatedAt', 'desc'), limit(20))))
+      assert.equal(comments.size, 2)
+    })
+    it('supports cursor pagination without new composite index', async () => {
+      const guest = testEnv.unauthenticatedContext().firestore()
+      await setDoc(commentRef(userDb()), commentData())
+      const first = await getDocs(query(commentsQuery(guest), orderBy('updatedAt', 'desc'), limit(20)))
+      const next = await assertSucceeds(getDocs(query(commentsQuery(guest), orderBy('updatedAt', 'desc'), startAfter(first.docs[0]), limit(20))))
+      assert.equal(next.size, 0)
+    })
+    for (const field of ['authorUsername', 'authorDisplayName']) {
+      for (const value of ['Impersonated', null, 123]) it(`rejects author snapshot ${field} ${JSON.stringify(value)}`, async () => {
+        await assertFails(setDoc(commentRef(userDb()), commentData({ [field]: value })))
+      })
+      it(`rejects update to immutable ${field} even after a profile change`, async () => {
+        const target = commentRef(userDb()); await setDoc(target, commentData())
+        await testEnv.withSecurityRulesDisabled(c => updateDoc(doc(c.firestore(), 'users/alice'), { [field === 'authorUsername' ? 'username' : 'displayName']: 'NewSnapshot' }))
+        await assertFails(updateDoc(target, { [field]: 'NewSnapshot', updatedAt: serverTimestamp() }))
+        await assertSucceeds(updateDoc(target, { text: 'Edit keeps original attribution', updatedAt: serverTimestamp() }))
+      })
+    }
+    it('owner may edit/delete existing comment after profile deletion; no auto snapshot refresh', async () => {
+      const target = commentRef(userDb()); await setDoc(target, commentData())
+      await testEnv.withSecurityRulesDisabled(c => deleteDoc(doc(c.firestore(), 'users/alice')))
+      await assertSucceeds(updateDoc(target, { text: 'Still authored by the same user', updatedAt: serverTimestamp() }))
+      await assertSucceeds(deleteDoc(target))
+    })
+    const invalidComment = [
+      ...['', ' \n\t', '\u00a0\u2003', '\v\ufeff', 'a'.repeat(2001), null, 123, [], {}].map(text => ({ text })),
+      ...[null, 'true', 0, []].map(containsSpoiler => ({ containsSpoiler })),
+    ]
+    for (const patch of invalidComment) for (const operation of ['create', 'update']) it(`rejects ${operation} comment ${JSON.stringify(patch).slice(0, 90)}`, async () => {
+      const target = commentRef(userDb())
+      if (operation === 'create') await assertFails(setDoc(target, commentData(patch)))
+      else { await setDoc(target, commentData()); await assertFails(updateDoc(target, { ...patch, updatedAt: serverTimestamp() })) }
+    })
+    for (const text of ['x', 'a'.repeat(2000), '\nОтзыв\n', '<b>Untrusted text, not HTML</b>']) it(`accepts text boundary length ${text.length}`, async () => {
+      await assertSucceeds(setDoc(commentRef(userDb()), commentData({ text })))
+    })
+    for (const identity of ['guest', 'alice']) for (const path of ['mediaComments/movie_123', 'mediaComments/movie_123/private/data', 'mediaComments/movie_123/comments/alice/private/data']) it(`denies ${identity} parent/unknown path ${path}`, async () => {
+      const db = identity === 'guest' ? testEnv.unauthenticatedContext().firestore() : userDb()
+      await assertFails(getDoc(doc(db, path))); await assertFails(setDoc(doc(db, path), { synthetic: true }))
+    })
+    it('does not make parent collection list public', async () => {
+      await assertFails(getDocs(query(collection(testEnv.unauthenticatedContext().firestore(), 'mediaComments'), limit(20))))
+    })
+  })
 })

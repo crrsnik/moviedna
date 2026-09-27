@@ -80,23 +80,59 @@ service cloud.firestore {
         && path.matches('^/[A-Za-z0-9_./-]+$') && !path.matches('.*[.][.].*'));
     }
 
+    function isValidMediaIdentity(data, mediaKey) {
+      return mediaKey.matches('^(movie|tv)_[1-9][0-9]{0,11}$')
+        && data.tmdbId is int && data.tmdbId >= 1 && data.tmdbId <= 999999999999
+        && data.mediaType in ['movie', 'tv']
+        && mediaKey == data.mediaType + '_' + string(data.tmdbId);
+    }
+
+    function isValidMediaSnapshot(data) {
+      return hasLibraryText(data.title, 200) && isLibraryPoster(data.posterPath)
+        && (data.releaseYear == null || (data.releaseYear is int
+          && data.releaseYear >= 1800 && data.releaseYear <= 2200));
+    }
+
     function isValidSavedMedia(data, mediaKey) {
       let fields = ['tmdbId', 'mediaType', 'title', 'posterPath', 'releaseYear',
                     'favorite', 'watchlist', 'listIds', 'createdAt', 'updatedAt'];
       return data.keys().hasAll(fields) && data.keys().hasOnly(fields)
-        && mediaKey.matches('^(movie|tv)_[1-9][0-9]{0,11}$')
-        && data.tmdbId is int && data.tmdbId >= 1 && data.tmdbId <= 999999999999
-        && data.mediaType in ['movie', 'tv']
-        && mediaKey == data.mediaType + '_' + string(data.tmdbId)
-        && hasLibraryText(data.title, 200) && isLibraryPoster(data.posterPath)
-        && (data.releaseYear == null || (data.releaseYear is int
-          && data.releaseYear >= 1800 && data.releaseYear <= 2200))
+        && isValidMediaIdentity(data, mediaKey) && isValidMediaSnapshot(data)
         && data.favorite is bool && data.watchlist is bool
         // No iteration/existence guarantee for individual list IDs; see data model.
         && data.listIds is list && data.listIds.size() <= 20
         && data.listIds.toSet().size() == data.listIds.size()
         && (data.favorite || data.watchlist || data.listIds.size() > 0)
         && hasLibraryTimestamps(data);
+    }
+
+    function hasCompletedProfile(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId))
+        && get(/databases/$(database)/documents/users/$(userId)).data.onboardingCompleted == true;
+    }
+
+    function isValidRating(data, mediaKey) {
+      let fields = ['tmdbId', 'mediaType', 'title', 'posterPath', 'releaseYear',
+                    'score', 'createdAt', 'updatedAt'];
+      return data.keys().hasAll(fields) && data.keys().hasOnly(fields)
+        && isValidMediaIdentity(data, mediaKey) && isValidMediaSnapshot(data)
+        && data.score is int && data.score >= 1 && data.score <= 10
+        && hasLibraryTimestamps(data);
+    }
+
+    function isValidComment(data, mediaKey) {
+      let fields = ['tmdbId', 'mediaType', 'authorUsername', 'authorDisplayName',
+                    'text', 'containsSpoiler', 'createdAt', 'updatedAt'];
+      return data.keys().hasAll(fields) && data.keys().hasOnly(fields)
+        && isValidMediaIdentity(data, mediaKey)
+        && data.authorUsername is string && data.authorDisplayName is string
+        && hasLibraryText(data.text, 2000) && data.containsSpoiler is bool
+        && hasLibraryTimestamps(data);
+    }
+
+    function matchesAuthorProfile(data, authorId) {
+      let profile = get(/databases/$(database)/documents/users/$(authorId)).data;
+      return data.authorUsername == profile.username && data.authorDisplayName == profile.displayName;
     }
 
     match /users/{userId} {
@@ -142,6 +178,18 @@ service cloud.firestore {
           && request.resource.data.createdAt == resource.data.createdAt;
       }
 
+      match /ratings/{mediaKey} {
+        allow get, list, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && hasCompletedProfile(userId)
+          && isValidRating(request.resource.data, mediaKey)
+          && request.resource.data.createdAt == request.time;
+        allow update: if isOwner(userId) && hasCompletedProfile(userId)
+          && isValidRating(request.resource.data, mediaKey)
+          && request.resource.data.tmdbId == resource.data.tmdbId
+          && request.resource.data.mediaType == resource.data.mediaType
+          && request.resource.data.createdAt == resource.data.createdAt;
+      }
+
       match /onboardingResponses/{responseId} {
         allow get, list: if isOwner(userId);
         allow create: if isOwner(userId) && hasIncompleteProfile(userId)
@@ -162,6 +210,22 @@ service cloud.firestore {
           && getAfter(/databases/$(database)/documents/users/$(userId)).data.onboardingCompleted == true
           && getAfter(/databases/$(database)/documents/users/$(userId)).data.updatedAt == request.time;
       }
+    }
+
+    match /mediaComments/{mediaKey}/comments/{commentAuthorId} {
+      allow get: if true;
+      // Ordering is a client contract; Rules guarantee only the bounded page size.
+      allow list: if 'limit' in request.query && request.query.limit is int
+        && request.query.limit >= 1 && request.query.limit <= 20;
+      allow create: if isOwner(commentAuthorId) && hasCompletedProfile(commentAuthorId)
+        && isValidComment(request.resource.data, mediaKey)
+        && matchesAuthorProfile(request.resource.data, commentAuthorId)
+        && request.resource.data.createdAt == request.time;
+      // Author snapshots stay immutable even if the profile changes in the future.
+      allow update: if isOwner(commentAuthorId)
+        && isValidComment(request.resource.data, mediaKey)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'containsSpoiler', 'updatedAt']);
+      allow delete: if isOwner(commentAuthorId);
     }
 
     match /usernames/{username} {

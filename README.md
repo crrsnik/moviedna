@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 7.3 — custom media lists.
+Stage 8.1 — ratings and comments security model.
 
 ## Стек
 
@@ -491,3 +491,27 @@ See [the data model](docs/firestore-data-model.md) for details.
 Stage 7.3 validation: 935 unit tests and 445 emulator-only Rules tests. Browser
 checks use synthetic Firebase adapters for authenticated flows and a fresh guest
 session for TMDB/detail/Library guards; no production Firestore data is accessed.
+
+
+## Ratings and comments security model (Stage 8.1)
+
+Published Firestore Rules separate private personal ratings at `users/{uid}/ratings/{mediaKey}`
+from public comments at `mediaComments/{mediaKey}/comments/{commentAuthorId}`.
+Only movie/TV are supported, with one rating and one comment per user/media.
+Ratings use integer scores 1–10 and remain independent of TMDB ratings; no public
+MovieDNA average is calculated. Rating create/update and comment create require
+an existing completed profile. Comments use an immutable username/displayName snapshot.
+
+A public comment exposes its author's Firebase UID in the document path. Email and
+other profile/Auth fields are not copied. Public comment get is allowed; list requires
+an explicit limit of 1–20. The planned client query uses `orderBy('updatedAt', 'desc')`
+with `limit(20)`; Rules do not guarantee ordering. Parent documents and unknown paths
+stay denied, and ratings stay owner-only. No composite index is needed for that query.
+
+This stage contains only schema documentation, Rules and emulator tests: no rating/comment
+UI or services. Only `firestore:rules` was deployed to the verified `(default)` database;
+indexes and other services were not deployed. There is no moderation backend; later UI must render
+comment text as text, never HTML. [Exact schemas and boundaries](docs/firestore-data-model.md#ratings-and-comments--stage-81).
+
+Проверки Stage 8.1: **768 Rules tests** (445 прежних + 323 новых), только
+`demo-moviedna`; **935 unit tests**. Локальный Emulator после тестов остановлен.

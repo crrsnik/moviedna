@@ -1,4 +1,4 @@
-# Firestore data model — Stage 7.1
+# Firestore data model — Stage 8.1
 
 История: модель onboarding этапа 3.3a. Её Rules развёрнуты в production только как
 `firestore:rules` после 208 успешных Rules tests (63 прежних + 145 новых),
@@ -351,3 +351,133 @@ commit: другая вкладка может успеть добавить mem
 dangling references не гарантируется. UI позволяет убрать отсутствующие списки из
 черновика Manage lists и явно сохранить изменения. Полноценная серверная координация
 не входит в этот этап. Операции приватны; public sharing отсутствует.
+
+
+## Ratings and comments — Stage 8.1
+
+Реализованы модель, Security Rules и Emulator tests. После повторных проверок
+опубликованы только `firestore:rules` в проверенный проект и базу `(default)`.
+Frontend и services в этот этап не входят; indexes и другие ресурсы не разворачивались. Поддерживаются movie/TV, но не
+person/actor. Rating и comment независимы: наличие оценки не требуется для комментария.
+Один Firebase UID может иметь максимум один документ каждого типа на один mediaKey;
+это не ограничение на количество разных аккаунтов одного человека.
+
+### Общая media identity
+
+`mediaKey` соответствует `^(movie|tv)_[1-9][0-9]{0,11}$` и **точно равен**
+`mediaType + '_' + string(tmdbId)`. `tmdbId` — integer 1–999999999999,
+`mediaType` — только `movie` или `tv`. Ведущий ноль, дробь, отрицательное число,
+экспоненциальная запись и другой префикс запрещены.
+
+Helpers identity/title/poster/year извлечены из savedMedia без изменения его
+семантики, полей, memberships, timestamps или доступа. Rules не подтверждают
+существование media в TMDB и не проверяют достоверность display snapshot.
+
+### Ratings: точная схема
+
+Путь: `users/{uid}/ratings/{mediaKey}`. Другие поля запрещены.
+
+| Поле | Ограничение |
+| --- | --- |
+| tmdbId | integer 1–999999999999; согласован с mediaKey |
+| mediaType | `movie` / `tv`; согласован с mediaKey |
+| title | string длиной 1–200 с непробельным символом |
+| posterPath | null или относительный path: `/` + непустые ASCII `A-Za-z0-9_./-`, максимум 200 символов, без `..`; те же правила, что savedMedia |
+| releaseYear | null или integer 1800–2200 |
+| score | integer 1–10, не float/string/boolean |
+| createdAt | timestamp, при create равен request.time, далее неизменяем |
+| updatedAt | timestamp, при каждом create/update равен request.time |
+
+Get/list/create/update/delete разрешены только владельцу пути uid. Гость и другой
+пользователь не имеют доступа; collection-group ratings не разрешён. Create/update
+дополнительно проверяют уже существующий профиль с `onboardingCompleted == true`
+через get/exists, а не getAfter: завершение onboarding в том же batch недостаточно.
+Update повторно валидирует весь документ, запрещает изменение tmdbId/mediaType/createdAt,
+но разрешает score и валидный snapshot refresh. Get/list/delete не требуют наличия
+профиля или завершённого onboarding, чтобы владелец мог прочитать/удалить свою оценку.
+
+### Comments: точная схема
+
+Путь: `mediaComments/{mediaKey}/comments/{commentAuthorId}`.
+`commentAuthorId` — Firebase UID автора, проверяемый через request.auth.uid при записи.
+Только эти восемь полей разрешены:
+
+| Поле | Ограничение |
+| --- | --- |
+| tmdbId | integer 1–999999999999; согласован с mediaKey |
+| mediaType | `movie` / `tv`; согласован с mediaKey |
+| authorUsername | string, при create точно равен users/{commentAuthorId}.username |
+| authorDisplayName | string, при create точно равен users/{commentAuthorId}.displayName |
+| text | string 1–2000 с хотя бы одним непробельным символом |
+| containsSpoiler | boolean |
+| createdAt | timestamp, при create равен request.time, далее неизменяем |
+| updatedAt | timestamp, при каждом create/update равен request.time |
+
+Create разрешён только автору с существующим завершённым профилем. Проверка профиля
+не делает его публично читаемым. Update разрешён только автору; итоговая схема и типы
+валидируются полностью, affectedKeys ограничены text/containsSpoiler/updatedAt.
+Identity, оба поля автора и createdAt неизменяемы. Update не требует повторного
+совпадения с текущим профилем: будущий rename профиля не должен блокировать правку
+текста или переписывать исторический snapshot. Delete — только автору. Существующий
+комментарий можно править/удалять при том же Auth UID даже после административного
+удаления профиля; публичность существующего комментария от профиля не зависит.
+
+### Публичное чтение и порядок выдачи
+
+Get отдельного comment document публичен гостям и авторизованным пользователям.
+List публичен **только при явно указанном integer limit от 1 до 20**. Отсутствующий
+limit и limit >20 запрещены. Это лимит одной страницы, не rate limit и не защита от
+последовательного скачивания всех публичных комментариев.
+
+Используется разрешённый fallback: порядок выдачи — контракт клиента, не гарантия
+Rules. Локальный Emulator показал, что `request.query.orderBy` представлен map полей
+и направлений; запросы с `updatedAt desc` первым и `__name__ desc` первым могут давать
+одинаковый map. Проверка такого map не доказывает приоритет полей. Поэтому не добавлена
+хрупкая проверка порядка: ограниченные запросы без сортировки или с другой сортировкой
+также разрешены, что явно покрыто тестами. Будущий UI использует updatedAt descending.
+Фильтры/направление/курсор не ограничены дополнительно; limit остаётся обязательным.
+
+Прямые get/list/write parent `mediaComments/{mediaKey}` запрещены. Другие subcollections,
+вложенные private paths и collection-group comments не разрешены. Deny-by-default
+остаётся для всего вне явно перечисленных путей. Публичность comment не открывает
+чтение users, ratings, savedMedia, lists или onboarding.
+
+### План запросов и indexes
+
+| Назначение | Запрос |
+| --- | --- |
+| Личные оценки | `users/{uid}/ratings` (owner collection) |
+| Оценка текущего media | get `users/{uid}/ratings/{mediaKey}` |
+| Публичные комментарии | `mediaComments/{mediaKey}/comments`, orderBy updatedAt desc, limit 20 |
+| Следующая страница | тот же query + startAfter последнего snapshot, limit 20 |
+| Собственный комментарий | get `mediaComments/{mediaKey}/comments/{uid}` |
+
+Collection-group queries не создаются. Для запланированной выдачи достаточно обычного
+collection-scope single-field descending index updatedAt при стандартной автоматической
+индексации. Composite index не нужен, `firestore.indexes.json` не изменён. Emulator
+проверяет Rules, но не доказывает наличие production indexes; вывод об индексе основан
+на [официальной документации индексов](https://firebase.google.com/docs/firestore/query-data/index-overview).
+Про request.query: [Firebase Rules reference](https://firebase.google.com/docs/reference/rules/rules.firestore.Request),
+[ограничения запросов](https://firebase.google.com/docs/firestore/security/rules-query).
+
+### Privacy / integrity / moderation boundaries
+
+- Ratings приватны. Нет публичного MovieDNA average/aggregate или статистики.
+  Личная оценка не изменяет и не заменяет TMDB rating.
+- Comments публичны, включая **Firebase UID в пути** и username/displayName snapshot.
+  Это позволяет связывать публичные комментарии одного аккаунта; приватность UID не обещается.
+- Email, token, photoURL, bio и прочие Auth/profile поля в схему не входят и как
+  дополнительные поля отклоняются. Текст и displayName пользователь вводит сам:
+  Rules не могут запретить пользователю вручную вписать личные данные в разрешённый текст.
+- Snapshot автора подтверждается при создании и не обновляется автоматически после
+  будущего изменения профиля. Удаление профиля не каскадно удаляет публичные comments.
+- Moderation backend отсутствует. Размер, структура и авторство не означают проверку
+  оскорбительного/незаконного контента, истинности или корректности containsSpoiler.
+- Будущий UI обязан выводить text **только как текст**, без HTML/dangerouslySetInnerHTML.
+  Rules не являются HTML sanitizer: буквальный markup допустим как строка.
+- UI, rating/comment services, actor ratings/comments, profiles/friends и другие
+  следующие этапы не реализованы. Production documents/users не читались и не изменялись.
+
+Проверки Stage 8.1: 445 прежних Rules tests сохранены без изменения поведения;
+323 новых, всего 768/768. Unit tests: 935/935. Тесты используют только локальный
+Firestore Emulator `demo-moviedna`; fixtures синтетические, production данные не используются.
