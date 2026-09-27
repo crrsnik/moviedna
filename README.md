@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 7.2 — favorites and watchlist.
+Stage 7.3 — custom media lists.
 
 ## Стек
 
@@ -465,3 +465,29 @@ sorting. Corrupted documents are filtered; detail actions refuse corrupt saved s
 Custom-list UI, new dependencies, Rules/index changes and deployment are outside this stage.
 Validation uses injected Firebase dependencies and an isolated browser fixture; no real
 production user or savedMedia data is used by automated checks.
+
+
+## Custom media lists (Stage 7.3)
+
+Library supports private custom lists alongside Favorites and To Watch. Create and
+edit a name (1–60 trimmed characters) and optional description (up to 300), or delete
+with explicit confirmation. Duplicate names are allowed. The selected list is in
+`/library?view=list&listId=<auto-ID>`; reload and browser history preserve selection.
+Invalid IDs fall back to Favorites; a deleted list shows “List not found”.
+
+Movie/TV details offer **Manage lists**. Checkbox changes stay local until Save,
+which confirms list existence and saves at most 20 memberships in one transaction.
+Favorites, Watchlist and existing timestamps are preserved. Removing the last
+membership deletes the savedMedia document. Lists are subscribed only while the
+panel is open; Cancel discards the draft. Guests still see “Log in to save”.
+
+List deletion rereads each referenced item in a transaction, removes only that
+list ID, checks remaining references, then deletes metadata. Partial cleanup can
+be retried explicitly; it is not atomic across all items. Other tabs can still
+create a dangling membership in the final query-to-delete window: the current
+Rules cannot eliminate this race. No public sharing or new composite indexes.
+See [the data model](docs/firestore-data-model.md) for details.
+
+Stage 7.3 validation: 935 unit tests and 445 emulator-only Rules tests. Browser
+checks use synthetic Firebase adapters for authenticated flows and a fresh guest
+session for TMDB/detail/Library guards; no production Firestore data is accessed.

@@ -1,7 +1,7 @@
 import { getMediaKey, normalizeMediaSnapshot } from '../validation/libraryValidation.js'
 import { LibraryError } from './libraryErrors.js'
 const fields = ['tmdbId', 'mediaType', 'title', 'posterPath', 'releaseYear', 'favorite', 'watchlist', 'listIds', 'createdAt', 'updatedAt']
-function time(value) {
+export function normalizeLibraryTimestamp(value) {
   if (!value || !Number.isInteger(value.seconds) || value.seconds < -62135596800 || value.seconds > 253402300799
     || !Number.isInteger(value.nanoseconds) || value.nanoseconds < 0 || value.nanoseconds > 999999999 || typeof value.toMillis !== 'function') throw new LibraryError('invalid-data')
   return { seconds: value.seconds, nanoseconds: value.nanoseconds }
@@ -16,7 +16,7 @@ export function normalizeSavedMedia(snapshot) {
       || !Array.isArray(data.listIds) || data.listIds.length > 20 || new Set(data.listIds).size !== data.listIds.length
       || !data.listIds.every(id => typeof id === 'string' && /^[A-Za-z0-9]{20}$/.test(id))
       || !(data.favorite || data.watchlist || data.listIds.length)) throw new Error()
-    return { ...media, key: snapshot.id, favorite: data.favorite, watchlist: data.watchlist, listIds: [...data.listIds], createdAt: time(data.createdAt), updatedAt: time(data.updatedAt) }
+    return { ...media, key: snapshot.id, favorite: data.favorite, watchlist: data.watchlist, listIds: [...data.listIds], createdAt: normalizeLibraryTimestamp(data.createdAt), updatedAt: normalizeLibraryTimestamp(data.updatedAt) }
   } catch { throw new LibraryError('invalid-data') }
 }
 const compareTime = (a, b) => b.seconds - a.seconds || b.nanoseconds - a.nanoseconds

@@ -1,0 +1,90 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { validateListId, normalizeListInput, validateSelectedListIds, normalizeLibrarySelection, librarySelectionParams } from '../../src/features/library/validation/customListValidation.js'
+import { normalizeCustomList, normalizeCustomLists } from '../../src/features/library/services/normalizeCustomList.js'
+import { createMediaLibraryService } from '../../src/features/library/services/createMediaLibraryService.js'
+import { createLibraryAction } from '../../src/features/library/services/libraryAction.js'
+import { toLibraryError } from '../../src/features/library/services/libraryErrors.js'
+const A = 'A'.repeat(20), B = 'B'.repeat(20), C = 'C'.repeat(20)
+const timestamp = (seconds = 10) => ({ seconds, nanoseconds: 0, toMillis: () => seconds * 1000 })
+const list = (overrides = {}) => ({ name: 'Synthetic list', description: '', createdAt: timestamp(), updatedAt: timestamp(), ...overrides })
+const media = { tmdbId: 42, mediaType: 'movie', title: 'Synthetic title', posterPath: null, releaseYear: 2020 }
+const saved = (overrides = {}) => ({ ...media, favorite: false, watchlist: false, listIds: [A], createdAt: timestamp(), updatedAt: timestamp(), ...overrides })
+const snap = (id, data) => ({ id, data: () => data, exists: () => data !== undefined, metadata: {} })
+function fixture() {
+  const auth = { currentUser: { uid: 'synthetic-owner' } }, store = new Map(), listeners = [], writes = [], targets = []
+  const state = { beforeGet: null, failAt: 0, transactions: 0, queries: 0, beforeQuery: null }
+  const path = (coll, id) => `users/synthetic-owner/${coll}/${id}`
+  const deps = {
+    auth, db: {}, serverTimestamp: () => timestamp(20),
+    collection: (...args) => ({ path: args.slice(1).join('/') }),
+    doc: (base, ...parts) => parts.length ? { path: parts.join('/'), id: parts.at(-1) } : { path: `${base.path}/${C}`, id: C },
+    where: (field, op, value) => ({ field, op, value }), limit: max => ({ max }),
+    query: (base, ...constraints) => ({ ...base, constraints }),
+    onSnapshot: (target, _, next, error) => { const listener = { target, next, error, stopped: false }; listeners.push(listener); targets.push(target); return () => { listener.stopped = true } },
+    getDocsFromServer: async target => {
+      state.queries++; await state.beforeQuery?.(state.queries)
+      const { field, value } = target.constraints[0], max = target.constraints[1]?.max ?? Infinity
+      return { docs: [...store].filter(([key, data]) => key.startsWith(target.path + '/') && data[field]?.includes(value)).slice(0, max).map(([key, data]) => snap(key.split('/').at(-1), data)) }
+    },
+    runTransaction: async (_, callback) => {
+      state.transactions++
+      if (state.transactions === state.failAt) throw { code: 'unavailable', message: 'RAW SECRET' }
+      const operations = []
+      await callback({
+        get: async target => { assert.equal(operations.length, 0, 'all transaction reads precede writes'); await state.beforeGet?.(target); return snap(target.id, store.get(target.path)) },
+        set: (target, value) => operations.push(['set', target, value]),
+        update: (target, value) => operations.push(['update', target, value]),
+        delete: target => operations.push(['delete', target]),
+      })
+      for (const [kind, target, value] of operations) {
+        writes.push({ kind, target, value })
+        if (kind === 'delete') store.delete(target.path)
+        else store.set(target.path, kind === 'set' ? value : { ...store.get(target.path), ...value })
+      }
+    },
+  }
+  return { service: createMediaLibraryService(deps), auth, store, listeners, targets, writes, state, path, uid: auth.currentUser.uid,
+    seedList: (id = A, data = list()) => store.set(path('lists', id), data),
+    seedMedia: (data = saved(), key = 'movie_42') => store.set(path('savedMedia', key), data) }
+}
+const rejects = (promise, code) => assert.rejects(promise, error => error.code === code && !error.message.includes('RAW'))
+for (const id of [A, '01234567890123456789', 'AbCdEf1234567890abcd']) test(`list ID accepts ${id}`, () => assert.equal(validateListId(id), id))
+for (const id of [null, undefined, 42, '', 'a'.repeat(19), 'a'.repeat(21), 'a/b', '_'.repeat(20), 'é'.repeat(20)]) test(`invalid list ID ${String(id)}`, () => assert.throws(() => validateListId(id), { code: 'invalid-list-id' }))
+for (const input of [null, {}, { name: 1, description: '' }, { name: '', description: '' }, { name: '  ', description: '' }, { name: 'a'.repeat(61), description: '' }, { name: 'a', description: null }, { name: 'a', description: 'x'.repeat(301) }]) test(`invalid list input ${JSON.stringify(input)?.slice(0, 60)}`, () => assert.throws(() => normalizeListInput(input), { code: 'invalid-list-input' }))
+test('list input trims and strips unknown fields without mutation', () => { const input = Object.freeze({ name: '  Film night  ', description: '  Friends  ', injected: true }); assert.deepEqual(normalizeListInput(input), { name: 'Film night', description: 'Friends' }) })
+test('list input boundary lengths and empty description', () => assert.deepEqual(normalizeListInput({ name: 'x'.repeat(60), description: 'y'.repeat(300) }), { name: 'x'.repeat(60), description: 'y'.repeat(300) }))
+for (const [query, expected] of [['', 'view=favorites'], ['view=invalid', 'view=favorites'], ['view=list', 'view=favorites'], ['view=list&listId=bad', 'view=favorites'], [`view=list&listId=${A}&extra=ignored`, `view=list&listId=${A}`], ['view=watchlist&listId=bad', 'view=watchlist'], ['view=favorites', 'view=favorites']]) test(`canonical library URL ${query}`, () => assert.equal(librarySelectionParams(normalizeLibrarySelection(new URLSearchParams(query))).toString(), expected))
+test('selected list IDs clone, zero and twenty allowed', () => { const ids = Array.from({ length: 20 }, (_, i) => String(i).padStart(20, '0')); assert.deepEqual(validateSelectedListIds(ids), ids); assert.notEqual(validateSelectedListIds(ids), ids); assert.deepEqual(validateSelectedListIds([]), []) })
+for (const [ids, code] of [[Array(21).fill(A), 'membership-limit'], [[A, A], 'invalid-list-id'], [[null], 'invalid-list-id'], [null, 'invalid-list-id']]) test(`invalid selection ${code} ${JSON.stringify(ids)}`, () => assert.throws(() => validateSelectedListIds(ids), { code }))
+test('normalization exact data, timestamps, no mutation', () => { const data = list({ name: ' Trim ' }); assert.equal(normalizeCustomList(snap(A, data)).name, 'Trim'); assert.equal(data.name, ' Trim '); assert.deepEqual(normalizeCustomList(snap(A, data)).createdAt, { seconds: 10, nanoseconds: 0 }) })
+for (const data of [undefined, {}, list({ extra: true }), list({ name: '' }), list({ createdAt: null }), list({ updatedAt: timestamp(NaN) }), list({ description: 12 })]) test(`corrupt list ${JSON.stringify(data)}`, () => assert.throws(() => normalizeCustomList(snap(A, data)), { code: 'invalid-list-data' }))
+test('lists filter corruption and sort oldest/name/id', () => { const result = normalizeCustomLists({ docs: [snap(B, list({ name: 'Z' })), snap(A, list({ name: 'A' })), snap('invalid', list()), snap(C, list({ createdAt: timestamp(1) }))] }); assert.deepEqual(result.map(item => item.id), [C, A, B]) })
+test('create payload exact fields server timestamps; duplicate names allowed', async () => { const f = fixture(); f.seedList(); assert.equal(await f.service.createCustomList(f.uid, { name: ' Synthetic list ', description: ' ', extra: true }), C); assert.deepEqual(Object.keys(f.writes[0].value).sort(), ['createdAt', 'description', 'name', 'updatedAt']); assert.equal(f.writes[0].value.createdAt.seconds, 20) })
+test('update payload preserves createdAt and identity', async () => { const f = fixture(); f.seedList(); await f.service.updateCustomList(f.uid, A, { name: ' New ', description: ' Text ' }); assert.deepEqual(Object.keys(f.writes[0].value).sort(), ['description', 'name', 'updatedAt']); assert.equal(f.store.get(f.path('lists', A)).createdAt.seconds, 10) })
+test('update missing list safe failure', async () => { const f = fixture(); await rejects(f.service.updateCustomList(f.uid, A, { name: 'X', description: '' }), 'list-not-found'); assert.equal(f.writes.length, 0) })
+for (const operation of [f => f.service.createCustomList(f.uid, {}), f => f.service.updateCustomList(f.uid, 'bad', {}), f => f.service.removeMediaFromCustomList(f.uid, 'bad', A), f => f.service.deleteCustomList(f.uid, 'bad'), f => f.service.updateMediaListMemberships(f.uid, media, Array(21).fill(A))]) test(`invalid input rejected before Firestore ${operation}`, async () => { const f = fixture(); await assert.rejects(operation(f)); assert.equal(f.state.transactions + f.state.queries, 0) })
+for (const operation of [f => f.service.createCustomList('other-owner', { name: 'X', description: '' }), f => f.service.updateCustomList('other-owner', A, { name: 'X', description: '' }), f => f.service.deleteCustomList('other-owner', A), f => f.service.updateMediaListMemberships('other-owner', media, [A]), f => f.service.removeMediaFromCustomList('other-owner', 'movie_42', A)]) test(`owner isolation ${operation}`, async () => { const f = fixture(); await rejects(operation(f), 'unauthenticated'); assert.equal(f.state.transactions + f.state.queries, 0) })
+test('custom list subscription scoped, stale/pending/cache ignored and unsubscribe', () => { const f = fixture(), values = []; const stop = f.service.subscribeToCustomLists(f.uid, value => values.push(value), assert.fail); const l = f.listeners[0]; assert.equal(l.target.path, 'users/synthetic-owner/lists'); for (const metadata of [{ hasPendingWrites: true }, { fromCache: true }]) l.next({ docs: [snap(A, list())], metadata }); assert.equal(values.length, 0); l.next({ docs: [snap(A, list())], metadata: {} }); assert.equal(values.length, 1); stop(); l.next({ docs: [] }); assert.equal(values.length, 1); assert.equal(l.stopped, true) })
+test('custom list items array-contains query without orderBy', () => { const f = fixture(); const stop = f.service.subscribeToCustomListItems(f.uid, A, () => {}, assert.fail); assert.deepEqual(f.targets[0], { path: 'users/synthetic-owner/savedMedia', constraints: [{ field: 'listIds', op: 'array-contains', value: A }] }); stop() })
+test('subscription session change rejects old snapshots', () => { const f = fixture(), errors = []; f.service.subscribeToCustomLists(f.uid, assert.fail, error => errors.push(error.code)); f.auth.currentUser = { uid: 'other-owner' }; f.listeners[0].next({ docs: [] }); assert.deepEqual(errors, ['session']) })
+test('invalid subscription never reaches Firebase', () => { const f = fixture(), errors = []; f.service.subscribeToCustomListItems(f.uid, 'bad', assert.fail, e => errors.push(e.code)); assert.deepEqual(errors, ['invalid-list-id']); assert.equal(f.listeners.length, 0) })
+test('membership create list-only media snapshot exact payload', async () => { const f = fixture(); f.seedList(); await f.service.updateMediaListMemberships(f.uid, { ...media, overview: 'Do not save' }, [A]); const data = f.store.get(f.path('savedMedia', 'movie_42')); assert.equal(data.favorite, false); assert.equal(data.watchlist, false); assert.deepEqual(data.listIds, [A]); assert.equal(Object.keys(data).length, 10); assert.equal(data.createdAt.seconds, 20) })
+test('membership update preserves flags/createdAt and uses one transaction', async () => { const f = fixture(); f.seedList(A); f.seedList(B); f.seedMedia(saved({ favorite: true, watchlist: true })); await f.service.updateMediaListMemberships(f.uid, media, [A, B]); const data = f.store.get(f.path('savedMedia', 'movie_42')); assert.equal(data.favorite && data.watchlist, true); assert.equal(data.createdAt.seconds, 10); assert.deepEqual(data.listIds, [A, B]); assert.equal(f.state.transactions, 1) })
+test('empty selection and no media is no-op', async () => { const f = fixture(); await f.service.updateMediaListMemberships(f.uid, media, []); assert.equal(f.writes.length, 0) })
+test('empty selection deletes last membership', async () => { const f = fixture(); f.seedMedia(); await f.service.updateMediaListMemberships(f.uid, media, []); assert.equal(f.store.size, 0) })
+test('missing list fails before any write', async () => { const f = fixture(); await rejects(f.service.updateMediaListMemberships(f.uid, media, [A]), 'list-not-found'); assert.equal(f.writes.length, 0) })
+test('corrupt media fails safely', async () => { const f = fixture(); f.seedList(); f.seedMedia({ broken: true }); await rejects(f.service.updateMediaListMemberships(f.uid, media, [A]), 'invalid-data'); assert.equal(f.writes.length, 0) })
+for (const overrides of [{ favorite: true }, { watchlist: true }, { listIds: [A, B] }, {}]) test(`remove/cleanup preserves other memberships ${JSON.stringify(overrides)}`, async () => { for (const cleanup of [false, true]) { const f = fixture(); f.seedList(); f.seedMedia(saved(overrides)); if (cleanup) await f.service.deleteCustomList(f.uid, A); else await f.service.removeMediaFromCustomList(f.uid, 'movie_42', A); const data = f.store.get(f.path('savedMedia', 'movie_42')); if (!Object.keys(overrides).length) assert.equal(data, undefined); else { assert.equal(data.favorite, overrides.favorite ?? false); assert.equal(data.watchlist, overrides.watchlist ?? false); assert.deepEqual(data.listIds, overrides.listIds ? [B] : []) } if (cleanup) assert.equal(f.store.has(f.path('lists', A)), false) } })
+test('remove absent document/membership idempotent', async () => { const f = fixture(); await f.service.removeMediaFromCustomList(f.uid, 'movie_42', A); f.seedMedia(saved({ listIds: [B] })); await f.service.removeMediaFromCustomList(f.uid, 'movie_42', A); assert.equal(f.writes.length, 0) })
+test('empty list delete and repeat delete idempotent', async () => { const f = fixture(); f.seedList(); await f.service.deleteCustomList(f.uid, A); await f.service.deleteCustomList(f.uid, A); assert.equal(f.store.size, 0); assert.equal(f.writes.length, 1) })
+test('partial cleanup retains metadata; explicit retry finishes safely', async () => { const f = fixture(); f.seedList(); f.seedMedia(); f.seedMedia(saved({ tmdbId: 43 }), 'movie_43'); f.state.failAt = 2; await rejects(f.service.deleteCustomList(f.uid, A), 'partial-cleanup'); assert.equal(f.store.has(f.path('lists', A)), true); assert.equal(f.store.has(f.path('savedMedia', 'movie_42')), false); f.state.failAt = 0; await f.service.deleteCustomList(f.uid, A); assert.equal(f.store.size, 0) })
+test('cleanup rereads concurrent savedMedia update rather than blind delete', async () => { const f = fixture(); f.seedList(); f.seedMedia(); f.state.beforeGet = target => { if (target.id === 'movie_42') f.seedMedia(saved({ favorite: true, listIds: [A, B] })) }; await f.service.deleteCustomList(f.uid, A); assert.equal(f.store.get(f.path('savedMedia', 'movie_42')).favorite, true); assert.deepEqual(f.store.get(f.path('savedMedia', 'movie_42')).listIds, [B]) })
+test('remaining references prevent metadata deletion', async () => { const f = fixture(); f.seedList(); f.state.beforeQuery = count => { if (count === 2) f.seedMedia() }; await rejects(f.service.deleteCustomList(f.uid, A), 'partial-cleanup'); assert.equal(f.store.has(f.path('lists', A)), true) })
+test('cleanup handles more than a query group with separate bounded transactions', async () => { const f = fixture(); f.seedList(); for (let id = 1; id <= 105; id++) f.seedMedia(saved({ tmdbId: id }), `movie_${id}`); await f.service.deleteCustomList(f.uid, A); assert.equal(f.store.size, 0); assert.equal(f.state.transactions, 106); assert.equal(f.state.queries, 4) })
+test('same-tab deletion blocks media/metadata changes and another deletion', async () => { const f = fixture(); f.seedList(); let release; f.state.beforeQuery = () => new Promise(resolve => { release = resolve }); const deletion = f.service.deleteCustomList(f.uid, A); await Promise.resolve(); await rejects(f.service.toggleFavorite({ uid: f.uid, media }), 'concurrent-deletion'); await rejects(f.service.createCustomList(f.uid, { name: 'X', description: '' }), 'concurrent-deletion'); await rejects(f.service.deleteCustomList(f.uid, A), 'concurrent-deletion'); f.state.beforeQuery = null; release(); await deletion })
+test('shared media lock prevents simultaneous favorite and lists writes', async () => { const f = fixture(); f.seedList(); let release; f.state.beforeGet = () => new Promise(resolve => { release = resolve }); const write = f.service.updateMediaListMemberships(f.uid, media, [A]); await Promise.resolve(); await rejects(f.service.toggleFavorite({ uid: f.uid, media }), 'pending'); f.state.beforeGet = null; release(); await write })
+test('logout during list check aborts before write', async () => { const f = fixture(); f.seedList(); f.state.beforeGet = () => { f.auth.currentUser = null }; await rejects(f.service.updateMediaListMemberships(f.uid, media, [A]), 'session'); assert.equal(f.writes.length, 0) })
+for (const code of ['permission-denied', 'unavailable', 'invalid-list-input', 'invalid-list-id', 'list-not-found', 'invalid-data', 'membership-limit', 'partial-cleanup', 'concurrent-deletion', 'unknown']) test(`safe custom list error ${code}`, () => { const error = toLibraryError({ code, message: 'RAW SECRET' }); assert.equal(error.code, code); assert.ok(!error.message.includes('RAW')) })
+test('form controller suppresses duplicate submit and stale success after unmount', async () => { const action = createLibraryAction(); let release, calls = 0, successes = 0; const operation = () => { calls++; return new Promise(resolve => { release = resolve }) }; const first = action.run(operation, () => {}, () => successes++); await action.run(operation, () => {}, () => successes++); assert.equal(calls, 1); action.dispose(); release(); await first; assert.equal(successes, 0) })
+test('form controller returns successful result only after confirmation', async () => { const action = createLibraryAction(); let value; await action.run(async () => A, () => {}, result => { value = result }); assert.equal(value, A) })

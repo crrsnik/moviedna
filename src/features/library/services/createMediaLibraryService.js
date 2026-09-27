@@ -1,11 +1,13 @@
+import { customListOperations } from './customListOperations.js'
 import { getMediaKey, normalizeMediaSnapshot, normalizeLibraryView } from '../validation/libraryValidation.js'
 import { normalizeSavedMedia, normalizeLibraryItems } from './normalizeSavedMedia.js'
 import { LibraryError, toLibraryError } from './libraryErrors.js'
 
 // Inject only the Firebase boundary. Unit tests never initialize or contact Firebase.
-export function createMediaLibraryService({ auth, db, doc, collection, query, where, onSnapshot, runTransaction, serverTimestamp }) {
+export function createMediaLibraryService({ auth, db, doc, collection, query, where, onSnapshot, runTransaction, serverTimestamp, getDocsFromServer, limit }) {
   const pending = new Map()
   const subscriptions = new Map()
+  const deleting = new Set()
   function requireOwner(uid, session = auth.currentUser) {
     if (typeof uid !== 'string' || !uid || uid.includes('/') || !session || session.uid !== uid) throw new LibraryError('unauthenticated')
     if (auth.currentUser !== session) throw new LibraryError('session')
@@ -54,6 +56,7 @@ export function createMediaLibraryService({ auth, db, doc, collection, query, wh
       const session = requireOwner(uid)
       const snapshot = normalizeMediaSnapshot(media), key = getMediaKey(snapshot.mediaType, snapshot.tmdbId)
       if (!['favorite', 'watchlist'].includes(field) || (enabled !== undefined && typeof enabled !== 'boolean')) throw new LibraryError('invalid-media')
+      if (deleting.has(uid)) throw new LibraryError('concurrent-deletion')
       const candidate = `${uid}:${key}`
       if (pending.has(candidate)) throw new LibraryError('pending')
       lock = candidate; pending.set(lock, uid)
@@ -84,7 +87,30 @@ export function createMediaLibraryService({ auth, db, doc, collection, query, wh
       }
     }
   }
-  return { subscribeToSavedMedia, subscribeToLibrary,
+  async function mutate(uid, key, operation, deletion = false) {
+    let lock
+    try {
+      const session = requireOwner(uid)
+      if (deleting.has(uid)) throw new LibraryError('concurrent-deletion')
+      if (deletion && [...pending.values()].includes(uid)) throw new LibraryError('pending')
+      const candidate = `${uid}:${key}`
+      if (pending.has(candidate)) throw new LibraryError('pending')
+      lock = candidate; pending.set(lock, uid)
+      if (deletion) deleting.add(uid)
+      const result = await operation(session)
+      requireOwner(uid, session)
+      return result
+    } catch (error) { throw toLibraryError(error) }
+    finally {
+      if (lock) {
+        pending.delete(lock)
+        if (deletion) deleting.delete(uid)
+        for (const refresh of subscriptions.get(uid) ?? []) refresh()
+      }
+    }
+  }
+  const custom = customListOperations({ db, doc, collection, query, where, limit, getDocsFromServer, runTransaction, serverTimestamp, requireOwner, subscribe, mutate, ref })
+  return { ...custom, subscribeToSavedMedia, subscribeToLibrary,
     toggleFavorite: options => changeMembership({ ...options, field: 'favorite' }),
     toggleWatchlist: options => changeMembership({ ...options, field: 'watchlist' }),
     removeFromView: options => changeMembership({ ...options, field: normalizeLibraryView(options.view) === 'favorites' ? 'favorite' : 'watchlist', enabled: false }) }

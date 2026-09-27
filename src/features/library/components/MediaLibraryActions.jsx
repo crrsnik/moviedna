@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import ManageListsPanel from './ManageListsPanel.jsx'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/hooks/useAuth.js'
 import { useSavedMediaStatus } from '../hooks/useSavedMediaStatus.js'
@@ -8,11 +10,14 @@ const button = 'rounded-lg border border-zinc-600 px-4 py-2 text-sm hover:bg-zin
 function AuthenticatedActions({ uid, media }) {
   const { data, loading, error, retry } = useSavedMediaStatus(uid, media)
   const action = useLibraryAction()
+  const [manage, setManage] = useState(false)
   return <section aria-label="Save to library" className="space-y-3">
     <div className="flex flex-wrap gap-3">
-      <button type="button" className={button} disabled={loading || Boolean(error) || action.pending} aria-pressed={Boolean(data?.favorite)} onClick={() => action.run(() => mediaLibraryService.toggleFavorite({ uid, media }))}>{data?.favorite ? 'Remove from Favorites' : 'Add to Favorites'}</button>
-      <button type="button" className={button} disabled={loading || Boolean(error) || action.pending} aria-pressed={Boolean(data?.watchlist)} onClick={() => action.run(() => mediaLibraryService.toggleWatchlist({ uid, media }))}>{data?.watchlist ? 'Remove from Watchlist' : 'Add to Watchlist'}</button>
+      <button type="button" className={button} disabled={loading || Boolean(error) || action.pending || manage} aria-pressed={Boolean(data?.favorite)} onClick={() => action.run(() => mediaLibraryService.toggleFavorite({ uid, media }))}>{data?.favorite ? 'Remove from Favorites' : 'Add to Favorites'}</button>
+      <button type="button" className={button} disabled={loading || Boolean(error) || action.pending || manage} aria-pressed={Boolean(data?.watchlist)} onClick={() => action.run(() => mediaLibraryService.toggleWatchlist({ uid, media }))}>{data?.watchlist ? 'Remove from Watchlist' : 'Add to Watchlist'}</button>
+      <button type="button" className={button} disabled={loading || Boolean(error) || action.pending || manage} aria-haspopup="dialog" onClick={() => setManage(true)}>Manage lists</button>
     </div>
+    {manage && <ManageListsPanel uid={uid} media={media} listIds={data?.listIds ?? []} onClose={() => setManage(false)} />}
     {(loading || action.pending) && <p role="status" aria-live="polite">{action.pending ? 'Saving…' : 'Loading saved status…'}</p>}
     {(error || action.error) && <p role="alert">{error || action.error}</p>}
     {error && <button type="button" className={button} onClick={retry}>Retry saved status</button>}

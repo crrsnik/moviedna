@@ -4,12 +4,12 @@ export function createLibraryAction() {
   return {
     activate() { active = true; generation++ },
     dispose() { active = false; generation++ },
-    async run(operation, notify) {
+    async run(operation, notify, onSuccess) {
       if (!active || busy) return
       const ownGeneration = generation
       const current = () => active && generation === ownGeneration
       busy = true; notify({ pending: true, error: null })
-      try { await operation() }
+      try { const result = await operation(); if (current()) onSuccess?.(result) }
       catch (error) { if (current()) notify({ pending: true, error }) }
       finally { busy = false; if (current()) notify({ pending: false }) }
     },

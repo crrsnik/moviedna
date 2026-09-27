@@ -230,8 +230,9 @@ Poster использует намеренно узкий набор ASCII-си�
 не делается, чтобы не создавать громоздкие правила. **Тип/regex отдельного listId и
 существование custom list не гарантируются.** Тест явно подтверждает принятие
 списка с числом, null и невалидной строкой; это не обещание будущего клиентского API.
-Клиентский service должен проверять каждый ID, существование собственных списков,
-дедупликацию и корректность snapshot. Такой service на этапе 7.1 не реализуется.
+Клиентский service этапа 7.3 проверяет каждый ID и существование собственных списков;
+он также отвергает повторяющиеся ID и проверяет snapshot. Эти клиентские проверки
+не заменяют серверные Security Rules.
 
 Rules не сканируют коллекции и не гарантируют отсутствие dangling references после
 удаления списка. Все эти документы всё равно доступны только владельцу: ссылка на
@@ -255,21 +256,10 @@ boundary; корректность содержимого/ссылок свер�
 Emulator подтверждает разрешение запросов Rules, но не служит доказательством
 production index coverage — вывод основан на документированных типах индексов.
 
-### Будущее удаление custom list
+### Удаление custom list
 
-1. Запросить собственные savedMedia с `array-contains listId`.
-2. Убрать ID из каждого документа, сохранив другие memberships.
-3. Если favorite/watchlist false и listIds пуст, удалить savedMedia вместо update.
-4. Удалить metadata document списка.
-
-Для небольшого набора возможен один batch. Нужно учитывать технические лимиты
-Firestore/SDK, размер запроса (10 MiB), количество операций и ограничения Rules
-на document-access calls, если будущие правила начнут делать get/exists.
-Для больших списков нужны несколько batches либо будущая server-side cleanup.
-Несколько batches не атомарны как целое; между query и записью другой клиент может
-добавить membership. Нужны повторяемая очистка и работа с конкурирующими изменениями.
+Реализованный transaction cleanup и его границы описаны ниже в Stage 7.3.
 Rules не обеспечивают каскадное удаление и не блокируют dangling references.
-UI, library service и cleanup на этом этапе отсутствуют.
 
 Источники: [Rules field/type validation](https://firebase.google.com/docs/firestore/security/rules-fields),
 [List.toSet](https://firebase.google.com/docs/reference/rules/rules.List),
@@ -307,5 +297,57 @@ query removals: удалённый локально документ уже мо
 медиатека не выдаёт cache за подтверждённое состояние.
 
 Favorites/Watchlist queries не используют orderBy. Сортировка идёт по updatedAt,
-createdAt (с сохранением nanoseconds), затем title и mediaKey. UI custom lists и
-каскадное удаление списка по-прежнему не реализованы.
+createdAt (с сохранением nanoseconds), затем title и mediaKey. Custom lists и cleanup добавлены в Stage 7.3 ниже.
+
+
+## Реализованный client flow — Stage 7.3
+
+Custom-list operations расширяют существующий mediaLibraryService и используют
+общие owner/session checks, блокировки и обработку ошибок. До Firestore проверяются
+UID текущей сессии, 20-символьный ASCII auto-ID и входные поля. Create генерирует
+Firestore auto-ID и записывает только name/description/createdAt/updatedAt; текст
+trim, длины 1–60 и 0–300. Update не меняет createdAt. Одинаковые имена разрешены.
+
+Owner-scoped lists subscription не использует collection-group или orderBy;
+повреждённые документы отбрасываются, сортировка createdAt по возрастанию, затем
+name/id. Custom-list items используют один `array-contains` на listIds и существующую
+нормализацию/сортировку savedMedia. Composite indexes не добавлены. Pending/cache
+snapshots не считаются подтверждением сервера; logout, UID/listId change и unmount
+отключают подписки и скрывают прежние данные. Retry подписок повторяет только чтение.
+
+### Membership transaction
+
+Manage lists хранит checkbox draft до Save. Одна transaction читает текущий savedMedia
+и все выбранные list documents до любых writes, проверяет их существование и схему.
+Максимум 20 уникальных валидных ID. Сохраняются favorite/watchlist/createdAt;
+обновляются display snapshot, listIds и updatedAt. Новый документ получает false
+flags и server timestamps. Пустой набор без других memberships означает delete.
+Remove from list перечитывает документ и удаляет только нужный ID; отсутствие
+документа или membership — безопасный no-op. Повреждённый savedMedia не перезаписывается.
+
+### Удаление и повтор
+
+Подтверждение явно предупреждает о многошаговой операции. На время удаления общий
+service lock блокирует новые library mutations этого UID в текущей вкладке; modal
+блокирует конфликтующие UI-действия. Удаление не начинает cleanup при уже выполняющейся
+mutation. Query читает максимум 100 references, каждый savedMedia перечитывается
+отдельной transaction, сохраняющей актуальные flags и другие listIds. Если memberships
+не остаётся — delete. Не используется blind delete из первоначального snapshot.
+
+За попытку обрабатывается максимум 10 групп (до 1000 документов), затем выполняется
+повторный server query `limit(1)`. Если references остались либо шаг завершился ошибкой,
+metadata сохраняется, UI показывает безопасную partial-cleanup ошибку. Пользователь
+может явно повторить Delete: уже очищенные/удалённые документы не мешают продолжению.
+Лишь после пустого повторного query metadata удаляется отдельной transaction.
+Это не атомарная операция на весь список, и Cancel после failure не откатывает уже
+подтверждённые удаления memberships. На успешном завершении URL возвращается к Favorites.
+
+### Честная граница между вкладками
+
+Проверка существования list documents в membership transaction защищает от добавления
+в уже удалённый список, но не закрывает окно между последним cleanup query и metadata
+commit: другая вкладка может успеть добавить membership. Rules не проверяют existence
+каждого listId и не предоставляют блокировку удаления; поэтому полное отсутствие
+dangling references не гарантируется. UI позволяет убрать отсутствующие списки из
+черновика Manage lists и явно сохранить изменения. Полноценная серверная координация
+не входит в этот этап. Операции приватны; public sharing отсутствует.
