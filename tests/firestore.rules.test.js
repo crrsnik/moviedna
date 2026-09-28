@@ -932,3 +932,164 @@ describe('Ratings and comments security model', { concurrency: false }, () => {
     })
   })
 })
+
+// Stage 9.2: private MovieDNA output/state and a completely server-only media cache.
+const dnaTimestamp = () => Timestamp.fromMillis(1_800_000_000_000)
+const dnaDimension = (key = 'genre:28', label = 'Action') => ({
+  key, label, score: 0.5, evidenceCount: 3, confidence: 0.6,
+})
+const dnaCurrentData = () => ({
+  schemaVersion: 1,
+  algorithmVersion: 'moviedna-v1.0.0',
+  status: 'ready',
+  inputFingerprint: `sha256:${'a'.repeat(64)}`,
+  sourceCounts: {
+    ratingsRead: 3, onboardingRead: 10, favoritesRead: 1,
+    uniqueNonZeroUsed: 9, ratingUsed: 3, onboardingUsed: 5,
+    favoriteUsed: 1, neutralOrSkipped: 4, shadowedByHigherPriority: 1,
+    discardedSourceCount: 0, enrichedUsed: 9, unavailableMetadata: 0,
+  },
+  metadataCoverage: 1,
+  confidence: 0.545,
+  dimensions: {
+    genres: [dnaDimension()],
+    mediaTypes: [dnaDimension('media:movie', 'Movies')],
+    decades: [dnaDimension('decade:2010', '2010s')],
+    languages: [dnaDimension('language:en', 'English')],
+    countries: [dnaDimension('country:US', 'United States')],
+    directors: [dnaDimension('person:20', 'Synthetic Director')],
+    creators: [],
+    actors: [dnaDimension('person:10', 'Synthetic Actor')],
+  },
+  calculatedAt: dnaTimestamp(),
+  updatedAt: dnaTimestamp(),
+})
+const dnaRecalculationData = () => ({
+  schemaVersion: 1,
+  status: 'succeeded',
+  requestedAt: dnaTimestamp(),
+  startedAt: dnaTimestamp(),
+  completedAt: dnaTimestamp(),
+  nextEligibleAt: dnaTimestamp(),
+  algorithmVersion: 'moviedna-v1.0.0',
+  inputFingerprint: `sha256:${'a'.repeat(64)}`,
+  errorCode: null,
+})
+const mediaSignalData = () => ({
+  schemaVersion: 1,
+  tmdbId: 123,
+  mediaType: 'movie',
+  genreIds: [28],
+  releaseYear: 2020,
+  originalLanguage: 'en',
+  countryCodes: ['US'],
+  directors: [{ id: 20, name: 'Synthetic Director' }],
+  creators: [],
+  actors: [{ id: 10, name: 'Synthetic Actor', billingOrder: 0 }],
+  fetchedAt: dnaTimestamp(),
+  expiresAt: dnaTimestamp(),
+  metadataStatus: 'ready',
+  metadataCompleteness: {
+    genres: true, releaseYear: true, originalLanguage: true,
+    countries: true, people: true,
+  },
+})
+
+describe('MovieDNA security model', { concurrency: false }, () => {
+  before(async () => {
+    testEnv = await initializeTestEnvironment({
+      projectId,
+      firestore: {
+        host: '127.0.0.1', port: 8080,
+        rules: await readFile(new URL('../firestore.rules', import.meta.url), 'utf8'),
+      },
+    })
+  })
+  beforeEach(async () => {
+    await testEnv.clearFirestore()
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore()
+      await setDoc(doc(db, 'users/alice/movieDna/current'), dnaCurrentData())
+      await setDoc(doc(db, 'users/alice/movieDna/recalculation'), dnaRecalculationData())
+      await setDoc(doc(db, 'mediaSignals/movie_123'), mediaSignalData())
+    })
+  })
+  after(async () => { await testEnv?.cleanup() })
+
+  async function deleteFixture(path) {
+    await testEnv.withSecurityRulesDisabled(context => deleteDoc(doc(context.firestore(), path)))
+  }
+  function dbFor(identity) {
+    return identity === 'guest' ? testEnv.unauthenticatedContext().firestore() : userDb(identity)
+  }
+
+  for (const [documentId, make] of [['current', dnaCurrentData], ['recalculation', dnaRecalculationData]]) {
+    const path = `users/alice/movieDna/${documentId}`
+    it(`allows owner get of movieDna/${documentId}`, async () => {
+      await assertSucceeds(getDoc(doc(userDb(), path)))
+    })
+    it(`denies owner list around movieDna/${documentId}`, async () => {
+      await assertFails(getDocs(collection(userDb(), 'users/alice/movieDna')))
+    })
+    for (const operation of ['create', 'update', 'delete']) {
+      it(`denies owner ${operation} of movieDna/${documentId}`, async () => {
+        const target = doc(userDb(), path)
+        if (operation === 'create') { await deleteFixture(path); await assertFails(setDoc(target, make())) }
+        else if (operation === 'update') await assertFails(updateDoc(target, { status: 'failed' }))
+        else await assertFails(deleteDoc(target))
+      })
+    }
+    for (const identity of ['bob', 'guest']) {
+      it(`denies ${identity} get of movieDna/${documentId}`, async () => {
+        await assertFails(getDoc(doc(dbFor(identity), path)))
+      })
+      it(`denies ${identity} list around movieDna/${documentId}`, async () => {
+        await assertFails(getDocs(collection(dbFor(identity), 'users/alice/movieDna')))
+      })
+      for (const operation of ['create', 'update', 'delete']) {
+        it(`denies ${identity} ${operation} of movieDna/${documentId}`, async () => {
+          const target = doc(dbFor(identity), path)
+          if (operation === 'create') { await deleteFixture(path); await assertFails(setDoc(target, make())) }
+          else if (operation === 'update') await assertFails(updateDoc(target, { status: 'failed' }))
+          else await assertFails(deleteDoc(target))
+        })
+      }
+    }
+  }
+
+  for (const identity of ['guest', 'alice', 'bob']) {
+    const path = 'mediaSignals/movie_123'
+    it(`denies ${identity} get of mediaSignals`, async () => {
+      await assertFails(getDoc(doc(dbFor(identity), path)))
+    })
+    it(`denies ${identity} list of mediaSignals`, async () => {
+      await assertFails(getDocs(collection(dbFor(identity), 'mediaSignals')))
+    })
+    for (const operation of ['create', 'update', 'delete']) {
+      it(`denies ${identity} ${operation} of mediaSignals`, async () => {
+        const target = doc(dbFor(identity), path)
+        if (operation === 'create') { await deleteFixture(path); await assertFails(setDoc(target, mediaSignalData())) }
+        else if (operation === 'update') await assertFails(updateDoc(target, { metadataStatus: 'missing' }))
+        else await assertFails(deleteDoc(target))
+      })
+    }
+  }
+
+  it('allows the rules-disabled Admin test context to prepare all fixtures', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore()
+      assert.equal((await getDoc(doc(db, 'users/alice/movieDna/current'))).exists(), true)
+      assert.equal((await getDoc(doc(db, 'users/alice/movieDna/recalculation'))).exists(), true)
+      assert.equal((await getDoc(doc(db, 'mediaSignals/movie_123'))).exists(), true)
+    })
+  })
+  it('denies owner access to an unknown movieDna document', async () => {
+    await assertFails(getDoc(doc(userDb(), 'users/alice/movieDna/history')))
+  })
+  it('keeps unknown nested MovieDNA and mediaSignals paths deny-by-default', async () => {
+    for (const path of ['users/alice/movieDna/current/private/data', 'mediaSignals/movie_123/private/data']) {
+      await assertFails(getDoc(doc(userDb(), path)))
+      await assertFails(setDoc(doc(userDb(), path), { synthetic: true }))
+    }
+  })
+})

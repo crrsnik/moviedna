@@ -190,6 +190,14 @@ service cloud.firestore {
           && request.resource.data.createdAt == resource.data.createdAt;
       }
 
+      // MovieDNA is calculated by a future trusted backend. Clients may read only
+      // their two concrete documents and can never list or mutate this collection.
+      match /movieDna/{documentId} {
+        allow get: if isOwner(userId)
+          && documentId in ['current', 'recalculation'];
+        allow list, create, update, delete: if false;
+      }
+
       match /onboardingResponses/{responseId} {
         allow get, list: if isOwner(userId);
         allow create: if isOwner(userId) && hasIncompleteProfile(userId)
@@ -226,6 +234,11 @@ service cloud.firestore {
         && isValidComment(request.resource.data, mediaKey)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'containsSpoiler', 'updatedAt']);
       allow delete: if isOwner(commentAuthorId);
+    }
+
+    // Normalized TMDB signals are an Admin SDK cache, not a client API.
+    match /mediaSignals/{mediaKey} {
+      allow get, list, create, update, delete: if false;
     }
 
     match /usernames/{username} {

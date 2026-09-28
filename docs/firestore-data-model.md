@@ -481,3 +481,115 @@ collection-scope single-field descending index updatedAt при стандарт
 Проверки Stage 8.1: 445 прежних Rules tests сохранены без изменения поведения;
 323 новых, всего 768/768. Unit tests: 935/935. Тесты используют только локальный
 Firestore Emulator `demo-moviedna`; fixtures синтетические, production данные не используются.
+
+
+## MovieDNA — Stage 9.2
+
+Stage 9.2 резервирует три server-authored пути. Calculation library, Functions,
+TMDB enrichment и UI ещё не реализованы. Admin SDK будущего backend обходит клиентские
+Rules; клиент не может создавать очередь или подделывать рассчитанный результат.
+
+### Приватный результат
+
+Путь: `users/{uid}/movieDna/current`. Только эти top-level поля входят в schema v1:
+
+| Поле | Тип / ограничение |
+| --- | --- |
+| schemaVersion | integer `1` |
+| algorithmVersion | version string; первая версия `moviedna-v1.0.0` |
+| status | `ready` / `insufficient-data` |
+| inputFingerprint | `sha256:` + 64 lowercase hex |
+| sourceCounts | точная map из 12 non-negative integer counters |
+| metadataCoverage | number 0–1 |
+| confidence | number 0–1 |
+| dimensions | точная map из восьми ограниченных arrays |
+| calculatedAt | timestamp |
+| updatedAt | timestamp, не раньше calculatedAt |
+
+`sourceCounts`: `ratingsRead`, `onboardingRead`, `favoritesRead`,
+`uniqueNonZeroUsed`, `ratingUsed`, `onboardingUsed`, `favoriteUsed`,
+`neutralOrSkipped`, `shadowedByHigherPriority`, `discardedSourceCount`,
+`enrichedUsed`, `unavailableMetadata`.
+
+`dimensions`: `genres`, `mediaTypes`, `decades`, `languages`, `countries`,
+`directors`, `creators`, `actors`. Максимум 20 элементов на dimension, для
+`mediaTypes` максимум 2. Каждый элемент содержит ровно:
+
+```js
+{ key, label, score, evidenceCount, confidence }
+```
+
+`key` — стабильный namespaced ID до 80 символов, `label` — display snapshot до
+100 символов, `score` — finite number `[-1, 1]`, `evidenceCount` — positive integer,
+`confidence` — finite number `[0, 1]`. Форматы key: `genre:{id}`,
+`media:movie|tv`, `decade:{YYYY}`, `language:{aa}`, `country:{AA}` и
+`person:{tmdbPersonId}`. Actor dimension использует максимум три top-billed actors
+одного media, multiplier 0.5 и требует повторения person минимум в двух media.
+
+### Состояние пересчёта
+
+Путь: `users/{uid}/movieDna/recalculation`. Точный набор:
+
+| Поле | Тип / ограничение |
+| --- | --- |
+| schemaVersion | integer `1` |
+| status | `queued`, `running`, `succeeded`, `failed` |
+| requestedAt | timestamp |
+| startedAt | timestamp / null |
+| completedAt | timestamp / null |
+| nextEligibleAt | timestamp |
+| algorithmVersion | version string |
+| inputFingerprint | SHA-256 fingerprint / null до normalization |
+| errorCode | null / allowlisted safe code без stack trace |
+
+Queued не имеет start/completion, running имеет start, terminal state имеет оба.
+Только failed содержит errorCode. Event-driven job является основным механизмом;
+будущий manual Refresh вызывает callable Function и не пишет этот документ. Cooldown,
+fingerprint и один active job обеспечивают deduplication/idempotency.
+
+### Закрытый cache TMDB-признаков
+
+Путь: `mediaSignals/{mediaKey}`. `mediaKey` строго равен
+`mediaType + '_' + string(tmdbId)` и соответствует
+`^(movie|tv)_[1-9][0-9]{0,11}$`. Документ содержит ровно:
+
+| Поле | Тип / ограничение |
+| --- | --- |
+| schemaVersion | integer `1` |
+| tmdbId / mediaType | canonical positive ID и `movie`/`tv`, согласованные с path |
+| genreIds | unique positive integers, максимум 20 |
+| releaseYear | null / integer 1800–2200, source для decade |
+| originalLanguage | null / lowercase two-letter code |
+| countryCodes | unique uppercase two-letter codes, максимум 20 |
+| directors | movie `{id,name}` array, максимум 10; для TV пустой |
+| creators | TV `{id,name}` array, максимум 10; для movie пустой |
+| actors | максимум три unique `{id,name,billingOrder}`, order 0–2 |
+| fetchedAt / expiresAt | timestamps, expiresAt позже fetchedAt |
+| metadataStatus | `ready`, `partial`, `missing`, `temporary-error` |
+| metadataCompleteness | exact boolean map: genres, releaseYear, originalLanguage, countries, people |
+
+Person IDs положительные, names — trimmed display snapshots до 100 символов.
+Popularity, vote count, keywords, overview, biography, images, videos, full credits и
+raw TMDB payload не сохраняются. Перед Stage 9.4 нужно повторно проверить актуальные
+TMDB API terms, attribution и допустимые условия/TTL постоянного metadata cache.
+
+### Доступ и индексы
+
+- Владелец может только `get` собственные `current` и `recalculation`.
+- Owner list и все client create/update/delete запрещены.
+- Guest и другой пользователь не могут читать или писать эти документы.
+- Любые другие `movieDna/{documentId}` и nested paths остаются deny-by-default.
+- `mediaSignals` полностью закрыт для guest и любого authenticated client:
+  get/list/create/update/delete запрещены.
+- Существующий public profile не раскрывает MovieDNA. Будущая публикация потребует
+  отдельного opt-in projection и отдельных Rules.
+
+Rules намеренно не валидируют внутреннюю server-only schema при записи: клиентские
+write всегда false, а Admin SDK не применяет client Rules. Schema должен строго
+валидировать будущий backend и его tests. Прямые get конкретных DNA documents и
+Admin direct gets cache не требуют composite indexes. `firestore.indexes.json`
+остаётся без изменений; index добавляется только под доказанный будущий query.
+
+Functions 2nd gen планируются в `europe-west6`. Production deploy возможен только
+после Blaze и budget protection. Полное удаление аккаунта до production должно
+серверно удалить оба private MovieDNA documents; общий `mediaSignals` не содержит UID.
