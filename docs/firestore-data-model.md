@@ -496,7 +496,7 @@ Rules; клиент не может создавать очередь или п�
 | Поле | Тип / ограничение |
 | --- | --- |
 | schemaVersion | integer `1` |
-| algorithmVersion | version string; первая версия `moviedna-v1.0.0` |
+| algorithmVersion | version string; первая версия `1.0.0` |
 | status | `ready` / `insufficient-data` |
 | inputFingerprint | `sha256:` + 64 lowercase hex |
 | sourceCounts | точная map из 12 non-negative integer counters |
@@ -516,12 +516,22 @@ Rules; клиент не может создавать очередь или п�
 `mediaTypes` максимум 2. Каждый элемент содержит ровно:
 
 ```js
-{ key, label, score, evidenceCount, confidence }
+{
+  key,
+  label,
+  signedContribution,
+  absoluteEvidenceWeight,
+  score,
+  evidenceCount,
+  confidence
+}
 ```
 
 `key` — стабильный namespaced ID до 80 символов, `label` — display snapshot до
-100 символов, `score` — finite number `[-1, 1]`, `evidenceCount` — positive integer,
-`confidence` — finite number `[0, 1]`. Форматы key: `genre:{id}`,
+100 символов, `signedContribution` — finite signed number,
+`absoluteEvidenceWeight` — finite non-negative number, `score` — finite number
+`[-1, 1]`, `evidenceCount` — positive integer, `confidence` — finite number `[0, 1]`.
+Все вычисляемые числа округлены до шести знаков. Форматы key: `genre:{id}`,
 `media:movie|tv`, `decade:{YYYY}`, `language:{aa}`, `country:{AA}` и
 `person:{tmdbPersonId}`. Actor dimension использует максимум три top-billed actors
 одного media, multiplier 0.5 и требует повторения person минимум в двух media.

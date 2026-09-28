@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 8.3 — public movie and TV comments.
+Stage 9.3 — deterministic MovieDNA calculation core.
 
 ## Стек
 
@@ -15,6 +15,19 @@ Stage 8.3 — public movie and TV comments.
 - OXLint для проверки кода
 - react-router-dom — Data Router с общим layout и страницами-заглушками
 - Firebase SDK — modular API, инициализация App, Auth, Firestore и Storage через переменные Vite
+
+## MovieDNA calculation core
+
+Чистое вычислительное ядро находится в `src/features/dna/core/`. Публичная функция
+`calculateMovieDna({ algorithmVersion, items })` валидирует нормализованные сигналы,
+применяет приоритет rating → onboarding like/dislike → Favorite, рассчитывает восемь
+измерений, metadata coverage, confidence и стабильный SHA-256 fingerprint. Алгоритм
+имеет версию `1.0.0`, не зависит от React, Firebase, TMDB, сети, окружения, времени
+или порядка входных данных.
+
+Core пока не подключён к production data: MovieDNA-документы не создаются,
+пользовательские оценки не запускают пересчёт автоматически. Авторитетный server
+runner и запись результата появятся на этапе 9.4.
 
 ## Локальный запуск
 

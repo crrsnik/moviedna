@@ -1,7 +1,7 @@
 # MovieDNA v1 — specification and architecture
 
-Status: Stage 9.2 data model and client Security Rules. Calculation, enrichment,
-Cloud Functions and UI remain future work; production data is unchanged.
+Status: Stage 9.3 deterministic calculation core. Enrichment, Cloud Functions and
+UI remain future work; production data and MovieDNA documents are unchanged.
 
 ## Approved v1 decisions
 
@@ -95,11 +95,10 @@ Build one record per canonical `mediaKey`, never one record per source:
 
 1. If a valid rating exists, its weight is authoritative. Ignore onboarding and
    Favorite weights for that media.
-2. Otherwise, if an onboarding response exists, use its reaction. Ignore Favorite
-   weight for that media. This resolves a possible onboarding-dislike/Favorite conflict
-   without double counting.
-3. Otherwise, use a Favorite as a weak positive signal.
-4. Watchlist, custom-list membership, comments, and onboarding `skip` contribute zero.
+2. Otherwise, use onboarding `like` or `dislike` and ignore Favorite for that media.
+3. An onboarding `skip` is neutral and does not block a later Favorite; otherwise,
+   use Favorite as a weak positive signal.
+4. Watchlist, custom-list membership, comments, and a skip without Favorite contribute zero.
 5. Malformed documents are excluded and counted in `discardedSourceCount`; they do
    not partially contribute.
 
@@ -114,14 +113,14 @@ canonical normalized signal/enrichment fields, so retry order cannot change outp
 | Source/value | Weight |
 | --- | ---: |
 | Rating 1 | -1.00 |
-| Rating 2 | -0.80 |
-| Rating 3 | -0.60 |
-| Rating 4 | -0.35 |
+| Rating 2 | -0.75 |
+| Rating 3 | -0.50 |
+| Rating 4 | -0.25 |
 | Rating 5 | 0.00 |
 | Rating 6 | +0.20 |
-| Rating 7 | +0.45 |
-| Rating 8 | +0.70 |
-| Rating 9 | +0.85 |
+| Rating 7 | +0.40 |
+| Rating 8 | +0.60 |
+| Rating 9 | +0.80 |
 | Rating 10 | +1.00 |
 | Onboarding dislike | -0.35 |
 | Onboarding skip | 0.00 |
@@ -142,16 +141,17 @@ from having longer metadata arrays, and actors remain weaker than direct attribu
 For value `v`:
 
 ```text
-raw(v) = sum(media contribution to v)
+signedContribution(v) = sum(media contribution to v)
+absoluteEvidenceWeight(v) = sum(abs(media contribution to v))
 normalizer(dimension) = sum(abs(all media contributions in that dimension))
-score(v) = raw(v) / normalizer(dimension)             # [-1, +1]
-support(v) = number of distinct media contributing to v
-positiveWeight(v) = sum(max(contribution, 0))
-negativeWeight(v) = sum(abs(min(contribution, 0)))
+score(v) = signedContribution(v) / normalizer(dimension) # [-1, +1]
+evidenceCount(v) = number of distinct media contributing to v
+confidence(v) = min(1, absoluteEvidenceWeight(v) / 2)
+                * min(1, evidenceCount(v) / 3)
 ```
 
-Round stored weights and scores to four decimal places only after all sums. Sort
-dimension entries by descending score, then descending support, then stable key.
+Round calculated decimals to six decimal places only after all sums. Sort
+dimension entries by descending score, then descending evidence count, then stable key.
 Store at most 20 entries per dimension; this truncation occurs after normalization.
 An item is displayed only when its dimension meets the minimum above, and people
 entries additionally require support from two titles. Negative entries are retained
@@ -164,16 +164,20 @@ Confidence describes evidence coverage, not prediction accuracy:
 ```text
 N = number of unique non-zero canonical media signals
 D = distinct valid genres with absolute raw support >= 0.20
-C = enriched non-zero signals / N                         # 0 when N = 0
-confidence = round4(
+C = covered applicable metadata slots / all applicable slots # 0 when N = 0
+overallConfidence = round6(
   0.60 * min(1, N / 20) +
   0.25 * min(1, D / 8) +
   0.15 * C
 )
 ```
 
-Confidence is 0 when `N = 0`. The document also stores the three components so the
-number is explainable. Missing metadata lowers coverage but does not erase a rating.
+Overall confidence is 0 when `N = 0`. For every meaningful media, the six applicable
+coverage slots are genres, release year, original language, countries, the applicable
+director/creator role, and actors. The shared `people` completeness flag covers the
+last two slots. A known-valid empty array is covered; missing or corrupt metadata is
+not. TV directors and movie creators are inapplicable and never reduce coverage.
+Missing metadata lowers coverage but does not erase a rating.
 More signals from the same title never increase `N`; broad genre evidence increases
 confidence only up to eight genres.
 
@@ -184,23 +188,21 @@ splits contributions when a title has multiple values.
 
 1. **New user after onboarding.** Ten responses contain three Action likes, one
    Comedy like, two Drama dislikes and four skips. Canonical non-zero weight is
-   `6 × 0.35 = 2.10`. Genre scores are Action `1.05 / 2.10 = +0.5000`, Comedy
-   `0.35 / 2.10 = +0.1667`, Drama `-0.70 / 2.10 = -0.3333`. With `N=6`, `D=3`,
+   `6 × 0.35 = 2.10`. Genre scores are Action `1.05 / 2.10 = +0.500000`, Comedy
+   `0.35 / 2.10 = +0.166667`, Drama `-0.70 / 2.10 = -0.333333`. With `N=6`, `D=3`,
    and complete onboarding genre metadata `C=1`, confidence is
-   `0.60×0.30 + 0.25×0.375 + 0.15 = 0.4238`.
+   `0.60×0.30 + 0.25×0.375 + 0.15 = 0.423750`.
 
-2. **Onboarding plus ratings.** The user later rates an onboarding Action movie 9,
-   so `+0.85` replaces its onboarding `+0.35`; it is not added. Two new ratings are
-   Sci-Fi 8 (`+0.70`) and Drama 3 (`-0.60`), and an unrated Favorite Comedy adds
-   `+0.20`. There are nine unique non-zero media, not thirteen source records. If
-   genre totals are Action `+1.55`, Comedy `+0.55`, Sci-Fi `+0.70`, Drama `-1.30`,
-   the denominator is `4.10` and scores are `+0.3780`, `+0.1341`, `+0.1707`,
-   `-0.3171`. With `N=9`, `D=4`, `C=1`, confidence is `0.5450`.
+2. **Mixed source priority.** An onboarding Action movie later rated 9 contributes
+   `+0.80`, replacing rather than adding its onboarding `+0.35`. A Sci-Fi rating 8
+   contributes `+0.60`, a Drama rating 3 contributes `-0.50`, and an otherwise
+   unsignalled Favorite Comedy contributes `+0.20`. Four canonical media yield
+   genre contributions `+0.80`, `+0.60`, `-0.50`, `+0.20`; no source is double counted.
 
-3. **Contradictory preferences.** Four Horror ratings have weights `+1.00`, `+0.70`,
-   `-0.80`, `-0.60`; two other Horror onboarding likes add `+0.70`. Horror raw is
-   `+1.00`, absolute evidence is `3.80`, so its score is only `+0.2632`, with support
-   6, positive weight `2.40` and negative weight `1.40`. The algorithm reports a
+3. **Contradictory preferences.** Four Horror ratings have weights `+1.00`, `+0.60`,
+   `-0.75`, `-0.50`; two other Horror onboarding likes add `+0.70`. Horror signed
+   contribution is `+1.05`, absolute evidence is `3.55`, so its score is only
+   `+0.295775`, with evidence count 6. The algorithm reports a
    mixed, weakly positive preference rather than hiding disagreement. If these are
    ten total non-zero signals over five supported genres with full enrichment,
    confidence is `0.6063`; confidence can be substantial while one affinity remains
@@ -225,6 +227,30 @@ budget alerts/spend caps, and approve the region and limits. Firebase currently
 documents the deployment requirement here:
 https://firebase.google.com/docs/functions/get-started
 
+### Stage 9.3 calculation-core contract
+
+The pure core lives in `src/features/dna/core/` and exports the asynchronous
+`calculateMovieDna({ algorithmVersion, items })` function. Its only asynchronous
+operation is standard Web Crypto SHA-256. It imports no React, Firebase, TMDB client,
+storage, environment, clock or random source. The supported version constant is
+`MOVIEDNA_ALGORITHM_VERSION = "1.0.0"`.
+
+Each normalized item supplies canonical `mediaKey`, `tmdbId`, `mediaType`, optional
+rating/reaction/Favorite and optional normalized metadata. Arrays and items are
+canonicalized before calculation. Duplicate source entries, identity mismatches,
+invalid signals and corrupt metadata produce safe coded `MovieDnaError` values.
+
+The returned plain JSON object contains `algorithmVersion`, `inputFingerprint`,
+`sourceCounts`, `metadataCoverage`, `overallConfidence` and all eight `dimensions`.
+The future Stage 9.4 runner adds status/timestamps/schema version and maps
+`overallConfidence` to persisted `confidence`. It must persist the two evidence
+fields in each dimension entry or apply an explicitly versioned projection.
+
+The fingerprint is SHA-256 of a canonical JSON payload containing algorithm version,
+sorted identities, signals and logical metadata IDs/codes/completeness. Input order,
+metadata-array order, timestamps and display labels do not affect it. It is a change
+detector and idempotency input, not an authentication or integrity primitive.
+
 ## 6. Proposed data model
 
 ### Authoritative private DNA
@@ -236,7 +262,7 @@ Only the following top-level fields are allowed in the server schema:
 | Field | Type and constraint |
 | --- | --- |
 | schemaVersion | integer, exactly `1` |
-| algorithmVersion | non-empty version string; v1 is `moviedna-v1.0.0` |
+| algorithmVersion | non-empty version string; v1 is `1.0.0` |
 | status | `ready` or `insufficient-data` |
 | inputFingerprint | `sha256:` followed by 64 lowercase hexadecimal characters |
 | sourceCounts | fixed map of the twelve non-negative integer counters shown below |
@@ -254,12 +280,14 @@ Only the following top-level fields are allowed in the server schema:
 
 `dimensions` contains exactly `genres`, `mediaTypes`, `decades`, `languages`,
 `countries`, `directors`, `creators`, and `actors`. Each array has no duplicate key
-and is capped at 20 entries; `mediaTypes` is capped at 2. Every entry has exactly:
+and is capped at 20 entries; `mediaTypes` is capped at 2. The Stage 9.3 core entry is:
 
 ```js
 {
   key: "stable namespaced key", // non-empty, at most 80 characters
   label: "display snapshot",    // non-empty, at most 100 characters
+  signedContribution: 1.05,     // signed sum before normalization
+  absoluteEvidenceWeight: 3.55, // absolute evidence, never negative
   score: 0.378,                 // finite number in [-1, 1]
   evidenceCount: 3,             // positive integer, distinct media count
   confidence: 0.6               // finite number in [0, 1]
@@ -269,14 +297,14 @@ and is capped at 20 entries; `mediaTypes` is capped at 2. Every entry has exactl
 Stable keys use `genre:{positiveTmdbGenreId}`, `media:movie`, `media:tv`,
 `decade:{fourDigitDecade}`, `language:{lowercaseTwoLetterCode}`,
 `country:{uppercaseTwoLetterCode}`, or `person:{positiveTmdbPersonId}`. Labels are
-non-authoritative snapshots. Scores and confidence are rounded to four decimals.
+non-authoritative snapshots. Contributions, scores and confidence are rounded to six decimals.
 People entries require at least two distinct media; actors come from at most three
 top-billed people per media and use the approved `0.5` contribution multiplier.
 
 ```js
 {
   schemaVersion: 1,
-  algorithmVersion: "moviedna-v1.0.0",
+  algorithmVersion: "1.0.0",
   status: "ready",
   inputFingerprint: "sha256:<hex>",
   confidence: 0.545,
@@ -334,7 +362,7 @@ active job per UID, and honor `nextEligibleAt`. Direct Firestore writes never en
 ```js
 {
   schemaVersion: 1,
-  algorithmVersion: "moviedna-v1.0.0",
+  algorithmVersion: "1.0.0",
   status: "queued" | "running" | "succeeded" | "failed",
   requestedAt: timestamp,
   startedAt: timestamp | null,
