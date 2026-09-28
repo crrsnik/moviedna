@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 8.2 — personal movie and TV ratings.
+Stage 8.3 — public movie and TV comments.
 
 ## Стек
 
@@ -542,3 +542,39 @@ Validation covers 1041 unit tests (935 existing + 106 ratings tests), 768 emulat
 Rules tests, and isolated browser fixtures for authenticated flows. Guest regression
 uses a fresh browser session; automated checks do not access production Firestore.
 Rules, indexes and dependencies remain unchanged. Comments UI is a later stage.
+
+
+## Public movie and TV comments (Stage 8.3)
+
+Movie and TV details show public comments to guests and signed-in users, including
+before onboarding completion. One comment per user/title is stored at
+`mediaComments/{mediaKey}/comments/{commentAuthorId}`. The author's Firebase UID
+is public in this document path. There are no public profile pages or username links.
+
+The public subscription uses `orderBy('updatedAt', 'desc')` and `limit(20)`:
+only the 20 most recently updated comments are shown, without further pagination.
+A separate own-document subscription lets eligible users edit their comment even
+when it is outside this window. The editor does not duplicate published text or
+reset its draft when the public list updates. Guests have no own-document subscription.
+
+A valid completed profile is required by the client to create, edit or delete.
+Transactions reread the current user's profile and existing comment, validate identity,
+and check the Auth session before writing. Creation copies confirmed username/displayName;
+edits preserve these author snapshots, media identity and createdAt, changing only
+text, containsSpoiler and updatedAt. Author names do not update automatically.
+Deletion requires confirmation and is idempotent; ratings and library data are unaffected.
+
+Text is trimmed, retains line breaks and is limited to 2000 characters. It is rendered
+only as React text, never HTML. Spoiler text starts hidden per card and can be revealed
+with the keyboard; changing media resets disclosure. There is no moderation system.
+
+Repeated actions are locked and UI waits for server confirmation. Failed saves keep
+the draft. Subscriptions ignore cache/pending and stale events, and hold local query
+removals until the transaction finishes. Retry comments restarts the list read only.
+Own subscriptions/editors clear on logout; public reading remains available. A server
+transaction already dispatched before logout cannot be guaranteed cancelled, but its
+result cannot update a different session or media screen.
+
+Rules and indexes remain those of Stage 8.1; no dependencies or Firebase configuration
+were changed. Automated authenticated UI checks use isolated synthetic services;
+no production comments are created or production Firebase data accessed.

@@ -1,3 +1,4 @@
+import MediaComments from '../features/comments/components/MediaComments.jsx'
 import MediaRatingControl from '../features/ratings/components/MediaRatingControl.jsx'
 import MediaLibraryActions from '../features/library/components/MediaLibraryActions.jsx'
 import { useParams } from 'react-router-dom'
@@ -24,5 +25,6 @@ export default function TvShowDetailPage() {
     <DetailCredits cast={data.cast} headingId="tv-cast" />
     <TvShowSeasons seasons={data.seasons} />
     {!!data.recommendations.length && <section aria-labelledby="tv-recommendations" className="min-w-0 space-y-5"><h2 id="tv-recommendations" className="text-2xl font-semibold">You may also like</h2><MediaRow items={data.recommendations} labelledBy="tv-recommendations" /></section>}
+    <MediaComments mediaType="tv" tmdbId={data.id} />
   </div>
 }

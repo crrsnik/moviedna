@@ -1,3 +1,4 @@
+import MediaComments from '../features/comments/components/MediaComments.jsx'
 import MediaRatingControl from '../features/ratings/components/MediaRatingControl.jsx'
 import MediaLibraryActions from '../features/library/components/MediaLibraryActions.jsx'
 import DetailStatus from '../features/catalog/components/DetailStatus.jsx'
@@ -21,5 +22,6 @@ export default function MovieDetailPage() {
     <MovieFacts movie={data} />
     <MovieCredits cast={data.cast} />
     {!!data.recommendations.length && <section aria-labelledby="movie-recommendations" className="min-w-0 space-y-5"><h2 id="movie-recommendations" className="text-2xl font-semibold">You may also like</h2><MediaRow items={data.recommendations} labelledBy="movie-recommendations" /></section>}
+    <MediaComments mediaType="movie" tmdbId={data.id} />
   </div>
 }
