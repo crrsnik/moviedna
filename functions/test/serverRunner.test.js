@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { MAX_SOURCE_ITEMS, MAX_TMDB_CONCURRENCY } from '../src/config.js'
+import {
+  MAX_SOURCE_ITEMS,
+  MAX_TMDB_CONCURRENCY,
+  MEDIA_CACHE_TTL_MS,
+  REFRESH_MOVIE_DNA_OPTIONS,
+} from '../src/config.js'
 import { MovieDnaServerError, SERVER_ERROR_CODES, safeErrorCode } from '../src/errors.js'
 import { createHandlers } from '../src/handlers/createHandlers.js'
 import { createMetadataResolver } from '../src/metadata/metadataCache.js'
@@ -229,6 +234,25 @@ describe('metadata cache', () => {
     await resolver.resolve([{ mediaKey: 'movie_2', tmdbId: 2, mediaType: 'movie' }])
     assert.equal(written.tmdbId, 2)
     assert.equal('overview' in written, false)
+    assert.equal(written.expiresAt - written.fetchedAt, MEDIA_CACHE_TTL_MS)
+  })
+
+  it('keeps upstream data from controlling server cache timestamps', async () => {
+    let written
+    const resolver = createMetadataResolver({
+      now: () => 50_000,
+      cache: { get: async () => null, set: async (_key, value) => { written = value } },
+      tmdbClient: {
+        getMetadata: async () => ({
+          ...cached(6),
+          fetchedAt: 1,
+          expiresAt: Number.MAX_SAFE_INTEGER,
+        }),
+      },
+    })
+    await resolver.resolve([{ mediaKey: 'movie_6', tmdbId: 6, mediaType: 'movie' }])
+    assert.equal(written.fetchedAt, 50_000)
+    assert.equal(written.expiresAt, 50_000 + MEDIA_CACHE_TTL_MS)
   })
 
   it('refreshes corrupted identity instead of trusting it', async () => {
@@ -242,14 +266,32 @@ describe('metadata cache', () => {
     assert.equal(requests, 1)
   })
 
-  it('preserves an expired compatible cache on transient failure', async () => {
+  it('does not return an expired compatible cache on transient failure', async () => {
     const resolver = createMetadataResolver({
       now: () => 20_000,
       cache: { get: async () => cached(4), set: async () => assert.fail('must not overwrite') },
       tmdbClient: { getMetadata: async () => { throw new MovieDnaServerError(SERVER_ERROR_CODES.TIMEOUT) } },
     })
-    const [item] = await resolver.resolve([{ mediaKey: 'movie_4', tmdbId: 4, mediaType: 'movie' }])
-    assert.equal(item.metadata.status, 'ready')
+    await assert.rejects(
+      resolver.resolve([{ mediaKey: 'movie_4', tmdbId: 4, mediaType: 'movie' }]),
+      (error) => error.code === SERVER_ERROR_CODES.TIMEOUT,
+    )
+  })
+
+  it('treats missing and malformed expiry values as cache misses', async () => {
+    for (const expiresAt of [undefined, null, 'tomorrow', Number.NaN]) {
+      let requests = 0
+      const resolver = createMetadataResolver({
+        now: () => 100,
+        cache: {
+          get: async () => ({ ...cached(5), expiresAt }),
+          set: async () => {},
+        },
+        tmdbClient: { getMetadata: async () => { requests += 1; return cached(5) } },
+      })
+      await resolver.resolve([{ mediaKey: 'movie_5', tmdbId: 5, mediaType: 'movie' }])
+      assert.equal(requests, 1)
+    }
   })
 
   it('limits concurrent metadata requests to four', async () => {
@@ -335,13 +377,22 @@ describe('runner idempotency, stale protection and handlers', () => {
     const uids = []
     const handlers = createHandlers(async (uid) => { uids.push(uid); return { status: 'updated' } })
     await assert.rejects(handlers.manualRefresh({ data: { uid: 'mallory' } }), (error) => error.code === 'unauthenticated')
-    await handlers.manualRefresh({ auth: { uid: 'alice' }, data: { uid: 'mallory' } })
+    await handlers.manualRefresh({ auth: { uid: 'alice' }, app: { appId: 'verified-by-platform' }, data: { uid: 'mallory' } })
     assert.deepEqual(uids, ['alice'])
+  })
+
+  it('enforces App Check at the callable boundary and in the handler', async () => {
+    assert.equal(REFRESH_MOVIE_DNA_OPTIONS.enforceAppCheck, true)
+    const handlers = createHandlers(async () => assert.fail('must not recalculate'))
+    await assert.rejects(
+      handlers.manualRefresh({ auth: { uid: 'alice' } }),
+      (error) => error.code === 'failed-precondition' && error.message === 'App verification is required.',
+    )
   })
 
   it('returns a safe callable error without raw internal details', async () => {
     const handlers = createHandlers(async () => { throw new Error('raw token and stack details') })
-    await assert.rejects(handlers.manualRefresh({ auth: { uid: 'alice' } }), (error) => {
+    await assert.rejects(handlers.manualRefresh({ auth: { uid: 'alice' }, app: { appId: 'verified-by-platform' } }), (error) => {
       assert.equal(error.code, 'internal')
       assert.equal(error.message, 'MovieDNA could not be refreshed.')
       assert.equal(error.message.includes('raw token'), false)

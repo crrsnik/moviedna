@@ -582,8 +582,24 @@ fingerprint и `runToken` обеспечивают deduplication/idempotency и 
 
 Person IDs положительные, names — trimmed display snapshots до 100 символов.
 Popularity, vote count, keywords, overview, biography, images, videos, full credits и
-raw TMDB payload не сохраняются. Перед production deployment Stage 9.4b нужно повторно проверить актуальные
-TMDB API terms, attribution и допустимые условия/TTL постоянного metadata cache.
+raw TMDB payload не сохраняются. Логический TTL равен 24 часам: отсутствующий,
+повреждённый, несовместимый или истёкший cache является miss и не возвращается при
+ошибке refresh. Backend выставляет `fetchedAt` и `expiresAt` с разницей ровно 24 часа.
+
+`firestore.indexes.json` декларативно включает TTL policy для collection group
+`mediaSignals`, field `expiresAt`; отдельные single-field indexes этого поля отключены,
+поскольку runtime делает только direct document gets. Firestore удаляет истёкшие
+документы асинхронно, обычно в течение 24 часов, поэтому читатель всегда проверяет
+логический TTL независимо от физического удаления. До production deployment требуется
+ручной purge уже истёкших документов.
+
+Текущая проверка TMDB API Terms фиксирует максимум шесть месяцев для cached content.
+24 часа существенно короче, но остаются provisional engineering policy. MovieDNA
+некоммерческий; коммерческий сценарий требует новой проверки licensing и разрешений.
+При прекращении использования или лицензии TMDB operational purge требует сначала
+остановить все cache writers, затем административно удалить все документы
+`mediaSignals` batch/bulk-delete процессом и подтвердить пустую collection; ожидание
+асинхронного TTL не считается полным purge.
 
 ### Доступ и индексы
 
@@ -599,15 +615,27 @@ TMDB API terms, attribution и допустимые условия/TTL пост�
 Rules намеренно не валидируют внутреннюю server-only schema при записи: клиентские
 write всегда false, а Admin SDK не применяет client Rules. Schema должен строго
 валидировать будущий backend и его tests. Прямые get конкретных DNA documents и
-Admin direct gets cache не требуют composite indexes. `firestore.indexes.json`
-остаётся без изменений; index добавляется только под доказанный будущий query.
+Admin direct gets cache не требуют composite indexes. Единственный field override —
+TTL policy `mediaSignals.expiresAt`; другие indexes не добавлены.
 
 Functions 2nd gen планируются в `europe-west6`. Production deploy возможен только
 после Blaze и budget protection. Полное удаление аккаунта до production должно
 серверно удалить оба private MovieDNA documents; общий `mediaSignals` не содержит UID.
 
-Локальный runner Stage 9.4a использует cache TTL 24 часа, не хранит полный TMDB
-response и сохраняет существующий совместимый cache при transient upstream failure.
+Локальный runner использует cache TTL 24 часа, не хранит полный TMDB response и не
+возвращает истёкший cache при transient upstream failure.
 Три Firestore triggers реагируют на ratings, onboarding summary и эффективное
 изменение Favorite; Watchlist/custom memberships дают быстрый no-op. Callable refresh
-берёт UID только из verified auth context и применяет cooldown 15 минут.
+берёт UID только из verified auth context, требует verified App Check context и
+применяет cooldown 15 минут. Callable декларативно использует `enforceAppCheck: true`;
+event handlers от App Check не зависят.
+
+Functions используют `firebase-admin@14.5.0` и `firebase-functions@7.4.0`. Известная
+цепочка `gaxios@6.7.1 -> uuid@9.0.1` соответствует
+`GHSA-w5hq-g745-h8pq` / `CVE-2026-41907`; уязвимый UUID v3/v5/v6 buffer-сценарий не
+достижим через текущие MovieDNA handlers. Пользователь принял residual risk только
+для ограниченного некоммерческого MVP deployment, без автоматического переноса на
+коммерческий или полноценный публичный production. Перед каждым Functions deploy
+нужен повторный audit. После появления официального совместимого Firebase update его
+следует установить; иначе major migration требует отдельной проверки. Overrides,
+downgrade и `npm audit fix` не применялись.

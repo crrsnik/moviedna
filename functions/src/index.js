@@ -5,7 +5,7 @@ import { onDocumentWritten } from 'firebase-functions/v2/firestore'
 import { onCall } from 'firebase-functions/v2/https'
 
 import { createFirestoreAdapter } from './adapters/firestoreAdapter.js'
-import { RUNTIME_OPTIONS } from './config.js'
+import { REFRESH_MOVIE_DNA_OPTIONS, RUNTIME_OPTIONS } from './config.js'
 import { MovieDnaServerError, SERVER_ERROR_CODES } from './errors.js'
 import { createHandlers } from './handlers/createHandlers.js'
 import { createMetadataResolver } from './metadata/metadataCache.js'
@@ -48,7 +48,6 @@ export const onSavedMediaWritten = onDocumentWritten({
 }, (event) => createRuntimeHandlers().savedMediaWrite(event))
 
 export const refreshMovieDna = onCall({
-  ...RUNTIME_OPTIONS,
-  enforceAppCheck: false,
+  ...REFRESH_MOVIE_DNA_OPTIONS,
   secrets: [tmdbToken],
 }, (request) => createRuntimeHandlers().manualRefresh(request))

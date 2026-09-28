@@ -45,17 +45,16 @@ export function createMetadataResolver({ cache, tmdbClient, now = () => Date.now
   async function resolveOne(item) {
     const existing = await cache.get(item.mediaKey)
     const compatible = validIdentity(existing, item)
-    if (compatible && existing.expiresAt > now()) return toCoreMetadata(existing)
-    try {
-      const fetched = await tmdbClient.getMetadata(item.mediaType, item.tmdbId)
-      const normalized = fetched ?? missingEntry(item)
-      const stored = { ...normalized, fetchedAt: now(), expiresAt: now() + ttlMs }
-      await cache.set(item.mediaKey, stored)
-      return toCoreMetadata(stored)
-    } catch (error) {
-      if (compatible) return toCoreMetadata(existing)
-      throw error
-    }
+    const currentTime = now()
+    const validExpiry = Number.isFinite(existing?.expiresAt) && existing.expiresAt > currentTime
+    if (compatible && validExpiry) return toCoreMetadata(existing)
+
+    const fetched = await tmdbClient.getMetadata(item.mediaType, item.tmdbId)
+    const normalized = fetched ?? missingEntry(item)
+    const writtenAt = now()
+    const stored = { ...normalized, fetchedAt: writtenAt, expiresAt: writtenAt + ttlMs }
+    await cache.set(item.mediaKey, stored)
+    return toCoreMetadata(stored)
   }
 
   async function resolve(items) {

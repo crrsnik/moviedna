@@ -14,3 +14,8 @@ export const RUNTIME_OPTIONS = Object.freeze({
   maxInstances: 4,
   concurrency: 10,
 })
+
+export const REFRESH_MOVIE_DNA_OPTIONS = Object.freeze({
+  ...RUNTIME_OPTIONS,
+  enforceAppCheck: true,
+})

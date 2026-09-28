@@ -12,6 +12,7 @@ export const SERVER_ERROR_CODES = Object.freeze({
   STALE_RUN: 'stale-run',
   COOLDOWN: 'cooldown',
   UNAUTHENTICATED: 'unauthenticated',
+  APP_CHECK_REQUIRED: 'app-check-required',
   INTERNAL: 'internal',
 })
 
@@ -29,6 +30,7 @@ const SAFE_MESSAGES = Object.freeze({
   [SERVER_ERROR_CODES.STALE_RUN]: 'A newer MovieDNA calculation is active.',
   [SERVER_ERROR_CODES.COOLDOWN]: 'MovieDNA was refreshed recently.',
   [SERVER_ERROR_CODES.UNAUTHENTICATED]: 'Authentication is required.',
+  [SERVER_ERROR_CODES.APP_CHECK_REQUIRED]: 'App verification is required.',
   [SERVER_ERROR_CODES.INTERNAL]: 'MovieDNA could not be refreshed.',
 })
 

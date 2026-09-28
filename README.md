@@ -5,7 +5,8 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 9.4a — local MovieDNA server runner.
+Stage 9.4b preparation — App Check and physical metadata-cache TTL are configured
+locally. Production deployment and Console-wide App Check enforcement remain blocked.
 
 ## Стек
 
@@ -14,7 +15,7 @@ Stage 9.4a — local MovieDNA server runner.
 - Tailwind CSS v4 — utility-классы через `@tailwindcss/vite`
 - OXLint для проверки кода
 - react-router-dom — Data Router с общим layout и страницами-заглушками
-- Firebase SDK — modular API, инициализация App, Auth, Firestore и Storage через переменные Vite
+- Firebase SDK — modular API, инициализация App Check, Auth, Firestore и Storage через переменные Vite
 
 ## MovieDNA calculation core
 
@@ -29,9 +30,25 @@ Stage 9.4a — local MovieDNA server runner.
 Локальный Firebase Functions 2nd gen runner собирает разрешённые источники,
 обогащает их через внедряемый server-only TMDB client и атомарно сохраняет private
 DNA вместе с состоянием пересчёта. Экспортируются три Firestore handlers для
-ratings, onboarding summary и Favorite membership, а также authenticated callable
-`refreshMovieDna`. Production deployment не выполнялся, и DNA пока не показывается
+ratings, onboarding summary и Favorite membership, а также callable
+`refreshMovieDna`, защищённый одновременно Firebase Auth и App Check. Production
+deployment не выполнялся, и DNA пока не показывается
 во frontend.
+
+Frontend инициализирует Firebase App Check с `ReCaptchaEnterpriseProvider` до Auth,
+Firestore и Storage. Public site key задаётся через
+`VITE_FIREBASE_APPCHECK_SITE_KEY`; auto-refresh включён. В Firebase Console для Web
+App должны быть настроены production-домены и TTL токена 1 час. reCAPTCHA Enterprise
+risk threshold остаётся `0.5`, пока реальные метрики не обоснуют изменение. Site key
+публичен; приватные debug tokens нельзя коммитить или использовать в production.
+
+Для локальной разработки debug token можно передать только через игнорируемый
+`VITE_FIREBASE_APPCHECK_DEBUG_TOKEN` в `.env.local`. Значение `true` допустимо только
+для явного первого локального запуска, чтобы SDK сгенерировал token; полученный token
+нужно зарегистрировать вручную в Firebase Console и затем хранить только локально.
+Эта переменная намеренно отсутствует в `.env.example`. Console-wide enforcement нельзя
+включать до ручной проверки всех Firebase flows. Если включение сломает важный flow,
+откат выполняется отключением enforcement в Console, а не ослаблением callable.
 
 Functions используют Node.js 22, ESM и регион `europe-west6`. Локальные проверки:
 
@@ -45,11 +62,30 @@ npm run test:local
 Integration suite запускает только Firestore и Functions Emulator с demo-проектом
 `demo-moviedna`. Для локального Functions Emulator допускается только фиктивный
 `TMDB_READ_ACCESS_TOKEN` в игнорируемом `functions/.secret.local`; production secret
-не создан. До этапа 9.4b необходимо повторно проверить условия TMDB caching,
-перевести Firebase project на Blaze с budget alerts, создать production secret,
-настроить spend cap, если он доступен, включить App Check enforcement для callable,
-закрыть или повторно принять зафиксированный transitive dependency advisory,
-подтвердить TMDB cache policy и runtime limits и отдельно одобрить production deploy.
+был подготовлен пользователем, но локальные проверки его не читают. Cache `mediaSignals`
+имеет логический TTL 24 часа и декларативную Firestore
+TTL policy по `expiresAt`; просроченный или повреждённый документ никогда не
+используется как результат. Физическое удаление асинхронно и обычно происходит в
+течение 24 часов после expiry. Текущие TMDB API Terms указывают максимум шесть месяцев
+для cached content; выбранные 24 часа существенно короче, но остаются provisional
+policy, а не утверждением о требовании TMDB. Перед production deployment нужно вручную
+перепроверить Terms, выполнить purge ранее истёкших cache documents и отдельно одобрить
+deploy. Blaze, budget alert и production secret были подготовлены пользователем; текущий
+этап ничего из этого не изменяет и не развёртывает.
+
+MovieDNA остаётся некоммерческим проектом. Перед любым коммерческим использованием
+нужно заново проверить TMDB licensing и получить необходимые разрешения. Также перед
+deploy требуется повторный официальный Firebase dependency audit; принятый residual
+risk `gaxios@6.7.1 -> uuid@9.0.1` не устранён override или downgrade. Пользователь
+явно принял этот риск только для ограниченного некоммерческого MVP deployment. Это
+решение автоматически не распространяется на коммерческий или полноценный публичный
+production-запуск. Audit обязателен перед каждым Functions deploy; после появления
+официального совместимого Firebase update его следует установить и повторно проверить.
+
+Operational purge при прекращении использования или лицензии TMDB: сначала отключить
+все writers MovieDNA, затем удалить всю server-only collection `mediaSignals`
+административным batch/bulk-delete процессом и проверить, что collection пуста. Эта
+инструкция не является командой для текущего этапа; production purge не выполнялся.
 
 ## Локальный запуск
 

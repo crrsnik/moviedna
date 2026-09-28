@@ -7,6 +7,7 @@ function safeCallableError(error) {
     const code = error.code === SERVER_ERROR_CODES.UNAUTHENTICATED ? 'unauthenticated'
       : error.code === SERVER_ERROR_CODES.COOLDOWN ? 'resource-exhausted'
         : error.code === SERVER_ERROR_CODES.ONBOARDING_REQUIRED ? 'failed-precondition'
+          : error.code === SERVER_ERROR_CODES.APP_CHECK_REQUIRED ? 'failed-precondition'
           : 'internal'
     return new HttpsError(code, error.message)
   }
@@ -31,6 +32,9 @@ export function createHandlers(recalculate) {
   const manualRefresh = async (request) => {
     if (!request.auth?.uid) {
       throw safeCallableError(new MovieDnaServerError(SERVER_ERROR_CODES.UNAUTHENTICATED))
+    }
+    if (!request.app) {
+      throw safeCallableError(new MovieDnaServerError(SERVER_ERROR_CODES.APP_CHECK_REQUIRED))
     }
     try {
       return await recalculate(request.auth.uid, { manual: true })

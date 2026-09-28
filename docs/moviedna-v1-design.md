@@ -504,23 +504,37 @@ The TMDB boundary accepts only movie/TV IDs and constructs URLs against the fixe
 `https://api.themoviedb.org` origin. It uses an eight-second timeout and at most two
 bounded transient retries, honors capped `Retry-After`, and never persists payloads,
 images, descriptions or credentials. `mediaSignals` has a conservative 24-hour TTL.
-A fresh compatible entry avoids the request; an expired entry is refreshed, while a
-transient failure may use the previous compatible normalized entry without deleting
-it. These terms and the TTL require review before production deployment.
+A fresh compatible entry avoids the request; a missing, malformed, identity-mismatched
+or expired entry is a cache miss. An expired entry is never returned when refresh
+fails. Writes set server-controlled `fetchedAt` and `expiresAt` exactly 24 hours apart.
+The Firestore TTL policy targets `mediaSignals.expiresAt`; physical deletion is
+asynchronous and normally occurs within 24 hours after expiry.
 
 Runtime options are fixed at `europe-west6`, 512 MiB, 120 seconds, zero minimum and
 four maximum instances, concurrency 10, with automatic event retry explicitly off.
-The callable's App Check enforcement remains off only for local Stage 9.4a testing.
-Before 9.4b, Blaze and budget protection, production secret provisioning, TMDB cache
-terms, App Check enforcement and explicit deployment approval are mandatory.
+The callable declares `enforceAppCheck: true` and also rejects a missing verified App
+Check context at the application boundary; event handlers do not require App Check.
+Auth and App Check are both mandatory for manual Refresh. Frontend App Check uses
+reCAPTCHA Enterprise, one-hour token TTL, automatic refresh and the public site key.
+Production domains must be allowlisted. Console-wide enforcement remains off until
+manual verification of every Firebase flow and a documented rollback decision.
 
 The 24-hour cache TTL is a provisional engineering value, not a statement that TMDB
-terms permit that retention period. Only normalized genre IDs, year, language,
+requires that retention period. The currently reviewed TMDB API Terms allow cached
+content for no longer than six months; 24 hours is intentionally far shorter. Only normalized genre IDs, year, language,
 country codes and bounded people references are retained; the full response is never
 stored, clients cannot read `mediaSignals`, and the existing application attribution
 remains visible. Production deployment is blocked until the current official TMDB
 API terms are manually reviewed. That review may require changing the TTL or removing
-persistent Firestore metadata caching before deploy.
+persistent Firestore metadata caching before deploy. A pre-deploy purge must remove
+already-expired cache documents; enabling TTL is not an immediate purge mechanism.
+MovieDNA is noncommercial, and commercial use requires a fresh licensing review and
+any required TMDB permission.
+
+If TMDB use or licensing ends, operators must first stop every MovieDNA cache writer,
+then remove every document in `mediaSignals` with an administrative batch/bulk-delete
+process and verify that the collection is empty. The asynchronous TTL policy is not a
+substitute for this full purge.
 
 Dependency review uses `firebase-admin@14.5.0` and `firebase-functions@7.4.0` and
 currently records `GHSA-w5hq-g745-h8pq` / `CVE-2026-41907` through the optional
@@ -530,9 +544,13 @@ used by MovieDNA handlers; this gaxios version calls UUID v4 only for multipart
 boundaries, while MovieDNA uses Admin Firestore and native `fetch` against a fixed
 TMDB host. The package is still present in the deployable dependency tree. No newer
 compatible Firebase release currently removes it, and a forced UUID 14 override is a
-major-module change, so no override is applied. This is a documented residual risk
-for local 9.4a and a required final dependency decision before production deploy.
-Before 9.4b, re-check the official Firebase releases for an upstream dependency fix.
+major-module change, so no override, downgrade, or `npm audit fix` is applied. The
+user explicitly accepts this residual risk only for a limited noncommercial MVP
+deployment. That acceptance does not automatically cover commercial use or a fully
+public production launch. Run the dependency audit before every Functions deploy;
+when an official compatible Firebase update removes the vulnerable chain, install it
+and repeat the full verification. A separately reviewed major migration remains the
+fallback if no compatible fix becomes available.
 
 The complete 9.4b deployment gate is: Blaze plan, budget alert, spend cap where the
 Firebase/Google Cloud account supports one, production `TMDB_READ_ACCESS_TOKEN`, App
