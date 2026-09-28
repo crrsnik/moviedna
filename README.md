@@ -5,8 +5,9 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 9.4b preparation — App Check and physical metadata-cache TTL are configured
-locally. Production deployment and Console-wide App Check enforcement remain blocked.
+Stage 9.4c preparation — Firebase Hosting and an App Check protected production TMDB
+proxy are configured locally. Production deployment, API enablement and Console-wide
+App Check enforcement remain blocked.
 
 ## Стек
 
@@ -30,8 +31,9 @@ locally. Production deployment and Console-wide App Check enforcement remain blo
 Локальный Firebase Functions 2nd gen runner собирает разрешённые источники,
 обогащает их через внедряемый server-only TMDB client и атомарно сохраняет private
 DNA вместе с состоянием пересчёта. Экспортируются три Firestore handlers для
-ratings, onboarding summary и Favorite membership, а также callable
-`refreshMovieDna`, защищённый одновременно Firebase Auth и App Check. Production
+ratings, onboarding summary и Favorite membership, callable `refreshMovieDna`,
+защищённый одновременно Firebase Auth и App Check, и HTTPS handler `tmdbProxy`,
+защищённый verified App Check. Production
 deployment не выполнялся, и DNA пока не показывается
 во frontend.
 
@@ -331,20 +333,51 @@ UserProfileProvider внутри AuthProvider связывает Firebase Auth u
 Browser → /api/tmdb → Vite dev proxy → https://api.themoviedb.org/3
 ```
 
-Proxy добавляет Bearer token только на сервере, проверяет TLS и разрешает только
-GET к двум trending endpoints с параметром language. Token не попадает в client
-bundle, URL или браузерные заголовки. Без токена dev-сервер сообщает об ошибке
+Vite proxy добавляет Bearer token только на development server, проверяет TLS и
+применяет тот же закрытый allowlist, что production backend. Token не попадает в
+client bundle, URL или браузерные заголовки. Без токена dev-сервер сообщает об ошибке
 конфигурации; `npm run build` токен не требует.
 
 Главная параллельно загружает `/trending/movie/day` и `/trending/tv/day`
 с `language=en-US`. Секции имеют отдельные loading/error/empty состояния и Retry;
 уход со страницы отменяет запросы. Poster CDN — `https://image.tmdb.org/t/p/w342`.
-Данные не записываются в Firebase. Поиск пока неактивен; detail pages отсутствуют.
+Данные не записываются в Firebase. Поиск, каталоги и detail pages используют тот же
+относительный transport и тот же allowlist.
 
-**Production limitation:** статический hosting и `npm run preview` не предоставляют
-`/api/tmdb`. Перед публичным deployment необходим backend/serverless route с этим
-путём и серверным хранением токена. Не заменяйте proxy прямым браузерным запросом
-с публичной переменной `VITE_*`.
+Production использует same-origin Hosting rewrites `/api/tmdb` и `/api/tmdb/**` к
+Functions v2 handler `tmdbProxy` в `europe-west6`. Proxy допускает только `GET` и
+точные paths/parameters, используемые MovieDNA: trending, search, browse/genres,
+discover и movie/TV/person details. Guest-доступ не требует Firebase Auth, поскольку
+каталог публичный, но каждый запрос требует актуальный App Check token в
+`X-Firebase-AppCheck`. Backend проверяет token через Admin SDK, сам формирует fixed
+TMDB URL и Authorization и не проксирует пользовательские headers. App Check token,
+TMDB token, upstream headers и raw errors клиенту не возвращаются. Ответ ограничен
+двумя мегабайтами и выдаётся с private `no-store`. App Check не считается Auth,
+квотой или надёжным rate limit, поэтому runtime limits и monitoring остаются частью
+защиты от злоупотреблений. `maxInstances: 4` ограничивает параллельную
+инфраструктуру, но не является spend cap; budget alert только уведомляет и не
+останавливает расходы. Перед production deployment требуется отдельное решение о
+принятии operational cost risk общего public guest traffic.
+
+Frontend получает свежий token modular App Check API только в production и продолжает
+обращаться к относительному `/api/tmdb`. DEV использует Vite proxy и не активирует
+production transport. MovieDNA debug helper выбирается build-time alias: production
+bundle не содержит `VITE_FIREBASE_APPCHECK_DEBUG_TOKEN` и не присваивает debug global.
+Оставшийся identifier `FIREBASE_APPCHECK_DEBUG_TOKEN` принадлежит официальному
+Firebase App Check SDK; MovieDNA его в production не активирует.
+
+Hosting serves `dist`; оба API rewrites находятся перед SPA fallback `** → /index.html`.
+`pinTag` не используется, поэтому Hosting deploy не разворачивает Function неявно.
+Functions API пока отключён, deploy не выполнялся, Console enforcement остаётся
+выключенным. Callable `refreshMovieDna` использует встроенный `enforceAppCheck`, а
+custom backend `tmdbProxy` вручную проверяет header.
+
+Порядок будущего deployment: отдельно одобрить API enablement; развернуть только
+`tmdbProxy`; проверить metadata Function; развернуть только Hosting; проверить
+production App Check и `/api/tmdb`; развернуть остальные четыре Functions; провести
+отдельно разрешённый smoke test; проверить production indexes; затем отдельно
+развернуть indexes/TTL без Rules. Hosting rollback использует предыдущую release,
+Functions rollback — повторный deploy последнего известного исправного commit.
 
 Unit tests используют только синтетические данные и подменённый fetch.
 
@@ -413,9 +446,9 @@ to 1–500 and available results. Changing query/type resets the page. Adult con
 is always disabled (`include_adult=false`); language is `en-US`.
 
 Responses are normalized into movie/TV/person cards; malformed and unknown items
-are discarded. Search does not store results in Firebase and movie cards link to their detail pages. Requests use only `/api/tmdb`; the private token remains in the Vite
-server proxy. Static production deployment still requires a backend/serverless
-`/api/tmdb` implementation with equivalent endpoint and parameter restrictions.
+are discarded. Search does not store results in Firebase and movie cards link to their detail pages. Requests use only `/api/tmdb`; development credentials remain in the
+Vite server proxy. The locally prepared production route uses the stricter App Check
+protected `tmdbProxy`, which has not been deployed.
 
 ## Public catalogs
 
@@ -435,7 +468,7 @@ Discover uses `sort_by=popularity.desc`, `include_adult=false`, and disables vid
 for movies or missing first-air dates for TV. List endpoints receive only language
 and page; they do not support the discover filters. Returned adult items are discarded
 by the shared normalizer. Genres receive only language. All requests use `en-US` and
-`/api/tmdb`; static production still needs a backend/serverless proxy. No Firebase
+`/api/tmdb`; production is prepared to use the undeployed `tmdbProxy`. No Firebase
 reads or writes are added by browsing. No new dependencies are required.
 
 ## Movie details
@@ -450,7 +483,7 @@ One `/api/tmdb/movie/{id}` request uses `language=en-US` and exactly
 `append_to_response=credits,videos,release_dates,recommendations`. The proxy allowlist
 requires these parameters; credentials remain server-side. Stage 6.1 added no
 Firebase operations, dependencies, TV/person detail pages or persistent TMDB data.
-Static production still requires the backend/serverless `/api/tmdb` proxy.
+Static production will use the locally prepared, currently undeployed `tmdbProxy`.
 
 The detail model validates optional metadata, filters malformed fields, orders and
 limits cast to 12, deduplicates directors/writers, prefers US theatrical certification,
@@ -480,7 +513,7 @@ with the most episodes, then alphabetical order. Specials (season 0) are allowed
 seasons are ordered by number in a horizontal lane so long-running shows do not
 create an excessively tall page. Last/next episode summaries and seasons have no
 links. Recommendations use the existing TV card model and the first page only.
-Stage 6.2 added no season, episode or person detail routes, Firebase operations or new dependencies. Static production still requires a backend/serverless `/api/tmdb` proxy.
+Stage 6.2 added no season, episode or person detail routes, Firebase operations or new dependencies. Static production will use the locally prepared, currently undeployed `tmdbProxy`.
 
 
 ## Person details and media links
@@ -489,8 +522,8 @@ Stage 6.2 added no season, episode or person detail routes, Firebase operations 
 and writers and TV creators link to person details when a valid ID is available.
 The existing server proxy makes one `/person/{id}` request with `language=en-US`
 and exactly `append_to_response=combined_credits,images,external_ids`.
-Credentials stay server-side; static production still needs a backend/serverless
-`/api/tmdb` implementation.
+Credentials stay server-side; static production is configured for the undeployed
+App Check protected `tmdbProxy` implementation.
 
 Person details include biography, dates (no inferred age), aliases, safe external
 links, up to eight extra photos, Known For and separate Acting/Crew filmographies.

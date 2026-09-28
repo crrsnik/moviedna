@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "imports": {
+    "#firebase-app-check-debug": "./src/shared/config/firebaseAppCheckDebug.js",
+    "#tmdb-app-check-token": "./src/features/catalog/services/tmdbAppCheckToken.js"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -14,6 +18,7 @@
     "firebase:deploy:firestore": "firebase deploy --only firestore",
     "test:rules": "firebase emulators:exec --only firestore --project demo-moviedna \"node --test tests/firestore.rules.test.js\"",
     "test:unit": "node --test tests/unit/*.test.js",
+    "test:bundle": "node --test tests/bundle/*.test.js",
     "test:functions": "npm --prefix functions test",
     "check:functions": "npm --prefix functions run check",
     "test:dna:integration": "firebase emulators:exec --only firestore,functions --project demo-moviedna \"node --test tests/integration/movieDnaFunctions.test.js\"",

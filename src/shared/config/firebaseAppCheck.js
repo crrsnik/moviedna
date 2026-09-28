@@ -2,27 +2,17 @@ import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-ch
 
 const appCheckInstanceKey = Symbol.for('moviedna.firebase.app-check')
 
-export function resolveAppCheckSettings(environment) {
-  const siteKey = environment.VITE_FIREBASE_APPCHECK_SITE_KEY
+export function resolveAppCheckSettings(siteKey) {
   if (typeof siteKey !== 'string' || siteKey.trim() === '') {
     throw new Error('Missing required Firebase environment variable: VITE_FIREBASE_APPCHECK_SITE_KEY')
   }
 
-  const debugValue = environment.DEV
-    && typeof environment.VITE_FIREBASE_APPCHECK_DEBUG_TOKEN === 'string'
-    && environment.VITE_FIREBASE_APPCHECK_DEBUG_TOKEN.trim()
-
-  return {
-    siteKey: siteKey.trim(),
-    debugToken: debugValue
-      ? (debugValue === 'true' ? true : debugValue)
-      : null,
-  }
+  return { siteKey: siteKey.trim() }
 }
 
 export function initializeFirebaseAppCheck(
   app,
-  environment,
+  siteKey,
   {
     initialize = initializeAppCheck,
     Provider = ReCaptchaEnterpriseProvider,
@@ -32,11 +22,10 @@ export function initializeFirebaseAppCheck(
   const existing = registry[appCheckInstanceKey]
   if (existing?.app === app) return existing.instance
 
-  const { siteKey, debugToken } = resolveAppCheckSettings(environment)
-  if (debugToken !== null) registry.FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken
+  const settings = resolveAppCheckSettings(siteKey)
 
   const instance = initialize(app, {
-    provider: new Provider(siteKey),
+    provider: new Provider(settings.siteKey),
     isTokenAutoRefreshEnabled: true,
   })
   registry[appCheckInstanceKey] = { app, instance }

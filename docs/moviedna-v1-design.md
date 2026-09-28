@@ -558,6 +558,63 @@ Check configuration and callable enforcement, resolution or explicit re-approval
 dependency advisories, final TMDB cache decision, confirmed runtime limits, and a
 separate user authorization for deployment.
 
+### Production catalog transport (Stage 9.4c)
+
+Production catalog traffic remains same-origin: Firebase Hosting rewrites
+`/api/tmdb` and `/api/tmdb/**` to the `tmdbProxy` Functions v2 HTTPS handler in
+`europe-west6`, before the final SPA fallback. The rewrite has no `pinTag`, and a
+Hosting-only deployment must never deploy or update the Function implicitly.
+
+`tmdbProxy` is public catalog infrastructure, so Firebase Auth is intentionally not
+required. App Check is mandatory: the frontend obtains a current modular App Check
+token for every production request and sends it only in `X-Firebase-AppCheck`; the
+handler verifies that token with Firebase Admin before reading its bound
+`TMDB_READ_ACCESS_TOKEN` or contacting TMDB. Replay consumption is deferred because
+the proxy is read-only. No CORS response is added: browser access is intended through
+the same-origin Hosting rewrite, while the direct Function URL still requires App
+Check.
+
+The proxy is not an open forwarder. It accepts only GET and an exact static inventory:
+movie/TV daily trending; multi/movie/TV/person search; the supported movie, TV and
+person browse views; movie/TV genre lists and discover filters; and canonical
+movie/TV/person detail requests. Language is `en-US`, page is 1–500, search is 2–100
+normalized characters, adult content is always false, IDs/genres are positive safe
+integers, and every endpoint has an exact parameter set. User hosts, full URLs,
+unknown paths, duplicate/unknown parameters and forwarded headers are rejected.
+The backend uses a fixed TMDB origin, an eight-second upstream timeout, JSON shape
+checks, a two-megabyte response limit, non-forwarded upstream headers, a private
+`no-store` response policy and stable sanitized errors. It does not add a Firestore
+proxy cache. App Check reduces casual abuse but is not authentication, a quota or a
+reliable per-user rate limiter; authenticated and guest clients share the same
+bounded Function capacity and TMDB quota. Per-IP or account-aware throttling remains
+an operational follow-up if observed traffic requires it.
+The current `maxInstances: 4` bounds concurrent infrastructure but is not a spend
+cap. A budget alert only sends notifications and does not stop charges. Production
+deployment therefore remains gated on a separate decision accepting the operational
+cost exposure of shared public guest traffic.
+
+Development retains the fixed-host Vite proxy with the same allowlist and a local
+server-only token. Production uses the Function and never a Vite proxy or browser
+TMDB credential. DEV App Check debug activation lives in a development-only module
+selected through a build-time alias. Production contains neither MovieDNA's
+`VITE_FIREBASE_APPCHECK_DEBUG_TOKEN` reference nor its debug-global assignment; an
+internal `FIREBASE_APPCHECK_DEBUG_TOKEN` identifier remains in the official Firebase
+App Check SDK and is not activated by MovieDNA production code.
+
+The Functions API is currently disabled and no deployment has occurred. Console-wide
+App Check enforcement remains off. `refreshMovieDna` uses callable
+`enforceAppCheck: true`; `tmdbProxy` uses the custom-backend header verification flow.
+The future deployment sequence is: explicitly approve API enablement; deploy only
+`tmdbProxy`; verify Function metadata; deploy only Hosting; verify production App
+Check and `/api/tmdb`; deploy the other four named Functions; run an explicitly
+approved smoke test; inspect production indexes; then deploy indexes/TTL without
+Rules. This prevents Hosting from targeting a missing Function and prevents the
+App-Check-enforced callable from preceding its client.
+
+Hosting rollback selects a previous live release. Functions rollback redeploys the
+last known-good commit with an explicit Function allowlist. TTL/index rollback is a
+separate operation and must account for documents that may already have been deleted.
+
 ## 8. Future personalized recommendations
 
 The recommendation pipeline should be a separate consumer of DNA:

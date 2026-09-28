@@ -4,6 +4,9 @@ import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
 import { initializeFirebaseAppCheck } from './firebaseAppCheck.js'
+import { configureFirebaseAppCheckDebug } from '#firebase-app-check-debug'
+
+configureFirebaseAppCheckDebug()
 
 const requiredVariables = {
   VITE_FIREBASE_API_KEY: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -32,7 +35,7 @@ const firebaseConfig = {
 }
 
 export const firebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)
-export const appCheck = initializeFirebaseAppCheck(firebaseApp, import.meta.env)
+export const appCheck = initializeFirebaseAppCheck(firebaseApp, import.meta.env.VITE_FIREBASE_APPCHECK_SITE_KEY)
 export const auth = getAuth(firebaseApp)
 export const db = getFirestore(firebaseApp)
 export const storage = getStorage(firebaseApp)

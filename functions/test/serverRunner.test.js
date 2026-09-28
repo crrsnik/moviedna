@@ -6,6 +6,8 @@ import {
   MAX_TMDB_CONCURRENCY,
   MEDIA_CACHE_TTL_MS,
   REFRESH_MOVIE_DNA_OPTIONS,
+  TMDB_PROXY_MAX_RESPONSE_BYTES,
+  TMDB_PROXY_OPTIONS,
 } from '../src/config.js'
 import { MovieDnaServerError, SERVER_ERROR_CODES, safeErrorCode } from '../src/errors.js'
 import { createHandlers } from '../src/handlers/createHandlers.js'
@@ -61,6 +63,14 @@ function response(status, body = {}, headers = {}) {
     json: async () => structuredClone(body),
   }
 }
+
+it('uses bounded App Check proxy runtime settings without CORS', () => {
+  assert.deepEqual(TMDB_PROXY_OPTIONS, {
+    region: 'europe-west6', memory: '512MiB', timeoutSeconds: 30,
+    minInstances: 0, maxInstances: 4, concurrency: 10, cors: false,
+  })
+  assert.equal(TMDB_PROXY_MAX_RESPONSE_BYTES, 2 * 1024 * 1024)
+})
 
 describe('source collection and merge', () => {
   it('applies rating over onboarding over Favorite', () => {

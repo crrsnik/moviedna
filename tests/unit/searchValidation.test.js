@@ -4,6 +4,7 @@ import { normalizeQuery, getQueryError, normalizeType, normalizePage, readSearch
 
 describe('Search URL validation and pagination', () => {
   it('trims and collapses whitespace including tabs and newlines', () => assert.equal(normalizeQuery('  Star \n\t Wars  '), 'Star Wars'))
+  it('normalizes Unicode before validating and navigating', () => assert.equal(normalizeQuery('  Cafe\u0301\u2003Noir  '), 'Café Noir'))
   for (const query of ['', ' ', 'x', 'a'.repeat(101), null]) it(`rejects query length ${query?.length}`, () => assert.ok(getQueryError(query)))
   for (const query of ['ab', 'a'.repeat(100)]) it(`accepts query length ${query.length}`, () => assert.equal(getQueryError(query), null))
   for (const type of ['all', 'movie', 'tv', 'person']) it(`accepts ${type}`, () => assert.equal(normalizeType(type), type))

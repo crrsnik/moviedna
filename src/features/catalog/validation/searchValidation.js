@@ -1,7 +1,7 @@
 export const SEARCH_TYPES = ['all', 'movie', 'tv', 'person']
 export const MAX_SEARCH_PAGE = 500
 export function normalizeQuery(value) {
-  return typeof value === 'string' ? value.trim().replace(/\s+/gu, ' ') : ''
+  return typeof value === 'string' ? value.normalize('NFC').trim().replace(/\s+/gu, ' ') : ''
 }
 export function getQueryError(query) {
   const value = normalizeQuery(query)

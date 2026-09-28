@@ -2,12 +2,13 @@ import { isMovieDetailPath, isTvDetailPath, isPersonDetailPath, PERSON_DETAIL_AP
 import { isBrowsePath, isAllowedBrowseRequest } from '../validation/browseValidation.js'
 import { TMDB_BASE_PATH, TMDB_DEFAULT_LANGUAGE } from '../../../shared/config/tmdb.js'
 import { isTmdbAbort, TmdbError } from './tmdbErrors.js'
+import { tmdbTransport } from './tmdbTransport.js'
 
 const searchEndpoints = new Set(['/search/multi', '/search/movie', '/search/tv', '/search/person'])
 const endpoints = new Set(['/trending/movie/day', '/trending/tv/day'])
 
-export async function getTmdb(path, { language = TMDB_DEFAULT_LANGUAGE, signal, search, browse, details = false } = {}) {
-  if ((!endpoints.has(path) && !searchEndpoints.has(path) && !(details && (isMovieDetailPath(path) || isTvDetailPath(path) || isPersonDetailPath(path))) && !isBrowsePath(path)) || typeof language !== 'string' || !/^[a-z]{2}-[A-Z]{2}$/.test(language)) {
+export async function getTmdb(path, { language = TMDB_DEFAULT_LANGUAGE, signal, search, browse, details = false, transport = tmdbTransport } = {}) {
+  if ((!endpoints.has(path) && !searchEndpoints.has(path) && !(details && (isMovieDetailPath(path) || isTvDetailPath(path) || isPersonDetailPath(path))) && !isBrowsePath(path)) || language !== TMDB_DEFAULT_LANGUAGE) {
     throw new TmdbError('request')
   }
   const query = new URLSearchParams({ language })
@@ -28,7 +29,7 @@ export async function getTmdb(path, { language = TMDB_DEFAULT_LANGUAGE, signal, 
   }
   try {
     signal?.throwIfAborted()
-    const response = await fetch(`${TMDB_BASE_PATH}${path}?${query}`, {
+    const response = await transport.request(`${TMDB_BASE_PATH}${path}?${query}`, {
       method: 'GET', headers: { Accept: 'application/json' }, signal,
       credentials: 'omit', redirect: 'error',
     })

@@ -624,6 +624,16 @@ Functions 2nd gen планируются в `europe-west6`. Production deploy в
 
 Локальный runner использует cache TTL 24 часа, не хранит полный TMDB response и не
 возвращает истёкший cache при transient upstream failure.
+
+Production HTTPS handler `tmdbProxy` не читает и не записывает Firestore и не
+использует `mediaSignals`: это ограниченный read-only transport к TMDB без cache.
+Guest и authenticated clients используют один контракт, защищённый App Check, через
+same-origin Hosting rewrite. Auth для публичного каталога не требуется. Proxy
+принимает только allowlisted GET paths/parameters, проверяет App Check до чтения
+server secret и возвращает только проверенный JSON ограниченного размера или
+стабильную безопасную ошибку. Ответ имеет private `no-store`; App Check не заменяет
+Auth, quota или отдельный rate limit публичного каталога.
+Развёртывание proxy, Hosting и TTL остаётся раздельным; Rules этим этапом не меняются.
 Три Firestore triggers реагируют на ratings, onboarding summary и эффективное
 изменение Favorite; Watchlist/custom memberships дают быстрый no-op. Callable refresh
 берёт UID только из verified auth context, требует verified App Check context и

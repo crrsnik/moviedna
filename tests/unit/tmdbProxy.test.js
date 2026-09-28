@@ -48,6 +48,7 @@ describe('Local TMDB proxy configuration with a synthetic token', () => {
     { method: 'GET', url: '/api/tmdb/account' },
     { method: 'GET', url: '/api/tmdb/trending/movie/day?target=https://example.invalid' },
     { method: 'GET', url: '/api/tmdb/trending/movie/day?api_key=synthetic' },
+    { method: 'GET', url: '/api/tmdb/trending/movie/day?language=fr-FR' },
   ]) {
     it(`blocks ${request.method} ${request.url}`, () => {
       let status, body

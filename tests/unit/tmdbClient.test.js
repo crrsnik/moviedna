@@ -11,9 +11,9 @@ afterEach(() => mock.restoreAll())
 describe('TMDB client with mocked fetch', () => {
   it('uses relative URL, encoded query, GET, Accept, signal and no Authorization', async () => {
     const signal = new AbortController().signal
-    assert.deepEqual(await getTmdb(path, { language: 'fr-FR', signal }), { results: [] })
+    assert.deepEqual(await getTmdb(path, { language: 'en-US', signal }), { results: [] })
     const [url, options] = fetchMock.mock.calls[0].arguments
-    assert.equal(url, '/api/tmdb/trending/movie/day?language=fr-FR')
+    assert.equal(url, '/api/tmdb/trending/movie/day?language=en-US')
     assert.equal(options.method, 'GET')
     assert.deepEqual(options.headers, { Accept: 'application/json' })
     assert.equal(options.signal, signal)
@@ -69,7 +69,7 @@ describe('TMDB client with mocked fetch', () => {
     })
   }
   it('rejects query injection and unexpected language types', async () => {
-    for (const language of ['en-US&api_key=anything', {}, null]) await assert.rejects(getTmdb(path, { language }), { code: 'request' })
+    for (const language of ['fr-FR', 'en-US&api_key=anything', {}, null]) await assert.rejects(getTmdb(path, { language }), { code: 'request' })
     assert.equal(fetchMock.mock.callCount(), 0)
   })
   it('never displays raw unknown messages', () => {
