@@ -5,7 +5,7 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 9.3 — deterministic MovieDNA calculation core.
+Stage 9.4a — local MovieDNA server runner.
 
 ## Стек
 
@@ -18,16 +18,38 @@ Stage 9.3 — deterministic MovieDNA calculation core.
 
 ## MovieDNA calculation core
 
-Чистое вычислительное ядро находится в `src/features/dna/core/`. Публичная функция
+Единственная авторитетная копия чистого вычислительного ядра находится в
+`functions/src/dna/core/`. Публичная функция
 `calculateMovieDna({ algorithmVersion, items })` валидирует нормализованные сигналы,
 применяет приоритет rating → onboarding like/dislike → Favorite, рассчитывает восемь
 измерений, metadata coverage, confidence и стабильный SHA-256 fingerprint. Алгоритм
 имеет версию `1.0.0`, не зависит от React, Firebase, TMDB, сети, окружения, времени
 или порядка входных данных.
 
-Core пока не подключён к production data: MovieDNA-документы не создаются,
-пользовательские оценки не запускают пересчёт автоматически. Авторитетный server
-runner и запись результата появятся на этапе 9.4.
+Локальный Firebase Functions 2nd gen runner собирает разрешённые источники,
+обогащает их через внедряемый server-only TMDB client и атомарно сохраняет private
+DNA вместе с состоянием пересчёта. Экспортируются три Firestore handlers для
+ratings, onboarding summary и Favorite membership, а также authenticated callable
+`refreshMovieDna`. Production deployment не выполнялся, и DNA пока не показывается
+во frontend.
+
+Functions используют Node.js 22, ESM и регион `europe-west6`. Локальные проверки:
+
+```sh
+npm run test:functions
+npm run check:functions
+npm run test:dna:integration
+npm run test:local
+```
+
+Integration suite запускает только Firestore и Functions Emulator с demo-проектом
+`demo-moviedna`. Для локального Functions Emulator допускается только фиктивный
+`TMDB_READ_ACCESS_TOKEN` в игнорируемом `functions/.secret.local`; production secret
+не создан. До этапа 9.4b необходимо повторно проверить условия TMDB caching,
+перевести Firebase project на Blaze с budget alerts, создать production secret,
+настроить spend cap, если он доступен, включить App Check enforcement для callable,
+закрыть или повторно принять зафиксированный transitive dependency advisory,
+подтвердить TMDB cache policy и runtime limits и отдельно одобрить production deploy.
 
 ## Локальный запуск
 

@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { calculateMovieDna } from '../../src/features/dna/core/calculateMovieDna.js'
+import { calculateMovieDna } from '../../functions/src/dna/core/calculateMovieDna.js'
 import {
   FAVORITE_WEIGHT,
   MOVIEDNA_ALGORITHM_VERSION,
   ONBOARDING_WEIGHTS,
   RATING_WEIGHTS,
-} from '../../src/features/dna/core/movieDnaConstants.js'
-import { MOVIEDNA_ERROR_CODES, MovieDnaError } from '../../src/features/dna/core/movieDnaErrors.js'
+} from '../../functions/src/dna/core/movieDnaConstants.js'
+import { MOVIEDNA_ERROR_CODES, MovieDnaError } from '../../functions/src/dna/core/movieDnaErrors.js'
 
 const complete = Object.freeze({
   genres: true,

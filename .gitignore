@@ -31,3 +31,13 @@ dist-ssr
 .firebase/
 firebase-debug.log
 firebase-debug.*.log
+firestore-debug.log
+functions-debug.log
+functions-debug.*.log
+functions/node_modules/
+functions/.secret.local
+.secret.local
+emulator-data/
+firebase-export-*/
+functions/.cache/
+functions/lib/

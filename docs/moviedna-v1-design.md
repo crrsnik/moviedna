@@ -1,7 +1,7 @@
 # MovieDNA v1 — specification and architecture
 
-Status: Stage 9.3 deterministic calculation core. Enrichment, Cloud Functions and
-UI remain future work; production data and MovieDNA documents are unchanged.
+Status: Stage 9.4a local MovieDNA server runner. Functions orchestration and
+enrichment are verified locally; production deployment and UI remain future work.
 
 ## Approved v1 decisions
 
@@ -220,7 +220,7 @@ splits contributions when a title has multiple values.
 a non-authoritative preview only, but must never write calculated DNA. The server is
 the sole writer of DNA, recalculation state, and media-signal cache.
 
-The future runner is Firebase Functions 2nd gen in `europe-west6`. Deploying Cloud Functions for Firebase requires the Blaze plan; local Functions
+The local runner is Firebase Functions 2nd gen in `europe-west6`. Deploying Cloud Functions for Firebase requires the Blaze plan; local Functions
 emulation does not. Stage 9.1–9.3 and local 9.4 development can proceed without an
 upgrade. Before production deployment in 9.4, the user must link billing, configure
 budget alerts/spend caps, and approve the region and limits. Firebase currently
@@ -229,7 +229,7 @@ https://firebase.google.com/docs/functions/get-started
 
 ### Stage 9.3 calculation-core contract
 
-The pure core lives in `src/features/dna/core/` and exports the asynchronous
+The sole authoritative pure core lives in `functions/src/dna/core/` and exports the asynchronous
 `calculateMovieDna({ algorithmVersion, items })` function. Its only asynchronous
 operation is standard Web Crypto SHA-256. It imports no React, Firebase, TMDB client,
 storage, environment, clock or random source. The supported version constant is
@@ -242,7 +242,7 @@ invalid signals and corrupt metadata produce safe coded `MovieDnaError` values.
 
 The returned plain JSON object contains `algorithmVersion`, `inputFingerprint`,
 `sourceCounts`, `metadataCoverage`, `overallConfidence` and all eight `dimensions`.
-The future Stage 9.4 runner adds status/timestamps/schema version and maps
+The Stage 9.4a runner adds status/timestamps/schema version and maps
 `overallConfidence` to persisted `confidence`. It must persist the two evidence
 fields in each dimension entry or apply an explicitly versioned projection.
 
@@ -351,8 +351,9 @@ The exact fields are `schemaVersion` (integer `1`), `status` (`queued`, `running
 `succeeded`, or `failed`), `requestedAt` (timestamp), `startedAt` and `completedAt`
 (timestamp or null), `nextEligibleAt` (timestamp), `algorithmVersion` (non-empty
 version string), `inputFingerprint` (valid SHA-256 fingerprint or null before input
-normalization), and `errorCode` (null or an allowlisted safe code such as
-`tmdb-unavailable`, `rate-limited`, `invalid-source`, or `internal`).
+normalization), `errorCode` (null or an allowlisted safe code such as
+`tmdb-unavailable`, `rate-limited`, `invalid-source`, or `internal`), and `runToken`
+(an opaque server-generated UUID used only to reject stale completion).
 
 `queued` has null start/completion; `running` has a start and null completion;
 terminal states have both timestamps, and only `failed` has an error code. Event
@@ -369,7 +370,8 @@ active job per UID, and honor `nextEligibleAt`. Direct Firestore writes never en
   completedAt: timestamp | null,
   nextEligibleAt: timestamp,
   inputFingerprint: "sha256:<hex>" | null,
-  errorCode: string | null
+  errorCode: string | null,
+  runToken: "opaque server UUID"
 }
 ```
 
@@ -480,6 +482,63 @@ one active recalculation per UID, a cooldown such as 15 minutes for manual reque
 a maximum unique-media count per run, bounded TMDB
 concurrency, global retry/backoff, and logs containing counts/status codes rather
 than user content or credentials. Exact limits belong in Stage 9.4 tests/config.
+
+### Stage 9.4a local server runner
+
+Deployable JavaScript lives in `functions/` as an ESM Node.js 22 package. Its entry
+file initializes Admin SDK and wires adapters only. Source collection, normalized
+TMDB metadata, cache policy, calculation orchestration, safe errors and handlers are
+separate dependency-injected layers. The frontend has no import or bundled copy of
+the calculation core.
+
+The runner reads only the target UID's profile, ratings, onboarding responses and
+summary, plus Favorite saved-media memberships. It caps one snapshot at 500 source
+documents, sorts canonical media keys, enriches at most four media concurrently and
+then calls algorithm `1.0.0`. It re-reads the complete source snapshot before commit.
+Every invocation installs an opaque `runToken`; only the latest token may atomically
+replace `current` and finish `recalculation`. Matching algorithm version plus input
+fingerprint is a no-op. Failures update only the safe recalculation status and retain
+the previous valid DNA.
+
+The TMDB boundary accepts only movie/TV IDs and constructs URLs against the fixed
+`https://api.themoviedb.org` origin. It uses an eight-second timeout and at most two
+bounded transient retries, honors capped `Retry-After`, and never persists payloads,
+images, descriptions or credentials. `mediaSignals` has a conservative 24-hour TTL.
+A fresh compatible entry avoids the request; an expired entry is refreshed, while a
+transient failure may use the previous compatible normalized entry without deleting
+it. These terms and the TTL require review before production deployment.
+
+Runtime options are fixed at `europe-west6`, 512 MiB, 120 seconds, zero minimum and
+four maximum instances, concurrency 10, with automatic event retry explicitly off.
+The callable's App Check enforcement remains off only for local Stage 9.4a testing.
+Before 9.4b, Blaze and budget protection, production secret provisioning, TMDB cache
+terms, App Check enforcement and explicit deployment approval are mandatory.
+
+The 24-hour cache TTL is a provisional engineering value, not a statement that TMDB
+terms permit that retention period. Only normalized genre IDs, year, language,
+country codes and bounded people references are retained; the full response is never
+stored, clients cannot read `mediaSignals`, and the existing application attribution
+remains visible. Production deployment is blocked until the current official TMDB
+API terms are manually reviewed. That review may require changing the TTL or removing
+persistent Firestore metadata caching before deploy.
+
+Dependency review uses `firebase-admin@14.5.0` and `firebase-functions@7.4.0` and
+currently records `GHSA-w5hq-g745-h8pq` / `CVE-2026-41907` through the optional
+production path `firebase-admin@14.5.0 -> @google-cloud/storage@8.2.0 ->
+gaxios@6.7.1 -> uuid@9.0.1`. The vulnerable UUID v3/v5/v6 caller-buffer API is not
+used by MovieDNA handlers; this gaxios version calls UUID v4 only for multipart
+boundaries, while MovieDNA uses Admin Firestore and native `fetch` against a fixed
+TMDB host. The package is still present in the deployable dependency tree. No newer
+compatible Firebase release currently removes it, and a forced UUID 14 override is a
+major-module change, so no override is applied. This is a documented residual risk
+for local 9.4a and a required final dependency decision before production deploy.
+Before 9.4b, re-check the official Firebase releases for an upstream dependency fix.
+
+The complete 9.4b deployment gate is: Blaze plan, budget alert, spend cap where the
+Firebase/Google Cloud account supports one, production `TMDB_READ_ACCESS_TOKEN`, App
+Check configuration and callable enforcement, resolution or explicit re-approval of
+dependency advisories, final TMDB cache decision, confirmed runtime limits, and a
+separate user authorization for deployment.
 
 ## 8. Future personalized recommendations
 

@@ -485,8 +485,8 @@ Firestore Emulator `demo-moviedna`; fixtures синтетические, product
 
 ## MovieDNA — Stage 9.2
 
-Stage 9.2 резервирует три server-authored пути. Calculation library, Functions,
-TMDB enrichment и UI ещё не реализованы. Admin SDK будущего backend обходит клиентские
+Stage 9.4a реализует локальный Functions runner для трёх server-authored путей.
+Production deployment и UI ещё отсутствуют. Admin SDK backend обходит клиентские
 Rules; клиент не может создавать очередь или подделывать рассчитанный результат.
 
 ### Приватный результат
@@ -551,11 +551,13 @@ Rules; клиент не может создавать очередь или п�
 | algorithmVersion | version string |
 | inputFingerprint | SHA-256 fingerprint / null до normalization |
 | errorCode | null / allowlisted safe code без stack trace |
+| runToken | opaque server-generated UUID для защиты от stale completion |
 
 Queued не имеет start/completion, running имеет start, terminal state имеет оба.
 Только failed содержит errorCode. Event-driven job является основным механизмом;
-будущий manual Refresh вызывает callable Function и не пишет этот документ. Cooldown,
-fingerprint и один active job обеспечивают deduplication/idempotency.
+manual Refresh вызывает callable Function и не пишет этот документ. Cooldown,
+fingerprint и `runToken` обеспечивают deduplication/idempotency и не позволяют
+устаревшему invocation завершить более новый run.
 
 ### Закрытый cache TMDB-признаков
 
@@ -580,7 +582,7 @@ fingerprint и один active job обеспечивают deduplication/idempo
 
 Person IDs положительные, names — trimmed display snapshots до 100 символов.
 Popularity, vote count, keywords, overview, biography, images, videos, full credits и
-raw TMDB payload не сохраняются. Перед Stage 9.4 нужно повторно проверить актуальные
+raw TMDB payload не сохраняются. Перед production deployment Stage 9.4b нужно повторно проверить актуальные
 TMDB API terms, attribution и допустимые условия/TTL постоянного metadata cache.
 
 ### Доступ и индексы
@@ -603,3 +605,9 @@ Admin direct gets cache не требуют composite indexes. `firestore.indexe
 Functions 2nd gen планируются в `europe-west6`. Production deploy возможен только
 после Blaze и budget protection. Полное удаление аккаунта до production должно
 серверно удалить оба private MovieDNA documents; общий `mediaSignals` не содержит UID.
+
+Локальный runner Stage 9.4a использует cache TTL 24 часа, не хранит полный TMDB
+response и сохраняет существующий совместимый cache при transient upstream failure.
+Три Firestore triggers реагируют на ratings, onboarding summary и эффективное
+изменение Favorite; Watchlist/custom memberships дают быстрый no-op. Callable refresh
+берёт UID только из verified auth context и применяет cooldown 15 минут.

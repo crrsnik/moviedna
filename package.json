@@ -13,7 +13,11 @@
     "firebase:deploy:indexes": "firebase deploy --only firestore:indexes",
     "firebase:deploy:firestore": "firebase deploy --only firestore",
     "test:rules": "firebase emulators:exec --only firestore --project demo-moviedna \"node --test tests/firestore.rules.test.js\"",
-    "test:unit": "node --test tests/unit/*.test.js"
+    "test:unit": "node --test tests/unit/*.test.js",
+    "test:functions": "npm --prefix functions test",
+    "check:functions": "npm --prefix functions run check",
+    "test:dna:integration": "firebase emulators:exec --only firestore,functions --project demo-moviedna \"node --test tests/integration/movieDnaFunctions.test.js\"",
+    "test:local": "npm run test:unit && npm run test:functions && npm run test:rules && npm run test:dna:integration && npm run lint && npm run check:functions && npm run build"
   },
   "dependencies": {
     "firebase": "^12.19.0",
