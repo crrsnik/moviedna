@@ -44,6 +44,7 @@ function safeCallableError(error) {
 export function createRecommendationHandler({
   loadContext,
   pipeline,
+  requireAppCheck = true,
 } = {}) {
   if (
     typeof loadContext !== 'function'
@@ -64,7 +65,7 @@ export function createRecommendationHandler({
       )
     }
 
-    if (!request.app) {
+    if (requireAppCheck && !request.app) {
       throw safeCallableError(
         new MovieDnaServerError(
           SERVER_ERROR_CODES.APP_CHECK_REQUIRED,

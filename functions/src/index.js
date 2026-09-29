@@ -28,11 +28,22 @@ if (!getApps().length) initializeApp()
 
 const tmdbToken = defineSecret('TMDB_READ_ACCESS_TOKEN')
 
+function createRuntimeFetch() {
+  if (process.env.FUNCTIONS_EMULATOR !== 'true') return globalThis.fetch
+
+  try {
+    const token = tmdbToken.value()
+    if (typeof token === 'string' && token.trim()) return globalThis.fetch
+  } catch {}
+
+  return async () => {
+    throw new MovieDnaServerError(SERVER_ERROR_CODES.TMDB_UNAVAILABLE)
+  }
+}
+
 function createRuntimeHandlers() {
   const store = createFirestoreAdapter(getFirestore())
-  const fetchImpl = process.env.FUNCTIONS_EMULATOR === 'true'
-    ? async () => { throw new MovieDnaServerError(SERVER_ERROR_CODES.TMDB_UNAVAILABLE) }
-    : globalThis.fetch
+  const fetchImpl = createRuntimeFetch()
   const tmdbClient = {
     getMetadata(mediaType, tmdbId) {
       return createTmdbClient({ token: tmdbToken.value(), fetchImpl }).getMetadata(mediaType, tmdbId)
@@ -45,9 +56,7 @@ function createRuntimeHandlers() {
 function createRecommendationRuntimeHandler() {
   const store = createFirestoreAdapter(getFirestore())
 
-  const fetchImpl = process.env.FUNCTIONS_EMULATOR === 'true'
-    ? async () => { throw new MovieDnaServerError(SERVER_ERROR_CODES.TMDB_UNAVAILABLE) }
-    : globalThis.fetch
+  const fetchImpl = createRuntimeFetch()
 
   const metadataClient = {
     getMetadata(mediaType, tmdbId) {
@@ -77,6 +86,7 @@ function createRecommendationRuntimeHandler() {
   return createRecommendationHandler({
     loadContext: (uid) => store.loadRecommendationContext(uid),
     pipeline,
+    requireAppCheck: process.env.FUNCTIONS_EMULATOR !== 'true',
   })
 }
 
@@ -104,6 +114,7 @@ export const refreshMovieDna = onCall({
 
 export const getRecommendations = onCall({
   ...RECOMMENDATION_OPTIONS,
+  enforceAppCheck: process.env.FUNCTIONS_EMULATOR !== 'true',
   secrets: [tmdbToken],
 }, (request) => createRecommendationRuntimeHandler()(request))
 

@@ -28,7 +28,7 @@ export default defineConfig(({ command, mode, isPreview }) => {
     } },
   }
   // Static builds and preview never require or expose the private API token.
-  if (productionBuild || localFirebaseMode) return config
+  if (productionBuild) return config
   const { TMDB_READ_ACCESS_TOKEN: token } = loadEnv(mode, process.cwd(), '')
   if (!token?.trim()) throw new Error('TMDB_READ_ACCESS_TOKEN is required for npm run dev. Set it in .env.local.')
 
