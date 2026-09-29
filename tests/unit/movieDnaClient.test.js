@@ -97,7 +97,7 @@ describe('local safety and accessible UI contract', () => {
   })
   it('keeps the compact mobile header accessible without a visible account email row', async () => {
     const header = await readFile(new URL('../../src/shared/components/layout/Header.jsx', import.meta.url), 'utf8')
-    for (const [path, label] of [['/movies', 'Movies'], ['/tv', 'TV Shows'], ['/actors', 'Actors'], ['/library', 'Library'], ['/dna', 'My DNA']]) {
+    for (const [path, label] of [['/movies', 'Movies'], ['/tv', 'TV Shows'], ['/actors', 'Actors'], ['/library', 'Library'], ['/dna', 'My DNA'], ['/history', 'History'], ['/stats', 'Statistics']]) {
       assert.match(header, new RegExp(`to=["']${path}["'][^>]*>${label}<`))
     }
     assert.match(header, /sr-only md:not-sr-only/)

@@ -1,6 +1,7 @@
 import LibraryPage from '../pages/LibraryPage.jsx'
 import DnaPage from '../pages/DnaPage.jsx'
 import HistoryPage from '../pages/HistoryPage.jsx'
+import StatisticsPage from '../pages/StatisticsPage.jsx'
 import PersonDetailPage from '../pages/PersonDetailPage.jsx'
 import TvShowDetailPage from '../pages/TvShowDetailPage.jsx'
 import MovieDetailPage from '../pages/MovieDetailPage.jsx'
@@ -52,6 +53,7 @@ const router = createBrowserRouter([
             { path: 'library', element: <LibraryPage /> },
             { path: 'dna', element: <DnaPage /> },
             { path: 'history', element: <HistoryPage /> },
+            { path: 'stats', element: <StatisticsPage /> },
           ],
         }],
       },
