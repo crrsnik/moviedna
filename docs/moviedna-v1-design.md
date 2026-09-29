@@ -655,6 +655,83 @@ Candidate generation and explanations belong in 9.6. Collaborative filtering,
 cross-user learning, embeddings, online learning and social recommendations are
 explicitly deferred beyond v1.
 
+### Deterministic recommendation ranking core v1
+
+Checkpoint 9.5.1 defines a pure ranking consumer with recommendation algorithm
+version `1.0.0`, independent of MovieDNA algorithm `1.0.0`. It performs no network,
+Firebase, storage, clock or random operation. Candidate metadata uses the compact
+server shape: `genreIds`, `releaseYear`, `originalLanguage`, `countryCodes`, and
+director/creator/actor identities. Malformed and duplicate candidate identities are
+rejected; unknown but well-formed identifiers remain neutral.
+
+For a DNA entry `e`, its effective affinity is:
+
+```text
+effective(e) = DNA score(e) * DNA confidence(e)       # [-1, +1]
+dimensionMatch = sum(effective(matched candidate values))
+                 / number of distinct candidate values
+dimensionContribution = dimensionWeight * dimensionMatch
+matchScore = clamp(0, 100, round2(50 + 50 * sum(dimensionContribution)))
+```
+
+An unknown candidate value contributes zero while remaining in the denominator.
+An absent or known-empty value contributes zero. No missing or neutral feature is
+converted into positive evidence. Averaging values and capping each dimension by its
+weight prevents a single genre or person from dominating the result.
+
+| Applicable dimension | Weight |
+| --- | ---: |
+| Genres | 0.30 |
+| Movie/TV type | 0.15 |
+| Release decade | 0.12 |
+| Original language | 0.10 |
+| Production/origin countries | 0.10 |
+| Actors | 0.08 |
+| Movie directors | 0.15 for movies only |
+| TV creators | 0.15 for TV only |
+
+The six shared dimensions plus the applicable director/creator dimension sum to
+exactly `1.00`. The result reports four separate concepts:
+
+- `metadataCoverage` is in `[0, 1]` and sums the applicable weights whose candidate
+  metadata presence is known, including known-valid empty arrays. Media type is
+  always known. It says nothing about whether the profile knows those values.
+- `profileEvidenceCoverage` is in `[0, 1]`. For each dimension it multiplies the
+  dimension weight by the fraction of distinct candidate values that have a valid,
+  comparable DNA entry, then sums those products. Missing metadata, unknown
+  identifiers and absent profile entries contribute zero. A valid neutral or
+  negative entry still counts as evidence.
+- `hasPersonalizationEvidence` is true only when at least one candidate value has a
+  matching valid DNA entry. It is false for an empty DNA, unknown identifiers and no
+  overlap, even when candidate metadata coverage is `1`.
+- `matchScore` is the formula result in `[0, 100]`; `50` is its mathematical neutral
+  point. Consumers must not present `50` as a personal match when
+  `hasPersonalizationEvidence` is false.
+
+Candidate metadata coverage affects the tie-breaker. Neither coverage value
+artificially increases the match score. Candidate quality and eligibility thresholds
+will be defined by candidate preparation checkpoint 9.5.2. Structurally malformed
+individual DNA entries are ignored and cannot create profile evidence; an invalid DNA
+document envelope, schema/version or duplicate valid key is still rejected.
+
+Results sort by match score descending, metadata coverage descending, optional TMDB
+popularity descending, then canonical `mediaKey` ascending. Popularity never changes
+the match score. Explanation reasons use the one to three largest absolute dimension
+contributions, with stable dimension order for ties. When all contributions are
+neutral, the core returns a single limited-evidence explanation.
+
+Examples: a genre with DNA score `+1` and confidence `0.8` contributes
+`0.30 × 0.8 = +0.24`, moving a metadata-limited neutral result from `50` to `62`.
+The same genre with confidence `0.2` moves it only to `53`. If a candidate has two
+genres and only one has effective affinity `+1`, the genre match is `0.5`, the capped
+genre contribution is `+0.15`, and the score change is `+7.5`. Fully matched,
+fully-confident applicable dimensions reach `100`; fully negative ones reach `0`.
+
+Rated and explicitly hidden/not-interested media are excluded before ranking by the
+canonical `movie_{tmdbId}` or `tv_{tmdbId}` identity. Candidate fetching, bounded
+pools, persistence, freshness, quality thresholds, hidden-state product storage and
+UI remain outside ranking core v1 and are deferred to a later checkpoint.
+
 ## 9. Privacy and operations
 
 - DNA and recalculation state are private by default. Publication requires a later,

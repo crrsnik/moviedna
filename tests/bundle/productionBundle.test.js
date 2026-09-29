@@ -18,6 +18,8 @@ describe('production bundle boundaries', () => {
     for (const marker of [
       'calculateMovieDna',
       'buildMovieDna',
+      'rankRecommendations',
+      'RECOMMENDATION_ALGORITHM_VERSION',
       'TMDB_READ_ACCESS_TOKEN',
       'Bearer synthetic',
       'demo-moviedna-emulator-only',
