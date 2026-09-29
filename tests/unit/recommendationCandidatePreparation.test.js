@@ -44,6 +44,10 @@ describe('recommendation candidate preparation', () => {
         mediaType: 'movie',
         title: 'Fight Club',
         popularity: 50.5,
+        posterPath: null,
+        releaseDate: null,
+        voteAverage: null,
+        voteCount: 0,
       },
     )
   })
@@ -61,6 +65,10 @@ describe('recommendation candidate preparation', () => {
         mediaType: 'tv',
         title: 'Game of Thrones',
         popularity: 80,
+        posterPath: null,
+        releaseDate: null,
+        voteAverage: null,
+        voteCount: 0,
       },
     )
   })
@@ -89,6 +97,10 @@ describe('recommendation candidate preparation', () => {
         mediaType: 'movie',
         title: 'Movie',
         popularity: 2,
+        posterPath: null,
+        releaseDate: null,
+        voteAverage: null,
+        voteCount: 0,
       },
     )
   })
@@ -159,6 +171,10 @@ describe('recommendation candidate preparation', () => {
       mediaType: 'movie',
       title: 'Fight Club',
       popularity: 50,
+      posterPath: '/fight-club.jpg',
+      releaseDate: '1999-10-15',
+      voteAverage: 8.4,
+      voteCount: 25000,
       metadata: completeMetadata(),
     })
 
@@ -168,6 +184,10 @@ describe('recommendation candidate preparation', () => {
       mediaType: 'movie',
       title: 'Fight Club',
       popularity: 50,
+      posterPath: '/fight-club.jpg',
+      releaseDate: '1999-10-15',
+      voteAverage: 8.4,
+      voteCount: 25000,
       metadata: {
         genreIds: [28],
         releaseYear: 2014,
@@ -177,6 +197,56 @@ describe('recommendation candidate preparation', () => {
         directors: [{ id: 100 }],
       },
     })
+  })
+
+  it('sanitizes recommendation display fields and rejects adult discovery items', () => {
+    assert.equal(
+      normalizeTmdbDiscoveryCandidate({
+        id: 20,
+        title: 'Adult',
+        adult: true,
+        popularity: 5,
+      }, 'movie'),
+      null,
+    )
+
+    assert.deepEqual(
+      normalizeTmdbDiscoveryCandidate({
+        id: 21,
+        title: 'Display',
+        popularity: 5,
+        poster_path: '/poster.jpg',
+        release_date: '2024-02-29',
+        vote_average: 7.6,
+        vote_count: 120,
+      }, 'movie'),
+      {
+        mediaKey: 'movie_21',
+        tmdbId: 21,
+        mediaType: 'movie',
+        title: 'Display',
+        popularity: 5,
+        posterPath: '/poster.jpg',
+        releaseDate: '2024-02-29',
+        voteAverage: 7.6,
+        voteCount: 120,
+      },
+    )
+
+    const sanitized = normalizeTmdbDiscoveryCandidate({
+      id: 22,
+      title: 'Unsafe display',
+      popularity: 5,
+      poster_path: 'https://example.invalid/poster.jpg',
+      release_date: '2023-02-29',
+      vote_average: 11,
+      vote_count: -1,
+    }, 'movie')
+
+    assert.equal(sanitized.posterPath, null)
+    assert.equal(sanitized.releaseDate, null)
+    assert.equal(sanitized.voteAverage, null)
+    assert.equal(sanitized.voteCount, 0)
   })
 
   it('rejects malformed identities and malformed resolved metadata safely', () => {

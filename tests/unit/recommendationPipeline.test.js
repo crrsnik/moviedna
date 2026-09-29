@@ -47,6 +47,10 @@ function movie(
     id,
     title: `Movie ${id}`,
     popularity,
+    poster_path: `/movie-${id}.jpg`,
+    release_date: '2014-02-20',
+    vote_average: 8,
+    vote_count: 100,
   }
 }
 
@@ -58,6 +62,10 @@ function tv(
     id,
     name: `TV ${id}`,
     popularity,
+    poster_path: `/tv-${id}.jpg`,
+    first_air_date: '2014-03-10',
+    vote_average: 7.5,
+    vote_count: 80,
   }
 }
 
@@ -298,6 +306,26 @@ describe('recommendation pipeline', () => {
 
     assert.equal(
       result.results[0].score,
+      100,
+    )
+
+    assert.equal(
+      result.results[0].posterPath,
+      '/movie-1.jpg',
+    )
+
+    assert.equal(
+      result.results[0].releaseDate,
+      '2014-02-20',
+    )
+
+    assert.equal(
+      result.results[0].voteAverage,
+      8,
+    )
+
+    assert.equal(
+      result.results[0].voteCount,
       100,
     )
 

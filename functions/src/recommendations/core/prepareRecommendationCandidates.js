@@ -20,6 +20,54 @@ function nonNegativeFinite(value) {
     && value >= 0
 }
 
+function normalizeImagePath(value) {
+  return typeof value === 'string'
+    && /^\/[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i.test(value)
+    ? value
+    : null
+}
+
+function normalizeDate(value) {
+  if (
+    typeof value !== 'string'
+    || !/^\d{4}-\d{2}-\d{2}$/.test(value)
+  ) {
+    return null
+  }
+
+  const [year, month, day] = value
+    .split('-')
+    .map(Number)
+
+  const date = new Date(
+    Date.UTC(year, month - 1, day),
+  )
+
+  return (
+    date.getUTCFullYear() === year
+    && date.getUTCMonth() === month - 1
+    && date.getUTCDate() === day
+  )
+    ? value
+    : null
+}
+
+function normalizeVoteAverage(value) {
+  return typeof value === 'number'
+    && Number.isFinite(value)
+    && value >= 0
+    && value <= 10
+    ? value
+    : null
+}
+
+function normalizeVoteCount(value) {
+  return Number.isSafeInteger(value)
+    && value >= 0
+    ? value
+    : 0
+}
+
 function normalizeTitle(value) {
   return typeof value === 'string' && value.trim()
     ? value.trim()
@@ -53,7 +101,7 @@ export function normalizeTmdbDiscoveryCandidate(
   payload,
   explicitMediaType,
 ) {
-  if (!plain(payload)) return null
+  if (!plain(payload) || payload.adult === true) return null
 
   const mediaType = explicitMediaType ?? payload.media_type
 
@@ -88,6 +136,18 @@ export function normalizeTmdbDiscoveryCandidate(
     mediaType,
     title,
     popularity,
+    posterPath: normalizeImagePath(payload.poster_path),
+    releaseDate: normalizeDate(
+      mediaType === 'movie'
+        ? payload.release_date
+        : payload.first_air_date,
+    ),
+    voteAverage: normalizeVoteAverage(
+      payload.vote_average,
+    ),
+    voteCount: normalizeVoteCount(
+      payload.vote_count,
+    ),
   })
 }
 
@@ -188,6 +248,18 @@ export function prepareRecommendationCandidate(value) {
     mediaType: value.mediaType,
     title: normalizeTitle(value.title),
     popularity,
+    posterPath: normalizeImagePath(
+      value.posterPath,
+    ),
+    releaseDate: normalizeDate(
+      value.releaseDate,
+    ),
+    voteAverage: normalizeVoteAverage(
+      value.voteAverage,
+    ),
+    voteCount: normalizeVoteCount(
+      value.voteCount,
+    ),
     metadata: Object.freeze(metadata),
   })
 }

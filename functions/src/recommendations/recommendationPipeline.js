@@ -216,10 +216,33 @@ export function createRecommendationPipeline({
       candidates: prepared,
     })
 
+    const displayByMediaKey = new Map(
+      prepared.map(candidate => [
+        candidate.mediaKey,
+        candidate,
+      ]),
+    )
+
+    const results = Object.freeze(
+      ranked.results.map(result => {
+        const display = displayByMediaKey.get(
+          result.mediaKey,
+        )
+
+        return Object.freeze({
+          ...result,
+          posterPath: display?.posterPath ?? null,
+          releaseDate: display?.releaseDate ?? null,
+          voteAverage: display?.voteAverage ?? null,
+          voteCount: display?.voteCount ?? 0,
+        })
+      }),
+    )
+
     return Object.freeze({
       algorithmVersion: ranked.algorithmVersion,
       genreIds: sourcePlan.genreIds,
-      results: ranked.results,
+      results,
       stats: Object.freeze({
         sourceRequestCount:
           sourcePlan.requests.length,

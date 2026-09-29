@@ -152,5 +152,12 @@ export function createFirestoreAdapter(db, { now = () => Date.now() } = {}) {
     })
   }
 
-  return { loadSources, cache, beginRun, finishRun, failRun }
+  return {
+    loadSources,
+    loadRecommendationContext,
+    cache,
+    beginRun,
+    finishRun,
+    failRun,
+  }
 }
