@@ -240,3 +240,159 @@ describe('viewing statistics', () => {
     )
   })
 })
+
+describe('viewing statistics hardening', () => {
+  it('does not double-count the same genre twice inside one viewing event', () => {
+    const result = calculateViewingStats([
+      movie({
+        genres: [
+          { id: 18, name: 'Drama' },
+          { id: 18, name: 'Drama duplicate' },
+        ],
+      }),
+    ], '2026-09-29')
+
+    assert.deepEqual(result.topGenres, [
+      { id: 18, name: 'Drama', count: 1 },
+    ])
+  })
+
+  it('uses each rewatch as new evidence for ranked statistics', () => {
+    const result = calculateViewingStats([
+      movie({
+        eventId: 'watch-1',
+        tmdbId: 550,
+      }),
+      movie({
+        eventId: 'watch-2',
+        tmdbId: 550,
+      }),
+      movie({
+        eventId: 'watch-3',
+        tmdbId: 550,
+      }),
+    ], '2026-09-29')
+
+    assert.equal(result.totalViewings, 3)
+    assert.equal(result.topGenres[0].count, 3)
+    assert.equal(result.topDirectors[0].count, 3)
+    assert.equal(result.topDecades[0].count, 3)
+  })
+
+  it('keeps all-time history while limiting this-year activity to the current year', () => {
+    const result = calculateViewingStats([
+      movie({
+        eventId: 'old',
+        watchedDate: '2024-06-10',
+      }),
+      movie({
+        eventId: 'current',
+        watchedDate: '2026-09-10',
+      }),
+    ], '2026-09-29')
+
+    assert.equal(result.totalViewings, 2)
+    assert.equal(result.thisYear, 1)
+
+    assert.equal(
+      result.monthlyActivity.reduce(
+        (sum, item) => sum + item.count,
+        0,
+      ),
+      1,
+    )
+  })
+
+  it('builds all twelve months when today is in December', () => {
+    const result = calculateViewingStats([
+      movie({
+        watchedDate: '2026-12-31',
+      }),
+    ], '2026-12-31')
+
+    assert.equal(result.monthlyActivity.length, 12)
+    assert.deepEqual(
+      result.monthlyActivity[11],
+      {
+        month: '2026-12',
+        count: 1,
+      },
+    )
+  })
+
+  it('limits ranked lists to five entries', () => {
+    const genres = Array.from(
+      { length: 8 },
+      (_, index) => ({
+        id: index + 1,
+        name: `Genre ${index + 1}`,
+      }),
+    )
+
+    const result = calculateViewingStats([
+      movie({ genres }),
+    ], '2026-09-29')
+
+    assert.equal(result.topGenres.length, 5)
+  })
+
+  it('uses deterministic ordering when ranked counts tie', () => {
+    const result = calculateViewingStats([
+      movie({
+        genres: [
+          { id: 2, name: 'Thriller' },
+          { id: 1, name: 'Drama' },
+        ],
+      }),
+    ], '2026-09-29')
+
+    assert.deepEqual(
+      result.topGenres.map(item => item.name),
+      ['Drama', 'Thriller'],
+    )
+  })
+
+  it('ignores malformed people without losing valid statistics', () => {
+    const result = calculateViewingStats([
+      movie({
+        directors: [
+          null,
+          { id: -1, name: 'Bad' },
+          { id: 10, name: '' },
+          { id: 1, name: 'Director A' },
+        ],
+      }),
+    ], '2026-09-29')
+
+    assert.deepEqual(result.topDirectors, [
+      {
+        id: 1,
+        name: 'Director A',
+        count: 1,
+      },
+    ])
+  })
+
+  it('ignores dates outside the viewing-history schema range', () => {
+    const result = calculateViewingStats([
+      movie({
+        eventId: 'too-old',
+        watchedDate: '1899-12-31',
+      }),
+      movie({
+        eventId: 'valid',
+        watchedDate: '2026-09-29',
+      }),
+    ], '2026-09-29')
+
+    assert.equal(result.totalViewings, 1)
+
+    assert.throws(
+      () => calculateViewingStats(
+        [],
+        '1899-12-31',
+      ),
+      TypeError,
+    )
+  })
+})

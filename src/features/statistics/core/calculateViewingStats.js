@@ -15,6 +15,11 @@ function validCalendarDate(value) {
   }
 
   const [year, month, day] = value.split('-').map(Number)
+
+  if (year < 1900 || year > 2199) {
+    return false
+  }
+
   const date = new Date(Date.UTC(year, month - 1, day))
 
   return (
