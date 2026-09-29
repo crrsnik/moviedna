@@ -198,3 +198,73 @@ describe('viewing history normalization', () => {
     )
   })
 })
+
+import {
+  detailToViewingSnapshot,
+  localDateString,
+} from '../../src/features/viewingHistory/validation/viewingHistoryValidation.js'
+
+describe('viewing history detail conversion', () => {
+  it('creates a movie viewing snapshot from detail data', () => {
+    const result = detailToViewingSnapshot('movie', {
+      id: 550,
+      title: 'Fight Club',
+      posterPath: '/poster.jpg',
+      releaseYear: '1999',
+      genres: [
+        { id: 18, name: 'Drama' },
+      ],
+      directors: [
+        { id: 7467, name: 'David Fincher' },
+      ],
+    })
+
+    assert.deepEqual(result, {
+      tmdbId: 550,
+      mediaType: 'movie',
+      title: 'Fight Club',
+      posterPath: '/poster.jpg',
+      releaseYear: 1999,
+      genres: [
+        { id: 18, name: 'Drama' },
+      ],
+      directors: [
+        { id: 7467, name: 'David Fincher' },
+      ],
+      creators: [],
+    })
+  })
+
+  it('creates a TV viewing snapshot from detail data', () => {
+    const result = detailToViewingSnapshot('tv', {
+      id: 1396,
+      name: 'Breaking Bad',
+      posterPath: '/poster.jpg',
+      firstAirDate: '2008-01-20',
+      genres: [
+        { id: 18, name: 'Drama' },
+      ],
+      creators: [
+        { id: 66633, name: 'Vince Gilligan' },
+      ],
+    })
+
+    assert.equal(result.tmdbId, 1396)
+    assert.equal(result.mediaType, 'tv')
+    assert.equal(result.title, 'Breaking Bad')
+    assert.equal(result.releaseYear, 2008)
+    assert.deepEqual(result.directors, [])
+    assert.deepEqual(result.creators, [
+      { id: 66633, name: 'Vince Gilligan' },
+    ])
+  })
+
+  it('formats today using local calendar fields', () => {
+    const date = new Date(2026, 8, 29, 23, 30)
+
+    assert.equal(
+      localDateString(date),
+      '2026-09-29',
+    )
+  })
+})

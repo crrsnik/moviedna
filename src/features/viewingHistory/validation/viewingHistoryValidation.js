@@ -116,3 +116,52 @@ export function viewingHistoryMediaSnapshot(input) {
     creators,
   }
 }
+
+export function localDateString(date = new Date()) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    fail('invalid-date')
+  }
+
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+export function detailToViewingSnapshot(mediaType, detail) {
+  if (
+    !detail
+    || typeof detail !== 'object'
+    || !['movie', 'tv'].includes(mediaType)
+  ) {
+    fail('invalid-media')
+  }
+
+  const releaseYearValue = mediaType === 'movie'
+    ? detail.releaseYear
+    : detail.firstAirDate?.slice(0, 4)
+
+  const releaseYear = releaseYearValue == null
+    ? null
+    : Number(releaseYearValue)
+
+  return viewingHistoryMediaSnapshot({
+    tmdbId: detail.id,
+    mediaType,
+    title: mediaType === 'movie'
+      ? detail.title
+      : detail.name,
+    posterPath: detail.posterPath,
+    releaseYear: Number.isInteger(releaseYear)
+      ? releaseYear
+      : null,
+    genres: detail.genres ?? [],
+    directors: mediaType === 'movie'
+      ? detail.directors ?? []
+      : [],
+    creators: mediaType === 'tv'
+      ? detail.creators ?? []
+      : [],
+  })
+}
