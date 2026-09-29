@@ -5,10 +5,13 @@
   "type": "module",
   "imports": {
     "#firebase-app-check-debug": "./src/shared/config/firebaseAppCheckDebug.js",
+    "#firebase-runtime": "./src/shared/config/firebaseRuntime.production.js",
     "#tmdb-app-check-token": "./src/features/catalog/services/tmdbAppCheckToken.js"
   },
   "scripts": {
     "dev": "vite",
+    "dev:local": "node scripts/devLocal.js",
+    "seed:dna:local": "FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 GCLOUD_PROJECT=demo-moviedna FIREBASE_CONFIG='{\"projectId\":\"demo-moviedna\"}' node scripts/seedDnaLocal.js",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",

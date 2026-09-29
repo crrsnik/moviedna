@@ -9,21 +9,26 @@ import { isAllowedSearchRequest } from './src/features/catalog/validation/search
 // https://vite.dev/config/
 export default defineConfig(({ command, mode, isPreview }) => {
   const productionBuild = command !== 'serve' || isPreview
+  const localFirebaseMode = process.env.VITE_MOVIEDNA_LOCAL === 'true' || mode === 'emulator'
   const debugModule = productionBuild
     ? './src/shared/config/firebaseAppCheckDebug.production.js'
     : './src/shared/config/firebaseAppCheckDebug.js'
   const tokenModule = productionBuild
     ? './src/features/catalog/services/tmdbAppCheckToken.production.js'
     : './src/features/catalog/services/tmdbAppCheckToken.js'
+  const firebaseRuntimeModule = localFirebaseMode && !productionBuild
+    ? './src/shared/config/firebaseRuntime.local.js'
+    : './src/shared/config/firebaseRuntime.production.js'
   const config = {
     plugins: [react(), tailwindcss()],
     resolve: { alias: {
       '#firebase-app-check-debug': fileURLToPath(new URL(debugModule, import.meta.url)),
       '#tmdb-app-check-token': fileURLToPath(new URL(tokenModule, import.meta.url)),
+      '#firebase-runtime': fileURLToPath(new URL(firebaseRuntimeModule, import.meta.url)),
     } },
   }
   // Static builds and preview never require or expose the private API token.
-  if (productionBuild) return config
+  if (productionBuild || localFirebaseMode) return config
   const { TMDB_READ_ACCESS_TOKEN: token } = loadEnv(mode, process.cwd(), '')
   if (!token?.trim()) throw new Error('TMDB_READ_ACCESS_TOKEN is required for npm run dev. Set it in .env.local.')
 

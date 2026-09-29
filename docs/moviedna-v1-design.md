@@ -1,7 +1,14 @@
 # MovieDNA v1 — specification and architecture
 
-Status: Stage 9.4a local MovieDNA server runner. Functions orchestration and
-enrichment are verified locally; production deployment and UI remain future work.
+Status: Stage 9.4.1 private My DNA read model and local UI. Functions orchestration
+and enrichment are verified locally; production deployment remains deferred.
+
+The `/dna` frontend is a read-only projection of the two owner-readable MovieDNA
+documents. Local development uses only `demo-moviedna` with explicit Auth, Firestore
+and Functions Emulator endpoints. A deterministic seed supplies synthetic metadata,
+so neither the seed nor local Functions integration contacts TMDB. The server core in
+`functions/src/dna/core` remains the only authoritative calculation implementation;
+recommendations and personal statistics remain later stages.
 
 ## Approved v1 decisions
 
@@ -87,6 +94,15 @@ stored fields until enrichment succeeds.
 | Directors | None | Movie credits where job is Director | 5 enriched movies; person support at least 2 | Include for movies. Multiple directors split the title contribution. |
 | TV creators | None | TV `created_by` | 5 enriched TV titles; creator support at least 2 | Include separately from directors; do not merge the roles in storage. |
 | Keywords | None; current detail append lists omit them | Would require movie/TV keyword responses and new validation | Not applicable yet | Defer. Adding it solely for dimension count would expand proxy/server contracts and request payloads without existing evidence. |
+
+The private DNA read UI resolves compact dimension identities without another TMDB
+request. Movie and TV genre IDs use the fixed TMDB genre taxonomy already supported
+by the catalog, ISO language and region codes use deterministic English
+`Intl.DisplayNames` labels with neutral fallbacks, and media types and decades use
+fixed product labels. Director, creator and actor names come from the existing
+validated metadata cache and DNA output; a missing numeric fallback is presented as
+an unknown role rather than as a person ID. These presentation rules do not change
+scoring, the fingerprint, algorithm version `1.0.0`, or document schema version 1.
 | Mainstream vs niche | Browser catalog has volatile TMDB `popularity` and vote count; neither is persisted authoritatively | Enrichment could snapshot popularity/vote count | No stable threshold currently exists | Defer. Popularity changes over time and is not comparable across snapshots; vote count grows and differs between movie/TV. Introduce only with a dated percentile baseline. |
 
 ## 3. Canonical signal set and deduplication

@@ -15,7 +15,15 @@ describe('production bundle boundaries', () => {
   })
 
   it('does not contain server DNA core or TMDB credentials', () => {
-    for (const marker of ['calculateMovieDna', 'buildMovieDna', 'TMDB_READ_ACCESS_TOKEN', 'Bearer synthetic']) {
+    for (const marker of [
+      'calculateMovieDna',
+      'buildMovieDna',
+      'TMDB_READ_ACCESS_TOKEN',
+      'Bearer synthetic',
+      'demo-moviedna-emulator-only',
+      'dna.local@demo.invalid',
+      '127.0.0.1:9099',
+    ]) {
       assert.equal(bundle.includes(marker), false)
     }
   })

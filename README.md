@@ -5,9 +5,34 @@ MovieDNA — приложение для исследования собстве
 
 ## Статус
 
-Stage 9.4c preparation — Firebase Hosting and an App Check protected production TMDB
-proxy are configured locally. Production deployment, API enablement and Console-wide
-App Check enforcement remain blocked.
+Stage 9.4.1 — private My DNA read model and live local UI. Production deployment,
+API enablement and Console-wide App Check enforcement remain blocked.
+
+## My DNA local workflow
+
+The private `/dna` route is available only to authenticated users who completed
+onboarding. It subscribes read-only to `users/{uid}/movieDna/current` and
+`users/{uid}/movieDna/recalculation`, keeps a confirmed profile visible during a
+recalculation, and presents all eight deterministic dimensions with accessible text
+and progress indicators. The frontend cannot write these documents and does not
+import the server calculation core.
+
+Run the complete local stack and deterministic seed in separate terminals:
+
+```sh
+npm run dev:local
+npm run seed:dna:local
+```
+
+The seed prints explicitly synthetic Emulator-only login credentials. `dev:local`
+connects Auth (`127.0.0.1:9099`), Firestore (`127.0.0.1:8080`) and Functions
+(`127.0.0.1:5001`) to the fixed `demo-moviedna` project and never falls back to
+production. The idempotent seed refuses any other hosts/project, preloads synthetic
+`mediaSignals`, and makes no TMDB request. Stop the stack with Ctrl+C.
+`functions/.secret.local` is not required by this seed workflow.
+
+The sole authoritative algorithm remains in `functions/src/dna/core`.
+Recommendations and personal statistics are not implemented in this checkpoint.
 
 ## Стек
 
