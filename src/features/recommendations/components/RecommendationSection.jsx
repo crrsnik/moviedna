@@ -1,6 +1,8 @@
 import RecommendationCard from './RecommendationCard.jsx'
 import { useRecommendations } from '../hooks/useRecommendations.js'
 
+export const RECOMMENDATION_DISPLAY_LIMIT = 20
+
 function RecommendationState({
   kind,
   retry,
@@ -87,7 +89,12 @@ function RecommendationSection() {
           className="min-w-0 overflow-x-auto rounded-lg pb-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
         >
           <ul className="flex gap-5">
-            {state.results.map((recommendation) => (
+            {state.results
+              .slice(
+                0,
+                RECOMMENDATION_DISPLAY_LIMIT,
+              )
+              .map((recommendation) => (
               <li
                 key={recommendation.mediaKey}
                 className="shrink-0"

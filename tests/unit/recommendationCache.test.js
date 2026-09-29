@@ -300,3 +300,131 @@ describe('recommendation revision refresh', () => {
     )
   })
 })
+
+describe('recommendation cache race safety', () => {
+  it('does not let an older DNA request overwrite a newer revision', async () => {
+    const cache = createRecommendationCache()
+
+    let resolveOld
+    let resolveFresh
+
+    const oldRequest = cache.load(
+      'user-a',
+      'revision-a',
+      () => new Promise(resolve => {
+        resolveOld = resolve
+      }),
+    )
+
+    await Promise.resolve()
+
+    const freshRequest = cache.load(
+      'user-a',
+      'revision-b',
+      () => new Promise(resolve => {
+        resolveFresh = resolve
+      }),
+    )
+
+    await Promise.resolve()
+
+    resolveFresh({
+      results: ['fresh'],
+    })
+
+    await freshRequest
+
+    resolveOld({
+      results: ['old'],
+    })
+
+    await oldRequest
+
+    assert.deepEqual(
+      cache.get(
+        'user-a',
+        'revision-b',
+      ),
+      {
+        results: ['fresh'],
+      },
+    )
+
+    assert.equal(
+      cache.get(
+        'user-a',
+        'revision-a',
+      ),
+      null,
+    )
+  })
+
+  it('does not repopulate an owner after clear while a request is in flight', async () => {
+    const cache = createRecommendationCache()
+
+    let resolveRequest
+
+    const request = cache.load(
+      'user-a',
+      'revision-a',
+      () => new Promise(resolve => {
+        resolveRequest = resolve
+      }),
+    )
+
+    await Promise.resolve()
+
+    cache.clear('user-a')
+
+    resolveRequest({
+      results: ['late'],
+    })
+
+    await request
+
+    assert.equal(
+      cache.get(
+        'user-a',
+        'revision-a',
+      ),
+      null,
+    )
+  })
+
+  it('keeps concurrent owners completely isolated', async () => {
+    const cache = createRecommendationCache()
+
+    await Promise.all([
+      cache.load(
+        'user-a',
+        'same-revision',
+        async () => ({
+          results: ['a'],
+        }),
+      ),
+      cache.load(
+        'user-b',
+        'same-revision',
+        async () => ({
+          results: ['b'],
+        }),
+      ),
+    ])
+
+    assert.deepEqual(
+      cache.get(
+        'user-a',
+        'same-revision',
+      ).results,
+      ['a'],
+    )
+
+    assert.deepEqual(
+      cache.get(
+        'user-b',
+        'same-revision',
+      ).results,
+      ['b'],
+    )
+  })
+})

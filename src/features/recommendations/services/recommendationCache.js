@@ -5,6 +5,8 @@ function validKey(value) {
 export function createRecommendationCache() {
   const entries = new Map()
   const pending = new Map()
+  const epochs = new Map()
+  const latestRevisions = new Map()
 
   function requestKey(uid, revision) {
     return `${uid}\u0000${revision}`
@@ -16,6 +18,10 @@ export function createRecommendationCache() {
         'A recommendation owner and revision are required.',
       )
     }
+  }
+
+  function epoch(uid) {
+    return epochs.get(uid) ?? 0
   }
 
   function get(uid, revision) {
@@ -30,6 +36,8 @@ export function createRecommendationCache() {
 
   function set(uid, revision, data) {
     validate(uid, revision)
+
+    latestRevisions.set(uid, revision)
 
     entries.set(uid, {
       revision,
@@ -47,6 +55,12 @@ export function createRecommendationCache() {
     }
 
     entries.delete(uid)
+    latestRevisions.delete(uid)
+
+    epochs.set(
+      uid,
+      epoch(uid) + 1,
+    )
 
     for (const key of pending.keys()) {
       if (key.startsWith(`${uid}\u0000`)) {
@@ -80,9 +94,30 @@ export function createRecommendationCache() {
 
     if (existing) return existing
 
+    const requestEpoch = epoch(uid)
+
+    latestRevisions.set(
+      uid,
+      revision,
+    )
+
     const promise = Promise.resolve()
       .then(loader)
-      .then(data => set(uid, revision, data))
+      .then(data => {
+        const isCurrent =
+          epoch(uid) === requestEpoch
+          && latestRevisions.get(uid)
+            === revision
+
+        if (isCurrent) {
+          entries.set(uid, {
+            revision,
+            data,
+          })
+        }
+
+        return data
+      })
       .finally(() => {
         if (pending.get(key) === promise) {
           pending.delete(key)
