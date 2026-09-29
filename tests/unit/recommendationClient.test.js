@@ -271,3 +271,29 @@ describe('recommendation UI state', () => {
     )
   })
 })
+
+describe('recommendation unavailable state', () => {
+  it('maps an unavailable DNA lifecycle without a callable error', () => {
+    assert.deepEqual(
+      deriveRecommendationState({
+        unavailable: true,
+      }),
+      {
+        kind: 'unavailable',
+        results: [],
+        data: null,
+        error: null,
+      },
+    )
+  })
+
+  it('keeps loading precedence while DNA or recommendations are pending', () => {
+    assert.equal(
+      deriveRecommendationState({
+        loading: true,
+        unavailable: true,
+      }).kind,
+      'loading',
+    )
+  })
+})

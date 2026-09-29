@@ -2,10 +2,20 @@ export function deriveRecommendationState({
   loading = false,
   data = null,
   error = null,
+  unavailable = false,
 } = {}) {
   if (loading) {
     return {
       kind: 'loading',
+      results: [],
+      data: null,
+      error: null,
+    }
+  }
+
+  if (unavailable) {
+    return {
+      kind: 'unavailable',
       results: [],
       data: null,
       error: null,
