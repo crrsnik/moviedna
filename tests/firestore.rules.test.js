@@ -1093,3 +1093,247 @@ describe('MovieDNA security model', { concurrency: false }, () => {
     }
   })
 })
+
+const viewingData = (overrides = {}) => ({
+  schemaVersion: 1,
+  tmdbId: 550,
+  mediaType: 'movie',
+  title: 'Fight Club',
+  posterPath: '/poster.jpg',
+  releaseYear: 1999,
+  genres: [
+    { id: 18, name: 'Drama' },
+    { id: 53, name: 'Thriller' },
+  ],
+  directors: [
+    { id: 7467, name: 'David Fincher' },
+  ],
+  creators: [],
+  watchedDate: '2026-09-29',
+  createdAt: serverTimestamp(),
+  updatedAt: serverTimestamp(),
+  ...overrides,
+})
+
+const viewingRef = (
+  db,
+  uid = 'alice',
+  id = 'ABCDEFGHIJKLMNOPQRST',
+) => doc(
+  db,
+  'users',
+  uid,
+  'viewingHistory',
+  id,
+)
+
+async function seedCompletedPair() {
+  await testEnv.withSecurityRulesDisabled(async context => {
+    await createPair(context.firestore(), {
+      profileData: profile(
+        'alice_123',
+        { onboardingCompleted: true },
+      ),
+    })
+  })
+}
+
+describe(
+  'Viewing history security rules',
+  { concurrency: false },
+  () => {
+    before(async () => {
+      testEnv = await initializeTestEnvironment({
+        projectId,
+        firestore: {
+          host: '127.0.0.1',
+          port: 8080,
+          rules: await readFile(
+            new URL(
+              '../firestore.rules',
+              import.meta.url,
+            ),
+            'utf8',
+          ),
+        },
+      })
+    })
+
+    beforeEach(async () => {
+      await testEnv.clearFirestore()
+      await seedCompletedPair()
+    })
+
+    after(async () => {
+      await testEnv?.cleanup()
+    })
+
+    it('allows owner create, get, list and delete', async () => {
+      const db = userDb()
+      const ref = viewingRef(db)
+
+      await assertSucceeds(
+        setDoc(ref, viewingData()),
+      )
+
+      await assertSucceeds(getDoc(ref))
+
+      assert.equal(
+        (
+          await assertSucceeds(
+            getDocs(
+              collection(
+                db,
+                'users/alice/viewingHistory',
+              ),
+            ),
+          )
+        ).size,
+        1,
+      )
+
+      await assertSucceeds(deleteDoc(ref))
+    })
+
+    it('allows changing only watchedDate', async () => {
+      const db = userDb()
+      const ref = viewingRef(db)
+
+      await setDoc(ref, viewingData())
+
+      await assertSucceeds(
+        updateDoc(ref, {
+          watchedDate: '2026-09-28',
+          updatedAt: serverTimestamp(),
+        }),
+      )
+
+      await assertFails(
+        updateDoc(ref, {
+          title: 'Changed title',
+          updatedAt: serverTimestamp(),
+        }),
+      )
+
+      await assertFails(
+        updateDoc(ref, {
+          tmdbId: 551,
+          updatedAt: serverTimestamp(),
+        }),
+      )
+    })
+
+    it('denies access to another user and guests', async () => {
+      const ref = viewingRef(userDb())
+      await setDoc(ref, viewingData())
+
+      const other = userDb('bob')
+      const guest = testEnv
+        .unauthenticatedContext()
+        .firestore()
+
+      await assertFails(
+        getDoc(viewingRef(other)),
+      )
+
+      await assertFails(
+        getDocs(
+          collection(
+            other,
+            'users/alice/viewingHistory',
+          ),
+        ),
+      )
+
+      await assertFails(
+        getDoc(viewingRef(guest)),
+      )
+    })
+
+    it('requires a completed profile for creation', async () => {
+      await testEnv.clearFirestore()
+      await seedPair()
+
+      await assertFails(
+        setDoc(
+          viewingRef(userDb()),
+          viewingData(),
+        ),
+      )
+    })
+
+    it('rejects malformed event IDs and schemas', async () => {
+      const db = userDb()
+
+      await assertFails(
+        setDoc(
+          viewingRef(db, 'alice', 'short'),
+          viewingData(),
+        ),
+      )
+
+      await assertFails(
+        setDoc(
+          viewingRef(
+            db,
+            'alice',
+            'QRSTUVWXYZABCDEFGHIJ',
+          ),
+          viewingData({
+            watchedDate: '2026-9-29',
+          }),
+        ),
+      )
+
+      await assertFails(
+        setDoc(
+          viewingRef(
+            db,
+            'alice',
+            '12345678901234567890',
+          ),
+          viewingData({
+            schemaVersion: 2,
+          }),
+        ),
+      )
+    })
+
+    it('enforces movie versus TV people roles', async () => {
+      const db = userDb()
+
+      await assertFails(
+        setDoc(
+          viewingRef(db),
+          viewingData({
+            creators: [
+              { id: 1, name: 'Invalid creator' },
+            ],
+          }),
+        ),
+      )
+
+      await assertSucceeds(
+        setDoc(
+          viewingRef(
+            db,
+            'alice',
+            'QRSTUVWXYZABCDEFGHIJ',
+          ),
+          viewingData({
+            tmdbId: 1396,
+            mediaType: 'tv',
+            title: 'Breaking Bad',
+            directors: [],
+            creators: [
+              {
+                id: 66633,
+                name: 'Vince Gilligan',
+              },
+            ],
+          }),
+        ),
+      )
+    })
+  },
+)

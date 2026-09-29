@@ -120,6 +120,28 @@ service cloud.firestore {
         && hasLibraryTimestamps(data);
     }
 
+    function isValidViewingEvent(data, eventId) {
+      let fields = ['schemaVersion', 'tmdbId', 'mediaType', 'title', 'posterPath',
+                    'releaseYear', 'genres', 'directors', 'creators',
+                    'watchedDate', 'createdAt', 'updatedAt'];
+
+      return eventId.matches('^[A-Za-z0-9]{20}$')
+        && data.keys().hasAll(fields) && data.keys().hasOnly(fields)
+        && data.schemaVersion is int && data.schemaVersion == 1
+        && data.tmdbId is int && data.tmdbId >= 1
+        && data.tmdbId <= 999999999999
+        && data.mediaType in ['movie', 'tv']
+        && isValidMediaSnapshot(data)
+        && data.genres is list && data.genres.size() <= 20
+        && data.directors is list && data.directors.size() <= 10
+        && data.creators is list && data.creators.size() <= 10
+        && (data.mediaType != 'movie' || data.creators.size() == 0)
+        && (data.mediaType != 'tv' || data.directors.size() == 0)
+        && data.watchedDate is string
+        && data.watchedDate.matches('^(19|20|21)[0-9]{2}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$')
+        && hasLibraryTimestamps(data);
+    }
+
     function isValidComment(data, mediaKey) {
       let fields = ['tmdbId', 'mediaType', 'authorUsername', 'authorDisplayName',
                     'text', 'containsSpoiler', 'createdAt', 'updatedAt'];
@@ -188,6 +210,22 @@ service cloud.firestore {
           && request.resource.data.tmdbId == resource.data.tmdbId
           && request.resource.data.mediaType == resource.data.mediaType
           && request.resource.data.createdAt == resource.data.createdAt;
+      }
+
+      match /viewingHistory/{eventId} {
+        allow get, list, delete: if isOwner(userId);
+
+        allow create: if isOwner(userId)
+          && hasCompletedProfile(userId)
+          && isValidViewingEvent(request.resource.data, eventId)
+          && request.resource.data.createdAt == request.time;
+
+        allow update: if isOwner(userId)
+          && hasCompletedProfile(userId)
+          && isValidViewingEvent(request.resource.data, eventId)
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['watchedDate', 'updatedAt']);
       }
 
       // MovieDNA is calculated by a future trusted backend. Clients may read only
