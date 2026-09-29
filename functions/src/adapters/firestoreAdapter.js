@@ -46,6 +46,23 @@ export function createFirestoreAdapter(db, { now = () => Date.now() } = {}) {
     return { snapshot, revision: revision(snapshot) }
   }
 
+  async function loadRecommendationContext(uid) {
+    const reference = user(uid)
+
+    const [dna, ratings] = await Promise.all([
+      reference.collection('movieDna').doc('current').get(),
+      reference.collection('ratings').get(),
+    ])
+
+    return {
+      dna: dna.exists ? dna.data() : null,
+      rated: documents(ratings).map((rating) => ({
+        tmdbId: rating.tmdbId,
+        mediaType: rating.mediaType,
+      })),
+    }
+  }
+
   const cache = {
     async get(mediaKey) {
       const snapshot = await db.collection('mediaSignals').doc(mediaKey).get()

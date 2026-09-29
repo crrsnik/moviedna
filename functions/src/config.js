@@ -22,6 +22,11 @@ export const REFRESH_MOVIE_DNA_OPTIONS = Object.freeze({
   enforceAppCheck: true,
 })
 
+export const RECOMMENDATION_OPTIONS = Object.freeze({
+  ...RUNTIME_OPTIONS,
+  enforceAppCheck: true,
+})
+
 export const TMDB_PROXY_OPTIONS = Object.freeze({
   region: REGION,
   memory: '512MiB',
