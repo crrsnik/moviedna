@@ -268,3 +268,55 @@ describe('viewing history detail conversion', () => {
     )
   })
 })
+
+import {
+  groupViewingHistoryByMonth,
+} from '../../src/features/viewingHistory/presentation/groupViewingHistory.js'
+
+describe('viewing history presentation', () => {
+  it('groups events by viewing month while preserving events', () => {
+    const events = [
+      {
+        eventId: 'a',
+        watchedDate: '2026-09-29',
+      },
+      {
+        eventId: 'b',
+        watchedDate: '2026-09-29',
+      },
+      {
+        eventId: 'c',
+        watchedDate: '2026-08-10',
+      },
+    ]
+
+    const groups = groupViewingHistoryByMonth(events)
+
+    assert.equal(groups.length, 2)
+    assert.equal(groups[0].month, '2026-09')
+    assert.deepEqual(
+      groups[0].events.map(event => event.eventId),
+      ['a', 'b'],
+    )
+    assert.equal(groups[1].month, '2026-08')
+  })
+
+  it('does not collapse repeated viewings of the same title', () => {
+    const events = [
+      {
+        eventId: 'first',
+        tmdbId: 550,
+        watchedDate: '2026-09-29',
+      },
+      {
+        eventId: 'second',
+        tmdbId: 550,
+        watchedDate: '2026-09-29',
+      },
+    ]
+
+    const groups = groupViewingHistoryByMonth(events)
+
+    assert.equal(groups[0].events.length, 2)
+  })
+})

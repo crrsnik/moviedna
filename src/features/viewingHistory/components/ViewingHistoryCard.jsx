@@ -1,0 +1,234 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+
+import { getTmdbPosterUrl } from '../../catalog/services/tmdbImages.js'
+
+import {
+  localDateString,
+  validateWatchedDate,
+} from '../validation/viewingHistoryValidation.js'
+
+import {
+  viewingHistoryService,
+} from '../services/viewingHistoryService.js'
+
+const button = 'rounded-lg border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4 disabled:cursor-wait disabled:opacity-50'
+
+export default function ViewingHistoryCard({
+  uid,
+  event,
+}) {
+  const [watchedDate, setWatchedDate] = useState(
+    event.watchedDate,
+  )
+
+  const [pending, setPending] = useState(null)
+  const [error, setError] = useState(null)
+  const [message, setMessage] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  useEffect(() => {
+    setWatchedDate(event.watchedDate)
+  }, [event.watchedDate])
+
+  const posterUrl = getTmdbPosterUrl(event.posterPath)
+
+  const href = event.mediaType === 'movie'
+    ? `/movies/${event.tmdbId}`
+    : `/tv/${event.tmdbId}`
+
+  async function saveDate() {
+    if (pending || watchedDate === event.watchedDate) return
+
+    try {
+      validateWatchedDate(watchedDate)
+
+      setPending('date')
+      setError(null)
+      setMessage(null)
+
+      await viewingHistoryService.updateViewingDate(
+        uid,
+        event.eventId,
+        watchedDate,
+      )
+
+      setMessage('Viewing date updated.')
+    } catch (failure) {
+      setError(
+        failure?.code === 'invalid-date'
+          ? 'Choose a valid viewing date.'
+          : 'The viewing date could not be updated.',
+      )
+    } finally {
+      setPending(null)
+    }
+  }
+
+  async function removeViewing() {
+    if (pending) return
+
+    try {
+      setPending('delete')
+      setError(null)
+      setMessage(null)
+
+      await viewingHistoryService.deleteViewing(
+        uid,
+        event.eventId,
+      )
+    } catch {
+      setError('This viewing could not be deleted.')
+      setPending(null)
+      setConfirmDelete(false)
+    }
+  }
+
+  return (
+    <article className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+      <div className="flex gap-4">
+        <Link
+          to={href}
+          className="shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4"
+        >
+          <div className="flex h-30 w-20 items-center justify-center overflow-hidden rounded-lg bg-zinc-800">
+            {posterUrl ? (
+              <img
+                src={posterUrl}
+                alt={`${event.title} poster`}
+                width="92"
+                height="138"
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="px-2 text-center text-xs text-zinc-500">
+                No poster
+              </span>
+            )}
+          </div>
+        </Link>
+
+        <div className="min-w-0 flex-1 space-y-3">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-zinc-500">
+              {event.mediaType === 'movie'
+                ? 'Movie'
+                : 'TV show'}
+              {event.releaseYear
+                ? ` · ${event.releaseYear}`
+                : ''}
+            </p>
+
+            <Link
+              to={href}
+              className="mt-1 inline-block rounded font-medium text-zinc-100 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
+            >
+              {event.title}
+            </Link>
+
+            {!!event.genres.length && (
+              <p className="mt-1 text-sm text-zinc-400">
+                {event.genres
+                  .slice(0, 3)
+                  .map(genre => genre.name)
+                  .join(' · ')}
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="space-y-1 text-sm">
+              <span className="block text-zinc-500">
+                Watched on
+              </span>
+
+              <input
+                type="date"
+                value={watchedDate}
+                max={localDateString()}
+                disabled={Boolean(pending)}
+                onChange={eventValue => {
+                  setWatchedDate(eventValue.target.value)
+                  setMessage(null)
+                  setError(null)
+                }}
+                className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-4"
+              />
+            </label>
+
+            <button
+              type="button"
+              className={button}
+              disabled={
+                Boolean(pending)
+                || watchedDate === event.watchedDate
+              }
+              onClick={saveDate}
+            >
+              {pending === 'date'
+                ? 'Saving…'
+                : 'Save date'}
+            </button>
+          </div>
+
+          {!confirmDelete ? (
+            <button
+              type="button"
+              className="rounded text-sm text-zinc-400 underline underline-offset-4 hover:text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-4"
+              disabled={Boolean(pending)}
+              onClick={() => {
+                setConfirmDelete(true)
+                setMessage(null)
+              }}
+            >
+              Delete viewing
+            </button>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-zinc-400">
+                Delete this viewing?
+              </span>
+
+              <button
+                type="button"
+                className={button}
+                disabled={Boolean(pending)}
+                onClick={removeViewing}
+              >
+                {pending === 'delete'
+                  ? 'Deleting…'
+                  : 'Delete'}
+              </button>
+
+              <button
+                type="button"
+                className={button}
+                disabled={Boolean(pending)}
+                onClick={() => setConfirmDelete(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {message && (
+            <p
+              role="status"
+              aria-live="polite"
+              className="text-sm text-zinc-400"
+            >
+              {message}
+            </p>
+          )}
+
+          {error && (
+            <p role="alert" className="text-sm text-zinc-400">
+              {error}
+            </p>
+          )}
+        </div>
+      </div>
+    </article>
+  )
+}
