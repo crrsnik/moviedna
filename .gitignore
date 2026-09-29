@@ -41,3 +41,6 @@ emulator-data/
 firebase-export-*/
 functions/.cache/
 functions/lib/
+
+# Firebase local emulator persistence
+.firebase-emulator-data/
