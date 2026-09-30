@@ -44,3 +44,6 @@ functions/lib/
 
 # Firebase local emulator persistence
 .firebase-emulator-data/
+
+# Google GitHub Actions credentials
+gha-creds-*.json
