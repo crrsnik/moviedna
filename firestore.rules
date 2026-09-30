@@ -93,6 +93,26 @@ service cloud.firestore {
         && data.updatedAt == request.time;
     }
 
+    function isValidProfileSettingsUpdate(data, previous, userId) {
+      return hasInitialProfileFields(data)
+        && data.keys().hasAll(['avatarId', 'profileVisibility'])
+        && data.diff(previous).affectedKeys().hasOnly([
+          'displayName',
+          'avatarId',
+          'profileVisibility',
+          'updatedAt'
+        ])
+        && isValidDisplayName(data.displayName)
+        && isValidAvatarId(data.avatarId)
+        && isValidProfileVisibility(data.profileVisibility)
+        && data.updatedAt == request.time
+        && isValidPublicProfile(
+          getAfter(/databases/$(database)/documents/publicProfiles/$(userId)).data,
+          userId,
+          data
+        );
+    }
+
     function hasIncompleteProfile(userId) {
       return exists(/databases/$(database)/documents/users/$(userId))
         && get(/databases/$(database)/documents/users/$(userId)).data.onboardingCompleted == false;
@@ -230,14 +250,26 @@ service cloud.firestore {
       allow get: if isOwner(userId);
       allow list, delete: if false;
       allow update: if isOwner(userId)
-        && hasInitialProfileFields(request.resource.data)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['onboardingCompleted', 'updatedAt'])
-        && resource.data.onboardingCompleted == false
-        && request.resource.data.onboardingCompleted == true
-        && request.resource.data.updatedAt == request.time
-        // A pre-existing summary must never be reused for completion.
-        && !exists(/databases/$(database)/documents/users/$(userId)/onboarding/summary)
-        && isValidSummary(getAfter(/databases/$(database)/documents/users/$(userId)/onboarding/summary).data, userId);
+        && (
+          (
+            hasInitialProfileFields(request.resource.data)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['onboardingCompleted', 'updatedAt'])
+            && resource.data.onboardingCompleted == false
+            && request.resource.data.onboardingCompleted == true
+            && request.resource.data.updatedAt == request.time
+            // A pre-existing summary must never be reused for completion.
+            && !exists(/databases/$(database)/documents/users/$(userId)/onboarding/summary)
+            && isValidSummary(
+              getAfter(/databases/$(database)/documents/users/$(userId)/onboarding/summary).data,
+              userId
+            )
+          )
+          || isValidProfileSettingsUpdate(
+            request.resource.data,
+            resource.data,
+            userId
+          )
+        );
       allow create: if isOwner(userId)
         && hasInitialProfileFields(request.resource.data)
         && isValidUsername(request.resource.data.username)
@@ -375,8 +407,20 @@ service cloud.firestore {
           getAfter(/databases/$(database)/documents/users/$(userId)).data
         );
 
-      // Profile editing will be introduced with the synchronized settings flow.
-      allow update, delete: if false;
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName',
+          'avatarId',
+          'profileVisibility',
+          'updatedAt'
+        ])
+        && isValidPublicProfile(
+          request.resource.data,
+          userId,
+          getAfter(/databases/$(database)/documents/users/$(userId)).data
+        );
+
+      allow delete: if false;
     }
 
     match /usernames/{username} {

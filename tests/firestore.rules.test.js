@@ -1597,4 +1597,226 @@ describe('Stage 11 profile privacy fields', { concurrency: false }, () => {
     await assertFails(deleteDoc(ref))
   })
 
+
+  it('allows the owner to update private and public profile settings atomically', async () => {
+    const db = userDb()
+
+    await assertSucceeds(createPair(db))
+
+    const batch = writeBatch(db)
+
+    batch.update(
+      doc(db, 'users', 'alice'),
+      {
+        displayName: 'Alice Updated',
+        avatarId: 'avatar_08',
+        profileVisibility: 'public',
+        updatedAt: serverTimestamp(),
+      },
+    )
+
+    batch.set(
+      doc(db, 'publicProfiles', 'alice'),
+      {
+        userId: 'alice',
+        username: 'alice_123',
+        displayName: 'Alice Updated',
+        avatarId: 'avatar_08',
+        profileVisibility: 'public',
+        createdAt: (
+          await getDoc(doc(db, 'users', 'alice'))
+        ).data().createdAt,
+        updatedAt: serverTimestamp(),
+      },
+    )
+
+    await assertSucceeds(batch.commit())
+
+    const privateData = (
+      await getDoc(doc(db, 'users', 'alice'))
+    ).data()
+
+    const publicData = (
+      await getDoc(doc(db, 'publicProfiles', 'alice'))
+    ).data()
+
+    assert.equal(privateData.displayName, 'Alice Updated')
+    assert.equal(publicData.displayName, 'Alice Updated')
+    assert.equal(privateData.avatarId, 'avatar_08')
+    assert.equal(publicData.avatarId, 'avatar_08')
+    assert.equal(privateData.profileVisibility, 'public')
+    assert.equal(publicData.profileVisibility, 'public')
+  })
+
+  it('denies changing profile settings without synchronizing publicProfiles', async () => {
+    const db = userDb()
+    await assertSucceeds(createPair(db))
+
+    await assertFails(
+      updateDoc(
+        doc(db, 'users', 'alice'),
+        {
+          displayName: 'Unsynced',
+          updatedAt: serverTimestamp(),
+        },
+      ),
+    )
+  })
+
+  it('denies changing publicProfiles without synchronizing the private profile', async () => {
+    const db = userDb()
+    await assertSucceeds(createPair(db))
+
+    await assertFails(
+      updateDoc(
+        doc(db, 'publicProfiles', 'alice'),
+        {
+          displayName: 'Unsynced',
+          updatedAt: serverTimestamp(),
+        },
+      ),
+    )
+  })
+
+  it('denies mismatched values inside an atomic profile settings update', async () => {
+    const db = userDb()
+    await assertSucceeds(createPair(db))
+
+    const current = (
+      await getDoc(doc(db, 'users', 'alice'))
+    ).data()
+
+    const batch = writeBatch(db)
+
+    batch.update(
+      doc(db, 'users', 'alice'),
+      {
+        displayName: 'Private Name',
+        updatedAt: serverTimestamp(),
+      },
+    )
+
+    batch.set(
+      doc(db, 'publicProfiles', 'alice'),
+      {
+        userId: 'alice',
+        username: 'alice_123',
+        displayName: 'Different Public Name',
+        avatarId: 'avatar_01',
+        profileVisibility: 'private',
+        createdAt: current.createdAt,
+        updatedAt: serverTimestamp(),
+      },
+    )
+
+    await assertFails(batch.commit())
+  })
+
+  it('migrates a legacy profile during its first settings save', async () => {
+    const createdAt = Timestamp.fromMillis(1000)
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), 'users', 'alice'),
+        {
+          username: 'alice_123',
+          displayName: 'Alice',
+          photoURL: null,
+          bio: '',
+          onboardingCompleted: true,
+          createdAt,
+          updatedAt: createdAt,
+        },
+      )
+    })
+
+    const db = userDb()
+    const batch = writeBatch(db)
+
+    batch.update(
+      doc(db, 'users', 'alice'),
+      {
+        displayName: 'Migrated Alice',
+        avatarId: 'avatar_02',
+        profileVisibility: 'private',
+        updatedAt: serverTimestamp(),
+      },
+    )
+
+    batch.set(
+      doc(db, 'publicProfiles', 'alice'),
+      {
+        userId: 'alice',
+        username: 'alice_123',
+        displayName: 'Migrated Alice',
+        avatarId: 'avatar_02',
+        profileVisibility: 'private',
+        createdAt,
+        updatedAt: serverTimestamp(),
+      },
+    )
+
+    await assertSucceeds(batch.commit())
+
+    const migrated = (
+      await getDoc(doc(db, 'users', 'alice'))
+    ).data()
+
+    assert.equal(migrated.avatarId, 'avatar_02')
+    assert.equal(migrated.profileVisibility, 'private')
+
+    assert.equal(
+      (
+        await getDoc(
+          doc(db, 'publicProfiles', 'alice'),
+        )
+      ).exists(),
+      true,
+    )
+  })
+
+  it('changing visibility to public immediately permits public reads', async () => {
+    const db = userDb()
+    await assertSucceeds(createPair(db))
+
+    const current = (
+      await getDoc(doc(db, 'users', 'alice'))
+    ).data()
+
+    const batch = writeBatch(db)
+
+    batch.update(
+      doc(db, 'users', 'alice'),
+      {
+        profileVisibility: 'public',
+        updatedAt: serverTimestamp(),
+      },
+    )
+
+    batch.set(
+      doc(db, 'publicProfiles', 'alice'),
+      {
+        userId: 'alice',
+        username: 'alice_123',
+        displayName: 'Alice',
+        avatarId: 'avatar_01',
+        profileVisibility: 'public',
+        createdAt: current.createdAt,
+        updatedAt: serverTimestamp(),
+      },
+    )
+
+    await assertSucceeds(batch.commit())
+
+    await assertSucceeds(
+      getDoc(
+        doc(
+          testEnv.unauthenticatedContext().firestore(),
+          'publicProfiles',
+          'alice',
+        ),
+      ),
+    )
+  })
+
 })
