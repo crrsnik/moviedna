@@ -163,7 +163,7 @@ describe('TMDB normalization and client', () => {
     } })
     await client.getMetadata('movie', 10)
     assert.equal(request[0].origin, 'https://api.themoviedb.org')
-    assert.equal(request[0].pathname, '/movie/10')
+    assert.equal(request[0].pathname, '/3/movie/10')
     assert.equal(request[1].headers.Authorization, 'Bearer synthetic-token')
   })
 

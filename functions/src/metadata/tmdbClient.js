@@ -2,7 +2,7 @@ import { TMDB_TIMEOUT_MS, TMDB_TRANSIENT_RETRIES } from '../config.js'
 import { MovieDnaServerError, SERVER_ERROR_CODES } from '../errors.js'
 import { normalizeMovieMetadata, normalizeTvMetadata } from './normalizeTmdbMetadata.js'
 
-const TMDB_ORIGIN = 'https://api.themoviedb.org'
+const TMDB_API_BASE_URL = 'https://api.themoviedb.org/3/'
 
 function retryDelay(response, attempt) {
   const retryAfter = Number(response?.headers?.get?.('retry-after'))
@@ -27,7 +27,7 @@ export function createTmdbClient({
       throw new MovieDnaServerError(SERVER_ERROR_CODES.INVALID_METADATA)
     }
     const append = mediaType === 'movie' ? 'credits' : 'aggregate_credits'
-    const url = new URL(`/${mediaType}/${tmdbId}`, TMDB_ORIGIN)
+    const url = new URL(`${mediaType}/${tmdbId}`, TMDB_API_BASE_URL)
     url.searchParams.set('language', 'en-US')
     url.searchParams.set('append_to_response', append)
 

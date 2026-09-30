@@ -122,7 +122,10 @@ export const tmdbProxy = onRequest({
   ...TMDB_PROXY_OPTIONS,
   secrets: [tmdbToken],
 }, createTmdbProxyHandler({
-  verifyAppCheck: (token) => getAppCheck().verifyToken(token),
+  verifyAppCheck: async (token) => {
+    const result = await getAppCheck().verifyToken(token)
+    return result.token
+  },
   getSecret: () => tmdbToken.value(),
   maxResponseBytes: TMDB_PROXY_MAX_RESPONSE_BYTES,
   timeoutMs: TMDB_PROXY_TIMEOUT_MS,
