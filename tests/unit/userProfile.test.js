@@ -4,6 +4,10 @@ import { Timestamp } from 'firebase/firestore'
 import { normalizeUserProfile } from '../../src/features/profile/services/normalizeUserProfile.js'
 import { getProfileErrorMessage } from '../../src/features/profile/services/profileErrors.js'
 import { getProfileContextValue } from '../../src/features/profile/context/profileState.js'
+import {
+  DEFAULT_PROFILE_AVATAR_ID,
+  DEFAULT_PROFILE_VISIBILITY,
+} from '../../src/features/profile/constants/profileSettings.js'
 
 const valid = {
   username: 'demo_fan', displayName: 'Demo Fan', photoURL: null, bio: '',
@@ -14,11 +18,24 @@ const snapshot = (data = valid) => ({ id: 'demo-user', exists: () => true, data:
 describe('Profile normalization', () => {
   it('copies expected fields and uses the document ID, ignoring unknown data', () => {
     const result = normalizeUserProfile(snapshot({ ...valid, id: 'wrong', uid: 'wrong', role: 'admin' }))
-    assert.deepEqual(result, { profile: { id: 'demo-user', ...valid }, profileError: null })
+    assert.deepEqual(result, {
+      profile: {
+        id: 'demo-user',
+        ...valid,
+        avatarId: DEFAULT_PROFILE_AVATAR_ID,
+        profileVisibility: DEFAULT_PROFILE_VISIBILITY,
+      },
+      profileError: null,
+    })
   })
   it('accepts a string photoURL and completed onboarding', () => {
     const data = { ...valid, photoURL: 'https://example.invalid/photo', onboardingCompleted: true }
-    assert.deepEqual(normalizeUserProfile(snapshot(data)).profile, { id: 'demo-user', ...data })
+    assert.deepEqual(normalizeUserProfile(snapshot(data)).profile, {
+      id: 'demo-user',
+      ...data,
+      avatarId: DEFAULT_PROFILE_AVATAR_ID,
+      profileVisibility: DEFAULT_PROFILE_VISIBILITY,
+    })
   })
   it('returns a controlled missing error without reading data', () => {
     assert.deepEqual(normalizeUserProfile({ exists: () => false }), {
@@ -65,4 +82,44 @@ describe('Profile context state', () => {
       assert.equal(getProfileContextValue('demo-user', { ...loaded(true), ...override }).hasCompletedOnboarding, false)
     }
   })
+})
+
+describe('Stage 11 profile privacy normalization', () => {
+  it('uses safe defaults for legacy profiles without privacy fields', () => {
+    const profile = normalizeUserProfile(snapshot()).profile
+
+    assert.equal(profile.avatarId, DEFAULT_PROFILE_AVATAR_ID)
+    assert.equal(profile.profileVisibility, DEFAULT_PROFILE_VISIBILITY)
+  })
+
+  it('preserves valid explicit avatar and visibility values', () => {
+    const data = {
+      ...valid,
+      avatarId: 'avatar_08',
+      profileVisibility: 'public',
+    }
+
+    const profile = normalizeUserProfile(snapshot(data)).profile
+
+    assert.equal(profile.avatarId, 'avatar_08')
+    assert.equal(profile.profileVisibility, 'public')
+  })
+
+  for (const avatarId of ['', 'avatar_00', 'avatar_09', 1, null]) {
+    it(`rejects invalid avatarId ${JSON.stringify(avatarId)}`, () => {
+      assert.equal(
+        normalizeUserProfile(snapshot({ ...valid, avatarId })).profile,
+        null,
+      )
+    })
+  }
+
+  for (const profileVisibility of ['', 'friends', 'PUBLIC', true, null]) {
+    it(`rejects invalid profileVisibility ${JSON.stringify(profileVisibility)}`, () => {
+      assert.equal(
+        normalizeUserProfile(snapshot({ ...valid, profileVisibility })).profile,
+        null,
+      )
+    })
+  }
 })

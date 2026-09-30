@@ -18,10 +18,53 @@ service cloud.firestore {
       return displayName is string && displayName.size() >= 1 && displayName.size() <= 50;
     }
 
+    function isValidAvatarId(avatarId) {
+      return avatarId in [
+        'avatar_01',
+        'avatar_02',
+        'avatar_03',
+        'avatar_04',
+        'avatar_05',
+        'avatar_06',
+        'avatar_07',
+        'avatar_08'
+      ];
+    }
+
+    function isValidProfileVisibility(profileVisibility) {
+      return profileVisibility in ['public', 'private'];
+    }
+
     function hasInitialProfileFields(data) {
-      let fields = ['username', 'displayName', 'photoURL', 'bio',
-                    'onboardingCompleted', 'createdAt', 'updatedAt'];
-      return data.keys().hasAll(fields) && data.keys().hasOnly(fields);
+      let legacyFields = [
+        'username',
+        'displayName',
+        'photoURL',
+        'bio',
+        'onboardingCompleted',
+        'createdAt',
+        'updatedAt'
+      ];
+
+      let currentFields = [
+        'username',
+        'displayName',
+        'photoURL',
+        'bio',
+        'avatarId',
+        'profileVisibility',
+        'onboardingCompleted',
+        'createdAt',
+        'updatedAt'
+      ];
+
+      return (
+        data.keys().hasAll(legacyFields)
+        && data.keys().hasOnly(legacyFields)
+      ) || (
+        data.keys().hasAll(currentFields)
+        && data.keys().hasOnly(currentFields)
+      );
     }
 
     function hasIncompleteProfile(userId) {
@@ -173,6 +216,9 @@ service cloud.firestore {
         && hasInitialProfileFields(request.resource.data)
         && isValidUsername(request.resource.data.username)
         && isValidDisplayName(request.resource.data.displayName)
+        && request.resource.data.keys().hasAll(['avatarId', 'profileVisibility'])
+        && isValidAvatarId(request.resource.data.avatarId)
+        && isValidProfileVisibility(request.resource.data.profileVisibility)
         && request.resource.data.photoURL == null
         && request.resource.data.bio == ''
         && request.resource.data.onboardingCompleted == false

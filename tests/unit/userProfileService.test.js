@@ -59,7 +59,15 @@ describe('Profile subscription with mocked Firebase', { concurrency: false }, ()
     next({ exists: () => false })
     const data = { username: 'demo_fan', displayName: 'Demo', bio: '', photoURL: null, onboardingCompleted: false, createdAt: new Timestamp(1, 0), updatedAt: new Timestamp(1, 0) }
     next({ id: 'demo-user', exists: () => true, data: () => ({ ...data, role: 'ignored' }) })
-    assert.deepEqual(results[1], { profile: { id: 'demo-user', ...data }, profileError: null })
+    assert.deepEqual(results[1], {
+      profile: {
+        id: 'demo-user',
+        ...data,
+        avatarId: 'avatar_01',
+        profileVisibility: 'private',
+      },
+      profileError: null,
+    })
   })
   it('ignores pending writes and publishes the confirmed metadata event', () => {
     const results = []

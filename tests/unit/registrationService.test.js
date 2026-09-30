@@ -95,6 +95,7 @@ describe('Registration service with mocked Firebase', { concurrency: false }, ()
     assert.deepEqual(transactionWrites, [
       ['users/new-test-user', {
         username: 'movie_fan', displayName: 'Movie Fan', photoURL: null, bio: '',
+        avatarId: 'avatar_01', profileVisibility: 'private',
         onboardingCompleted: false, createdAt: 'SERVER_TIMESTAMP', updatedAt: 'SERVER_TIMESTAMP',
       }],
       ['usernames/movie_fan', { userId: 'new-test-user', createdAt: 'SERVER_TIMESTAMP' }],

@@ -3,6 +3,10 @@ import { runTransaction, doc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '../../../shared/config/firebase.js'
 import { normalizeUsername, validateRegistration } from '../validation/registrationValidation.js'
 import { RegistrationError } from './registrationErrors.js'
+import {
+  DEFAULT_PROFILE_AVATAR_ID,
+  DEFAULT_PROFILE_VISIBILITY,
+} from '../../profile/constants/profileSettings.js'
 
 let registrationPending = false
 
@@ -35,6 +39,8 @@ export async function registerUser({ username, displayName, email, password }) {
         displayName: trimmedDisplayName,
         photoURL: null,
         bio: '',
+        avatarId: DEFAULT_PROFILE_AVATAR_ID,
+        profileVisibility: DEFAULT_PROFILE_VISIBILITY,
         onboardingCompleted: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),

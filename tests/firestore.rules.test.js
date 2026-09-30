@@ -21,6 +21,8 @@ const profile = (username = 'alice_123', overrides = {}) => ({
   displayName: 'Alice',
   photoURL: null,
   bio: '',
+  avatarId: 'avatar_01',
+  profileVisibility: 'private',
   onboardingCompleted: false,
   createdAt: serverTimestamp(),
   updatedAt: serverTimestamp(),
@@ -1337,3 +1339,72 @@ describe(
     })
   },
 )
+
+describe('Stage 11 profile privacy fields', { concurrency: false }, () => {
+  before(async () => {
+    testEnv = await initializeTestEnvironment({
+      projectId,
+      firestore: {
+        host: '127.0.0.1',
+        port: 8080,
+        rules: await readFile(
+          new URL('../firestore.rules', import.meta.url),
+          'utf8',
+        ),
+      },
+    })
+  })
+
+  beforeEach(async () => {
+    await testEnv.clearFirestore()
+  })
+
+  after(async () => {
+    await testEnv?.cleanup()
+  })
+
+  for (const avatarId of [
+    '',
+    'avatar_00',
+    'avatar_09',
+    'custom-avatar',
+    1,
+    null,
+  ]) {
+    it(`denies invalid avatarId ${JSON.stringify(avatarId)}`, async () => {
+      await assertFails(createPair(userDb(), {
+        profileData: profile(undefined, { avatarId }),
+      }))
+    })
+  }
+
+  for (const avatarId of ['avatar_01', 'avatar_08']) {
+    it(`allows avatarId ${avatarId}`, async () => {
+      await assertSucceeds(createPair(userDb(), {
+        profileData: profile(undefined, { avatarId }),
+      }))
+    })
+  }
+
+  for (const profileVisibility of [
+    '',
+    'friends',
+    'PUBLIC',
+    true,
+    null,
+  ]) {
+    it(`denies invalid profileVisibility ${JSON.stringify(profileVisibility)}`, async () => {
+      await assertFails(createPair(userDb(), {
+        profileData: profile(undefined, { profileVisibility }),
+      }))
+    })
+  }
+
+  for (const profileVisibility of ['public', 'private']) {
+    it(`allows profileVisibility ${profileVisibility}`, async () => {
+      await assertSucceeds(createPair(userDb(), {
+        profileData: profile(undefined, { profileVisibility }),
+      }))
+    })
+  }
+})
