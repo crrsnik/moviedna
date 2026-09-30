@@ -29,6 +29,7 @@ export async function registerUser({ username, displayName, email, password }) {
     await updateProfile(createdUser, { displayName: trimmedDisplayName })
 
     const profileRef = doc(db, 'users', createdUser.uid)
+    const publicProfileRef = doc(db, 'publicProfiles', createdUser.uid)
     const usernameRef = doc(db, 'usernames', normalizedUsername)
     await runTransaction(db, async (transaction) => {
       const existingUsername = await transaction.get(usernameRef)
@@ -45,6 +46,16 @@ export async function registerUser({ username, displayName, email, password }) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       })
+      transaction.set(publicProfileRef, {
+        userId: createdUser.uid,
+        username: normalizedUsername,
+        displayName: trimmedDisplayName,
+        avatarId: DEFAULT_PROFILE_AVATAR_ID,
+        profileVisibility: DEFAULT_PROFILE_VISIBILITY,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+
       transaction.set(usernameRef, {
         userId: createdUser.uid,
         createdAt: serverTimestamp(),

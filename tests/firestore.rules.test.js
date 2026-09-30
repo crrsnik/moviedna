@@ -28,6 +28,17 @@ const profile = (username = 'alice_123', overrides = {}) => ({
   updatedAt: serverTimestamp(),
   ...overrides,
 })
+const publicProfile = (userId = 'alice', source = profile(), overrides = {}) => ({
+  userId,
+  username: source.username ?? 'alice_123',
+  displayName: source.displayName ?? 'Alice',
+  avatarId: source.avatarId ?? 'avatar_01',
+  profileVisibility: source.profileVisibility ?? 'private',
+  createdAt: source.createdAt ?? serverTimestamp(),
+  updatedAt: source.updatedAt ?? serverTimestamp(),
+  ...overrides,
+})
+
 const reservation = (userId = 'alice', overrides = {}) => ({
   userId, createdAt: serverTimestamp(), ...overrides,
 })
@@ -35,10 +46,12 @@ const userDb = (uid = 'alice') => testEnv.authenticatedContext(uid).firestore()
 
 function createPair(db, {
   uid = 'alice', username = 'alice_123', profileData = profile(username),
+  publicProfileData = publicProfile(uid, profileData),
   reservationData = reservation(uid),
 } = {}) {
   const batch = writeBatch(db)
   batch.set(doc(db, 'users', uid), profileData)
+  batch.set(doc(db, 'publicProfiles', uid), publicProfileData)
   batch.set(doc(db, 'usernames', username), reservationData)
   return batch.commit()
 }
@@ -1407,4 +1420,181 @@ describe('Stage 11 profile privacy fields', { concurrency: false }, () => {
       }))
     })
   }
+
+  it('creates the matching public profile in the registration bundle', async () => {
+    const db = userDb()
+
+    await assertSucceeds(createPair(db))
+
+    const snapshot = await assertSucceeds(
+      getDoc(doc(db, 'publicProfiles', 'alice')),
+    )
+
+    assert.deepEqual(
+      {
+        userId: snapshot.data().userId,
+        username: snapshot.data().username,
+        displayName: snapshot.data().displayName,
+        avatarId: snapshot.data().avatarId,
+        profileVisibility: snapshot.data().profileVisibility,
+      },
+      {
+        userId: 'alice',
+        username: 'alice_123',
+        displayName: 'Alice',
+        avatarId: 'avatar_01',
+        profileVisibility: 'private',
+      },
+    )
+  })
+
+  it('denies registration when the public profile is omitted', async () => {
+    const db = userDb()
+    const batch = writeBatch(db)
+
+    batch.set(doc(db, 'users', 'alice'), profile())
+    batch.set(doc(db, 'usernames', 'alice_123'), reservation())
+
+    await assertFails(batch.commit())
+  })
+
+  it('denies a public profile without its private user profile', async () => {
+    const db = userDb()
+
+    await assertFails(
+      setDoc(
+        doc(db, 'publicProfiles', 'alice'),
+        publicProfile(),
+      ),
+    )
+  })
+
+  for (const [field, value] of [
+    ['userId', 'bob'],
+    ['username', 'another_name'],
+    ['displayName', 'Another Name'],
+    ['avatarId', 'avatar_08'],
+    ['profileVisibility', 'public'],
+  ]) {
+    it(`denies a public profile whose ${field} does not match the private profile`, async () => {
+      const db = userDb()
+      const privateProfile = profile()
+
+      await assertFails(
+        createPair(db, {
+          profileData: privateProfile,
+          publicProfileData: publicProfile(
+            'alice',
+            privateProfile,
+            { [field]: value },
+          ),
+        }),
+      )
+    })
+  }
+
+  it('allows the owner to read their private public-profile mirror', async () => {
+    const db = userDb()
+    await assertSucceeds(createPair(db))
+
+    await assertSucceeds(
+      getDoc(doc(db, 'publicProfiles', 'alice')),
+    )
+  })
+
+  it('denies other users and unauthenticated users from reading a private profile', async () => {
+    await assertSucceeds(createPair(userDb()))
+
+    await assertFails(
+      getDoc(
+        doc(
+          userDb('bob'),
+          'publicProfiles',
+          'alice',
+        ),
+      ),
+    )
+
+    await assertFails(
+      getDoc(
+        doc(
+          testEnv.unauthenticatedContext().firestore(),
+          'publicProfiles',
+          'alice',
+        ),
+      ),
+    )
+  })
+
+  it('allows authenticated and unauthenticated reads of a public profile', async () => {
+    const privateProfile = profile(
+      undefined,
+      { profileVisibility: 'public' },
+    )
+
+    await assertSucceeds(
+      createPair(userDb(), {
+        profileData: privateProfile,
+      }),
+    )
+
+    await assertSucceeds(
+      getDoc(
+        doc(
+          userDb('bob'),
+          'publicProfiles',
+          'alice',
+        ),
+      ),
+    )
+
+    await assertSucceeds(
+      getDoc(
+        doc(
+          testEnv.unauthenticatedContext().firestore(),
+          'publicProfiles',
+          'alice',
+        ),
+      ),
+    )
+  })
+
+  it('denies listing publicProfiles even when a public profile exists', async () => {
+    const privateProfile = profile(
+      undefined,
+      { profileVisibility: 'public' },
+    )
+
+    await assertSucceeds(
+      createPair(userDb(), {
+        profileData: privateProfile,
+      }),
+    )
+
+    await assertFails(
+      getDocs(
+        collection(
+          userDb('bob'),
+          'publicProfiles',
+        ),
+      ),
+    )
+  })
+
+  it('denies direct public profile updates and deletion', async () => {
+    const db = userDb()
+    await assertSucceeds(createPair(db))
+
+    const ref = doc(db, 'publicProfiles', 'alice')
+
+    await assertFails(
+      updateDoc(ref, {
+        displayName: 'Changed',
+        updatedAt: serverTimestamp(),
+      }),
+    )
+
+    await assertFails(deleteDoc(ref))
+  })
+
 })

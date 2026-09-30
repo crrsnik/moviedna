@@ -89,7 +89,7 @@ describe('Registration service with mocked Firebase', { concurrency: false }, ()
   })
   after(async () => { await server?.close(); delete globalThis[key] })
 
-  it('normalizes data, creates the exact document pair, and performs nothing after commit', async () => {
+  it('normalizes data, creates the exact registration documents, and performs nothing after commit', async () => {
     assert.equal(await registerUser(input), createdUser)
     assert.deepEqual(calls, ['create', 'updateProfile', 'transaction', 'get', 'commit'])
     assert.deepEqual(transactionWrites, [
@@ -97,6 +97,15 @@ describe('Registration service with mocked Firebase', { concurrency: false }, ()
         username: 'movie_fan', displayName: 'Movie Fan', photoURL: null, bio: '',
         avatarId: 'avatar_01', profileVisibility: 'private',
         onboardingCompleted: false, createdAt: 'SERVER_TIMESTAMP', updatedAt: 'SERVER_TIMESTAMP',
+      }],
+      ['publicProfiles/new-test-user', {
+        userId: 'new-test-user',
+        username: 'movie_fan',
+        displayName: 'Movie Fan',
+        avatarId: 'avatar_01',
+        profileVisibility: 'private',
+        createdAt: 'SERVER_TIMESTAMP',
+        updatedAt: 'SERVER_TIMESTAMP',
       }],
       ['usernames/movie_fan', { userId: 'new-test-user', createdAt: 'SERVER_TIMESTAMP' }],
     ])

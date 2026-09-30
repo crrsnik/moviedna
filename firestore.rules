@@ -67,6 +67,32 @@ service cloud.firestore {
       );
     }
 
+    function isValidPublicProfile(data, userId, userData) {
+      let fields = [
+        'userId',
+        'username',
+        'displayName',
+        'avatarId',
+        'profileVisibility',
+        'createdAt',
+        'updatedAt'
+      ];
+
+      return data.keys().hasAll(fields)
+        && data.keys().hasOnly(fields)
+        && data.userId == userId
+        && isValidUsername(data.username)
+        && isValidDisplayName(data.displayName)
+        && isValidAvatarId(data.avatarId)
+        && isValidProfileVisibility(data.profileVisibility)
+        && data.username == userData.username
+        && data.displayName == userData.displayName
+        && data.avatarId == userData.avatarId
+        && data.profileVisibility == userData.profileVisibility
+        && data.createdAt == userData.createdAt
+        && data.updatedAt == request.time;
+    }
+
     function hasIncompleteProfile(userId) {
       return exists(/databases/$(database)/documents/users/$(userId))
         && get(/databases/$(database)/documents/users/$(userId)).data.onboardingCompleted == false;
@@ -224,6 +250,12 @@ service cloud.firestore {
         && request.resource.data.onboardingCompleted == false
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time
+        // New registrations must also create the matching public profile atomically.
+        && isValidPublicProfile(
+          getAfter(/databases/$(database)/documents/publicProfiles/$(userId)).data,
+          userId,
+          request.resource.data
+        )
         // Reservation must be new in this atomic operation, not pre-existing.
         && !exists(/databases/$(database)/documents/usernames/$(request.resource.data.username))
         && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.username)).data.userId == userId;
@@ -323,6 +355,28 @@ service cloud.firestore {
     // Normalized TMDB signals are an Admin SDK cache, not a client API.
     match /mediaSignals/{mediaKey} {
       allow get, list, create, update, delete: if false;
+    }
+
+    match /publicProfiles/{userId} {
+      // Owners may always read their mirror. Everyone else may read only
+      // profiles whose owner explicitly made them public.
+      allow get: if isOwner(userId)
+        || resource.data.profileVisibility == 'public';
+
+      // Public profile discovery/search is intentionally not enabled yet.
+      allow list: if false;
+
+      // Creation is allowed only as an exact mirror of the private profile.
+      // getAfter() also supports the atomic registration transaction.
+      allow create: if isOwner(userId)
+        && isValidPublicProfile(
+          request.resource.data,
+          userId,
+          getAfter(/databases/$(database)/documents/users/$(userId)).data
+        );
+
+      // Profile editing will be introduced with the synchronized settings flow.
+      allow update, delete: if false;
     }
 
     match /usernames/{username} {
