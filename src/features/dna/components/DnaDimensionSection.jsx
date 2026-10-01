@@ -1,14 +1,28 @@
 import { useState } from 'react'
 
-import { sortDnaEntriesForDisplay } from '../utils/sortDnaEntriesForDisplay.js'
+import {
+  useTranslation,
+} from '../../localization/hooks/useTranslation.js'
+import {
+  sortDnaEntriesForDisplay,
+} from '../utils/sortDnaEntriesForDisplay.js'
 
 const DEFAULT_VISIBLE = 4
 
-function compatibility(score) {
-  if (score >= 0.35) return 'Strong match'
-  if (score > 0.05) return 'Positive match'
-  if (score <= -0.2) return 'Lower compatibility'
-  return 'Neutral or mixed'
+function compatibilityKey(score) {
+  if (score >= 0.35) {
+    return 'dnaUi.compatibility.strong'
+  }
+
+  if (score > 0.05) {
+    return 'dnaUi.compatibility.positive'
+  }
+
+  if (score <= -0.2) {
+    return 'dnaUi.compatibility.lower'
+  }
+
+  return 'dnaUi.compatibility.neutral'
 }
 
 export default function DnaDimensionSection({
@@ -16,12 +30,23 @@ export default function DnaDimensionSection({
   title,
   entries = [],
 }) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
-  const orderedEntries = sortDnaEntriesForDisplay(entries)
-  const hasMore = orderedEntries.length > DEFAULT_VISIBLE
+
+  const orderedEntries = (
+    sortDnaEntriesForDisplay(entries)
+  )
+
+  const hasMore = (
+    orderedEntries.length > DEFAULT_VISIBLE
+  )
+
   const visibleEntries = expanded
     ? orderedEntries
-    : orderedEntries.slice(0, DEFAULT_VISIBLE)
+    : orderedEntries.slice(
+      0,
+      DEFAULT_VISIBLE,
+    )
 
   return (
     <section
@@ -45,7 +70,6 @@ export default function DnaDimensionSection({
               const percent = Math.round(
                 Math.abs(entry.score) * 100,
               )
-              const description = compatibility(entry.score)
 
               return (
                 <li
@@ -58,7 +82,11 @@ export default function DnaDimensionSection({
                     </strong>
 
                     <span className="text-sm text-zinc-300">
-                      {description}
+                      {t(
+                        compatibilityKey(
+                          entry.score,
+                        ),
+                      )}
                       {' · '}
                       {entry.score >= 0 ? '+' : '−'}
                       {percent}%
@@ -66,7 +94,10 @@ export default function DnaDimensionSection({
                   </div>
 
                   <progress
-                    aria-label={`${entry.label} compatibility strength`}
+                    aria-label={t(
+                      'dnaUi.compatibility.strength',
+                      { label: entry.label },
+                    )}
                     value={percent}
                     max="100"
                     className="mt-3 h-2 w-full accent-violet-400"
@@ -81,18 +112,26 @@ export default function DnaDimensionSection({
               type="button"
               aria-expanded={expanded}
               aria-controls={`${id}-entries`}
-              onClick={() => setExpanded(value => !value)}
+              onClick={() => setExpanded(
+                value => !value,
+              )}
               className="mt-4 rounded text-sm font-medium text-violet-300 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4"
             >
               {expanded
-                ? 'Show less'
-                : `Show all (${orderedEntries.length})`}
+                ? t('dnaUi.showLess')
+                : t(
+                  'dnaUi.showAll',
+                  {
+                    count:
+                      orderedEntries.length,
+                  },
+                )}
             </button>
           )}
         </>
       ) : (
         <p className="mt-3 text-sm text-zinc-400">
-          Not enough evidence yet.
+          {t('dnaUi.notEnoughEvidence')}
         </p>
       )}
     </section>

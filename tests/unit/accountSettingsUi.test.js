@@ -22,10 +22,10 @@ describe('account settings UI', () => {
       /path:\s*['"]account['"][\s\S]*AccountSettingsPage/,
     )
 
-    assert.match(page, /Account settings/)
-    assert.match(page, /Email address/)
+    assert.match(page, /accountSettingsPage\.title/)
+    assert.match(page, /accountSettingsPage\.emailAddress/)
     assert.match(page, /readOnly/)
-    assert.match(page, /Email changes are not supported yet/)
+    assert.match(page, /accountSettingsPage\.emailUnsupported/)
   })
 
   it('uses the existing password reset service without adding password storage', async () => {
@@ -38,7 +38,7 @@ describe('account settings UI', () => {
     )
 
     assert.match(page, /requestPasswordReset/)
-    assert.match(page, /Send password reset email/)
+    assert.match(page, /accountSettingsPage\.sendReset/)
     assert.match(page, /getPasswordResetErrorMessage/)
     assert.doesNotMatch(page, /updatePassword/)
     assert.doesNotMatch(page, /currentPassword/)

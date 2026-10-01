@@ -1,22 +1,44 @@
 import { useMemo } from 'react'
 
-import { calculateViewingStats } from '../features/statistics/core/calculateViewingStats.js'
+import {
+  useTranslation,
+} from '../features/localization/hooks/useTranslation.js'
+import {
+  calculateViewingStats,
+} from '../features/statistics/core/calculateViewingStats.js'
 import { useViewingHistory } from '../features/viewingHistory/hooks/useViewingHistory.js'
-import { localDateString } from '../features/viewingHistory/validation/viewingHistoryValidation.js'
+import {
+  localDateString,
+} from '../features/viewingHistory/validation/viewingHistoryValidation.js'
 
-function monthLabel(value) {
-  const [year, month] = value.split('-').map(Number)
+function monthLabel(value, locale) {
+  const [year, month] = (
+    value.split('-').map(Number)
+  )
 
-  return new Intl.DateTimeFormat('en', {
-    month: 'short',
-    timeZone: 'UTC',
-  }).format(new Date(Date.UTC(year, month - 1, 1)))
+  return new Intl.DateTimeFormat(
+    locale,
+    {
+      month: 'short',
+      timeZone: 'UTC',
+    },
+  ).format(
+    new Date(
+      Date.UTC(year, month - 1, 1),
+    ),
+  )
 }
 
-function MetricCard({ label, value, description }) {
+function MetricCard({
+  label,
+  value,
+  description,
+}) {
   return (
     <article className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-      <p className="text-sm text-zinc-400">{label}</p>
+      <p className="text-sm text-zinc-400">
+        {label}
+      </p>
 
       <p className="mt-2 text-3xl font-semibold tracking-tight">
         {value}
@@ -31,7 +53,11 @@ function MetricCard({ label, value, description }) {
   )
 }
 
-function RankedList({ title, items, emptyText }) {
+function RankedList({
+  title,
+  items,
+  emptyText,
+}) {
   return (
     <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
       <h2 className="text-lg font-semibold">
@@ -46,7 +72,9 @@ function RankedList({ title, items, emptyText }) {
         <ol className="mt-4 space-y-3">
           {items.map((item, index) => (
             <li
-              key={item.id ?? item.decade}
+              key={
+                item.id ?? item.decade
+              }
               className="flex items-center justify-between gap-4"
             >
               <div className="min-w-0">
@@ -70,7 +98,11 @@ function RankedList({ title, items, emptyText }) {
   )
 }
 
-function MediaTypeBreakdown({ mediaTypes }) {
+function MediaTypeBreakdown({
+  mediaTypes,
+}) {
+  const { t } = useTranslation()
+
   const moviePercent = Math.round(
     mediaTypes.movieShare * 100,
   )
@@ -82,15 +114,20 @@ function MediaTypeBreakdown({ mediaTypes }) {
   return (
     <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
       <h2 className="text-lg font-semibold">
-        Movies vs TV
+        {t('statisticsUi.mediaTypesTitle')}
       </h2>
 
       <div className="mt-5 space-y-5">
         <div>
           <div className="flex justify-between gap-4 text-sm">
-            <span>Movies</span>
+            <span>
+              {t('statisticsUi.movies')}
+            </span>
+
             <span className="text-zinc-400">
-              {mediaTypes.movieCount} · {moviePercent}%
+              {mediaTypes.movieCount}
+              {' · '}
+              {moviePercent}%
             </span>
           </div>
 
@@ -100,16 +137,23 @@ function MediaTypeBreakdown({ mediaTypes }) {
           >
             <div
               className="h-full rounded-full bg-zinc-300"
-              style={{ width: `${moviePercent}%` }}
+              style={{
+                width: `${moviePercent}%`,
+              }}
             />
           </div>
         </div>
 
         <div>
           <div className="flex justify-between gap-4 text-sm">
-            <span>TV shows</span>
+            <span>
+              {t('statisticsUi.tvShows')}
+            </span>
+
             <span className="text-zinc-400">
-              {mediaTypes.tvCount} · {tvPercent}%
+              {mediaTypes.tvCount}
+              {' · '}
+              {tvPercent}%
             </span>
           </div>
 
@@ -119,7 +163,9 @@ function MediaTypeBreakdown({ mediaTypes }) {
           >
             <div
               className="h-full rounded-full bg-zinc-500"
-              style={{ width: `${tvPercent}%` }}
+              style={{
+                width: `${tvPercent}%`,
+              }}
             />
           </div>
         </div>
@@ -129,6 +175,8 @@ function MediaTypeBreakdown({ mediaTypes }) {
 }
 
 function ActivityChart({ activity }) {
+  const { t, locale } = useTranslation()
+
   const maximum = Math.max(
     1,
     ...activity.map(item => item.count),
@@ -138,27 +186,39 @@ function ActivityChart({ activity }) {
     <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">
-          This year's activity
+          {t('statisticsUi.activityTitle')}
         </h2>
 
         <p className="text-sm text-zinc-500">
-          Viewing events by month
+          {t(
+            'statisticsUi.activityDescription',
+          )}
         </p>
       </div>
 
       <div
         className="mt-6 flex h-48 items-end gap-2"
-        aria-label="Viewing activity by month"
+        aria-label={t(
+          'statisticsUi.activityAria',
+        )}
       >
         {activity.map(item => {
           const height = item.count
             ? Math.max(
-                8,
-                Math.round(
-                  (item.count / maximum) * 100,
-                ),
-              )
+              8,
+              Math.round(
+                (
+                  item.count
+                  / maximum
+                ) * 100,
+              ),
+            )
             : 2
+
+          const label = monthLabel(
+            item.month,
+            locale,
+          )
 
           return (
             <div
@@ -172,13 +232,21 @@ function ActivityChart({ activity }) {
               <div className="flex h-32 w-full items-end justify-center">
                 <div
                   className="w-full max-w-8 rounded-t bg-zinc-300"
-                  style={{ height: `${height}%` }}
-                  title={`${item.month}: ${item.count} viewing events`}
+                  style={{
+                    height: `${height}%`,
+                  }}
+                  title={t(
+                    'statisticsUi.activityBarTitle',
+                    {
+                      month: label,
+                      count: item.count,
+                    },
+                  )}
                 />
               </div>
 
               <span className="text-xs text-zinc-500">
-                {monthLabel(item.month)}
+                {label}
               </span>
             </div>
           )
@@ -189,6 +257,8 @@ function ActivityChart({ activity }) {
 }
 
 export default function StatisticsPage() {
+  const { t } = useTranslation()
+
   const {
     data,
     loading,
@@ -199,19 +269,25 @@ export default function StatisticsPage() {
   const today = localDateString()
 
   const stats = useMemo(
-    () => calculateViewingStats(data, today),
+    () => calculateViewingStats(
+      data,
+      today,
+    ),
     [data, today],
   )
 
   if (loading) {
     return (
-      <main className="space-y-4" aria-live="polite">
+      <main
+        className="space-y-4"
+        aria-live="polite"
+      >
         <h1 className="text-3xl font-semibold tracking-tight">
-          Statistics
+          {t('statisticsUi.title')}
         </h1>
 
         <p className="text-zinc-400">
-          Calculating your viewing statistics…
+          {t('statisticsUi.calculating')}
         </p>
       </main>
     )
@@ -221,11 +297,14 @@ export default function StatisticsPage() {
     return (
       <main className="space-y-4">
         <h1 className="text-3xl font-semibold tracking-tight">
-          Statistics
+          {t('statisticsUi.title')}
         </h1>
 
-        <p role="alert" className="text-zinc-400">
-          Your viewing statistics could not be loaded.
+        <p
+          role="alert"
+          className="text-zinc-400"
+        >
+          {t('statisticsUi.loadError')}
         </p>
 
         <button
@@ -233,7 +312,7 @@ export default function StatisticsPage() {
           onClick={retry}
           className="rounded-lg border border-zinc-600 px-4 py-2 text-sm hover:bg-zinc-800"
         >
-          Try again
+          {t('statisticsUi.retry')}
         </button>
       </main>
     )
@@ -243,45 +322,55 @@ export default function StatisticsPage() {
     <main className="w-full min-w-0 space-y-8">
       <header className="space-y-2">
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Statistics
+          {t('statisticsUi.title')}
         </h1>
 
         <p className="text-zinc-400">
-          Your viewing activity based on titles marked as watched.
+          {t('statisticsUi.description')}
         </p>
       </header>
 
       <section
-        aria-label="Viewing totals"
+        aria-label={t(
+          'statisticsUi.totalsAria',
+        )}
         className="grid gap-4 sm:grid-cols-3"
       >
         <MetricCard
-          label="This month"
+          label={t('statisticsUi.thisMonth')}
           value={stats.thisMonth}
-          description="Viewing events"
+          description={t(
+            'statisticsUi.viewingEvents',
+          )}
         />
 
         <MetricCard
-          label="This year"
+          label={t('statisticsUi.thisYear')}
           value={stats.thisYear}
-          description="Viewing events"
+          description={t(
+            'statisticsUi.viewingEvents',
+          )}
         />
 
         <MetricCard
-          label="All time"
+          label={t('statisticsUi.allTime')}
           value={stats.totalViewings}
-          description="Viewing events"
+          description={t(
+            'statisticsUi.viewingEvents',
+          )}
         />
       </section>
 
       {!stats.totalViewings ? (
         <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
           <h2 className="text-xl font-semibold">
-            No viewing statistics yet
+            {t('statisticsUi.emptyTitle')}
           </h2>
 
           <p className="mt-2 text-sm text-zinc-400">
-            Mark movies and TV shows as watched to start building your statistics.
+            {t(
+              'statisticsUi.emptyDescription',
+            )}
           </p>
         </section>
       ) : (
@@ -292,9 +381,13 @@ export default function StatisticsPage() {
             />
 
             <RankedList
-              title="Favorite eras"
+              title={t(
+                'statisticsUi.favoriteEras',
+              )}
               items={stats.topDecades}
-              emptyText="No release-year data yet."
+              emptyText={t(
+                'statisticsUi.noReleaseYear',
+              )}
             />
           </div>
 
@@ -304,21 +397,33 @@ export default function StatisticsPage() {
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             <RankedList
-              title="Most watched genres"
+              title={t(
+                'statisticsUi.topGenres',
+              )}
               items={stats.topGenres}
-              emptyText="No genre data yet."
+              emptyText={t(
+                'statisticsUi.noGenres',
+              )}
             />
 
             <RankedList
-              title="Most watched directors"
+              title={t(
+                'statisticsUi.topDirectors',
+              )}
               items={stats.topDirectors}
-              emptyText="No movie director data yet."
+              emptyText={t(
+                'statisticsUi.noDirectors',
+              )}
             />
 
             <RankedList
-              title="Most watched TV creators"
+              title={t(
+                'statisticsUi.topCreators',
+              )}
               items={stats.topCreators}
-              emptyText="No TV creator data yet."
+              emptyText={t(
+                'statisticsUi.noCreators',
+              )}
             />
           </div>
         </>

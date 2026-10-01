@@ -1,35 +1,56 @@
 import { useRef, useState } from 'react'
 
 import { useAuth } from '../features/auth/hooks/useAuth.js'
-import { getPasswordResetErrorMessage } from '../features/auth/services/passwordResetErrors.js'
-import { requestPasswordReset } from '../features/auth/services/passwordResetService.js'
+import {
+  getPasswordResetErrorMessage,
+} from '../features/auth/services/passwordResetErrors.js'
+import {
+  requestPasswordReset,
+} from '../features/auth/services/passwordResetService.js'
+import {
+  translateAuthMessage,
+} from '../features/localization/core/authUiMessages.js'
+import {
+  useTranslation,
+} from '../features/localization/hooks/useTranslation.js'
 
 export default function AccountSettingsPage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
+
   const email = typeof user?.email === 'string'
     ? user.email
     : ''
 
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
+  const [success, setSuccess] = useState(false)
+
   const pending = useRef(false)
 
   async function handlePasswordReset() {
-    if (pending.current || isSending || !email) return
+    if (
+      pending.current
+      || isSending
+      || !email
+    ) {
+      return
+    }
 
     pending.current = true
     setIsSending(true)
     setError(null)
-    setSuccess(null)
+    setSuccess(false)
 
     try {
       await requestPasswordReset(email)
-      setSuccess(
-        'Password reset instructions have been sent to your email.',
-      )
+      setSuccess(true)
     } catch (resetError) {
-      setError(getPasswordResetErrorMessage(resetError))
+      setError(
+        getPasswordResetErrorMessage(
+          resetError,
+        ),
+      )
     } finally {
       pending.current = false
       setIsSending(false)
@@ -40,11 +61,11 @@ export default function AccountSettingsPage() {
     <section className="mx-auto w-full max-w-3xl space-y-6">
       <header>
         <h2 className="text-3xl font-semibold tracking-tight">
-          Account settings
+          {t('accountSettingsPage.title')}
         </h2>
 
         <p className="mt-2 text-zinc-400">
-          Manage your sign-in email and password.
+          {t('accountSettingsPage.description')}
         </p>
       </header>
 
@@ -52,11 +73,13 @@ export default function AccountSettingsPage() {
         <section className="space-y-3">
           <div>
             <h3 className="text-lg font-semibold text-zinc-100">
-              Email
+              {t('accountSettingsPage.emailTitle')}
             </h3>
 
             <p className="mt-1 text-sm text-zinc-400">
-              This email is used to sign in to your MovieDNA account.
+              {t(
+                'accountSettingsPage.emailDescription',
+              )}
             </p>
           </div>
 
@@ -65,7 +88,9 @@ export default function AccountSettingsPage() {
               htmlFor="account-email"
               className="block text-sm font-medium text-zinc-200"
             >
-              Email address
+              {t(
+                'accountSettingsPage.emailAddress',
+              )}
             </label>
 
             <input
@@ -78,7 +103,9 @@ export default function AccountSettingsPage() {
             />
 
             <p className="text-sm text-zinc-500">
-              Email changes are not supported yet.
+              {t(
+                'accountSettingsPage.emailUnsupported',
+              )}
             </p>
           </div>
         </section>
@@ -86,11 +113,15 @@ export default function AccountSettingsPage() {
         <section className="space-y-4 border-t border-zinc-800 pt-8">
           <div>
             <h3 className="text-lg font-semibold text-zinc-100">
-              Password
+              {t(
+                'accountSettingsPage.passwordTitle',
+              )}
             </h3>
 
             <p className="mt-1 text-sm text-zinc-400">
-              Send a secure password reset link to your account email.
+              {t(
+                'accountSettingsPage.passwordDescription',
+              )}
             </p>
           </div>
 
@@ -101,25 +132,38 @@ export default function AccountSettingsPage() {
             className="rounded-md border border-zinc-600 px-4 py-2 font-medium text-zinc-100 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSending
-              ? 'Sending…'
-              : 'Send password reset email'}
+              ? t('accountSettingsPage.sending')
+              : t('accountSettingsPage.sendReset')}
           </button>
 
           {!email && (
-            <p role="alert" className="text-sm text-red-300">
-              No email address is available for this account.
+            <p
+              role="alert"
+              className="text-sm text-red-300"
+            >
+              {t(
+                'accountSettingsPage.missingEmail',
+              )}
             </p>
           )}
 
           {error && (
-            <p role="alert" className="text-sm text-red-300">
-              {error}
+            <p
+              role="alert"
+              className="text-sm text-red-300"
+            >
+              {translateAuthMessage(t, error)}
             </p>
           )}
 
           {success && (
-            <p role="status" className="text-sm text-zinc-300">
-              {success}
+            <p
+              role="status"
+              className="text-sm text-zinc-300"
+            >
+              {t(
+                'accountSettingsPage.resetSuccess',
+              )}
             </p>
           )}
         </section>

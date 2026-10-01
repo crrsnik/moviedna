@@ -1,22 +1,63 @@
-import { Navigate, Outlet } from 'react-router-dom'
-import { useUserProfile } from '../hooks/useUserProfile.js'
-import { getProfileErrorMessage } from '../services/profileErrors.js'
+import {
+  Navigate,
+  Outlet,
+} from 'react-router-dom'
 
-function OnboardingRoute({ requireCompleted = false }) {
-  const { profile, isProfileLoading, profileError, hasCompletedOnboarding } = useUserProfile()
-  if (isProfileLoading) return <p role="status" aria-live="polite" className="text-zinc-400">Loading your profile…</p>
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
+import { useUserProfile } from '../hooks/useUserProfile.js'
+
+function OnboardingRoute({
+  requireCompleted = false,
+}) {
+  const { t } = useTranslation()
+
+  const {
+    profile,
+    isProfileLoading,
+    profileError,
+    hasCompletedOnboarding,
+  } = useUserProfile()
+
+  if (isProfileLoading) {
+    return (
+      <p
+        role="status"
+        aria-live="polite"
+        className="text-zinc-400"
+      >
+        {t('onboarding.route.loading')}
+      </p>
+    )
+  }
+
   if (profileError || !profile) {
     return (
       <div className="max-w-md space-y-5 text-center">
-        <p role="alert" className="text-zinc-300">{profileError || getProfileErrorMessage('missing')}</p>
-        <button type="button" onClick={() => window.location.reload()} className="rounded-md bg-zinc-100 px-4 py-2 font-medium text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100">
-          Refresh page
+        <p
+          role="alert"
+          className="text-zinc-300"
+        >
+          {t('onboarding.route.error')}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="rounded-md bg-zinc-100 px-4 py-2 font-medium text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
+        >
+          {t('onboarding.route.refresh')}
         </button>
       </div>
     )
   }
-  if (requireCompleted) return <Outlet />
-  return hasCompletedOnboarding ? <Navigate to="/" replace /> : <Outlet />
+
+  if (requireCompleted) {
+    return <Outlet />
+  }
+
+  return hasCompletedOnboarding
+    ? <Navigate to="/" replace />
+    : <Outlet />
 }
 
 export default OnboardingRoute

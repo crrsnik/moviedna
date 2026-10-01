@@ -110,18 +110,18 @@ describe('local safety and accessible UI contract', () => {
     }
 
     for (const label of [
-      'Strong match',
-      'Positive match',
-      'Neutral or mixed',
-      'Lower compatibility',
+      'dnaUi.compatibility.strong',
+      'dnaUi.compatibility.positive',
+      'dnaUi.compatibility.neutral',
+      'dnaUi.compatibility.lower',
     ]) {
       assert.match(dimension, new RegExp(label))
     }
 
     assert.match(dimension, /sortDnaEntriesForDisplay/)
-    assert.match(dimension, /slice\(0, DEFAULT_VISIBLE\)/)
-    assert.match(dimension, /Show all/)
-    assert.match(dimension, /Show less/)
+    assert.match(dimension, /orderedEntries\.slice\([\s\S]*0,[\s\S]*DEFAULT_VISIBLE,[\s\S]*\)/)
+    assert.match(dimension, /dnaUi\.showAll/)
+    assert.match(dimension, /dnaUi\.showLess/)
     assert.match(dimension, /aria-expanded=/)
     assert.match(dimension, /<progress/)
     assert.doesNotMatch(dimension, /Evidence from/)
