@@ -19,6 +19,7 @@ describe('profile navigation UI', () => {
       ['/profile/history', 'History'],
       ['/profile/stats', 'Statistics'],
       ['/profile/settings', 'Profile settings'],
+      ['/profile/account', 'Account settings'],
     ]) {
       assert.match(
         layout,

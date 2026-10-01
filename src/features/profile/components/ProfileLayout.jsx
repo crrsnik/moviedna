@@ -103,6 +103,9 @@ function ProfileLayout() {
         <NavLink className={tabClasses} to="/profile/settings">
           Profile settings
         </NavLink>
+        <NavLink className={tabClasses} to="/profile/account">
+          Account settings
+        </NavLink>
       </nav>
 
       <Outlet />

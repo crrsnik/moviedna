@@ -23,6 +23,7 @@ import PersonDetailPage from '../pages/PersonDetailPage.jsx'
 import ProfileOverviewPage from '../pages/ProfileOverviewPage.jsx'
 import PublicProfilePage from '../pages/PublicProfilePage.jsx'
 import ProfileSettingsPage from '../pages/ProfileSettingsPage.jsx'
+import AccountSettingsPage from '../pages/AccountSettingsPage.jsx'
 import RegisterPage from '../pages/RegisterPage.jsx'
 import SearchPage from '../pages/SearchPage.jsx'
 import StatisticsPage from '../pages/StatisticsPage.jsx'
@@ -79,6 +80,7 @@ const router = createBrowserRouter([
                   { path: 'history', element: <HistoryPage /> },
                   { path: 'stats', element: <StatisticsPage /> },
                   { path: 'settings', element: <ProfileSettingsPage /> },
+                  { path: 'account', element: <AccountSettingsPage /> },
                 ],
               },
 
