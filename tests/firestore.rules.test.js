@@ -1819,4 +1819,110 @@ describe('Stage 11 profile privacy fields', { concurrency: false }, () => {
     )
   })
 
+
+  it('allows an unauthenticated exact username lookup for a public profile', async () => {
+    const ownerDb = userDb()
+
+    const profileData = profile(
+      'alice_123',
+      {
+        profileVisibility: 'public',
+      },
+    )
+
+    await assertSucceeds(
+      createPair(ownerDb, {
+        profileData,
+        publicProfileData: publicProfile(
+          'alice',
+          profileData,
+        ),
+      }),
+    )
+
+    const guestDb = testEnv.unauthenticatedContext().firestore()
+
+    await assertSucceeds(
+      getDoc(
+        doc(
+          guestDb,
+          'usernames',
+          'alice_123',
+        ),
+      ),
+    )
+  })
+
+  it('denies an unauthenticated username lookup for a private profile', async () => {
+    const ownerDb = userDb()
+
+    await assertSucceeds(
+      createPair(ownerDb),
+    )
+
+    const guestDb = testEnv.unauthenticatedContext().firestore()
+
+    await assertFails(
+      getDoc(
+        doc(
+          guestDb,
+          'usernames',
+          'alice_123',
+        ),
+      ),
+    )
+  })
+
+  it('keeps exact private username lookup available to authenticated users', async () => {
+    const ownerDb = userDb()
+
+    await assertSucceeds(
+      createPair(ownerDb),
+    )
+
+    const otherDb = userDb('bob')
+
+    await assertSucceeds(
+      getDoc(
+        doc(
+          otherDb,
+          'usernames',
+          'alice_123',
+        ),
+      ),
+    )
+  })
+
+  it('continues to deny username collection discovery', async () => {
+    const ownerDb = userDb()
+
+    const profileData = profile(
+      'alice_123',
+      {
+        profileVisibility: 'public',
+      },
+    )
+
+    await assertSucceeds(
+      createPair(ownerDb, {
+        profileData,
+        publicProfileData: publicProfile(
+          'alice',
+          profileData,
+        ),
+      }),
+    )
+
+    const guestDb = testEnv.unauthenticatedContext().firestore()
+
+    await assertFails(
+      getDocs(
+        collection(
+          guestDb,
+          'usernames',
+        ),
+      ),
+    )
+  })
+
 })

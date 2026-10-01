@@ -1,0 +1,257 @@
+import { after, before, beforeEach, describe, it } from 'node:test'
+import assert from 'node:assert/strict'
+import { createServer } from 'vite'
+
+const key = '__moviednaPublicProfileServiceTest'
+
+const db = {}
+let server
+let getPublicProfileByUsername
+let calls
+let responses
+
+const stubs = {
+  db,
+
+  doc(_db, ...path) {
+    const ref = path.join('/')
+    calls.push(['doc', ref])
+    return ref
+  },
+
+  async getDoc(ref) {
+    calls.push(['getDoc', ref])
+
+    const next = responses.shift()
+
+    if (next instanceof Error) throw next
+    if (next?.throw) throw next.throw
+
+    return next
+  },
+}
+
+function snapshot(id, data, exists = true) {
+  return {
+    id,
+    exists: () => exists,
+    data: () => data,
+  }
+}
+
+function publicProfile(overrides = {}) {
+  return {
+    userId: 'alice',
+    username: 'alice_123',
+    displayName: 'Alice',
+    avatarId: 'avatar_01',
+    profileVisibility: 'public',
+    createdAt: { seconds: 1 },
+    updatedAt: { seconds: 2 },
+    ...overrides,
+  }
+}
+
+describe('Public profile service', { concurrency: false }, () => {
+  before(async () => {
+    globalThis[key] = stubs
+
+    server = await createServer({
+      configFile: false,
+      envFile: false,
+      logLevel: 'silent',
+      server: { middlewareMode: true },
+      ssr: { noExternal: true },
+      plugins: [{
+        name: 'public-profile-test-firebase-boundaries',
+        enforce: 'pre',
+
+        resolveId(source, importer) {
+          if (!importer?.endsWith('/publicProfileService.js')) return
+
+          if (source === 'firebase/firestore') return '\0mock:firestore'
+          if (source === '../../../shared/config/firebase.js') {
+            return '\0mock:config'
+          }
+        },
+
+        load(id) {
+          if (id === '\0mock:firestore') {
+            return `export const { doc, getDoc } = globalThis.${key}`
+          }
+
+          if (id === '\0mock:config') {
+            return `export const db = globalThis.${key}.db`
+          }
+        },
+      }],
+    })
+
+    getPublicProfileByUsername = (
+      await server.ssrLoadModule(
+        '/src/features/profile/services/publicProfileService.js',
+      )
+    ).getPublicProfileByUsername
+  })
+
+  beforeEach(() => {
+    calls = []
+    responses = []
+  })
+
+  after(async () => {
+    await server?.close()
+    delete globalThis[key]
+  })
+
+  it('loads a public profile by username', async () => {
+    responses = [
+      snapshot('alice_123', {
+        userId: 'alice',
+        createdAt: { seconds: 1 },
+      }),
+      snapshot('alice', publicProfile()),
+    ]
+
+    const result = await getPublicProfileByUsername('Alice_123')
+
+    assert.equal(result.kind, 'public')
+    assert.equal(result.username, 'alice_123')
+    assert.equal(result.profile.userId, 'alice')
+    assert.equal(result.profile.displayName, 'Alice')
+
+    assert.deepEqual(calls, [
+      ['doc', 'usernames/alice_123'],
+      ['getDoc', 'usernames/alice_123'],
+      ['doc', 'publicProfiles/alice'],
+      ['getDoc', 'publicProfiles/alice'],
+    ])
+  })
+
+  it('returns not-found when the username does not exist', async () => {
+    responses = [
+      snapshot('missing_user', null, false),
+    ]
+
+    const result = await getPublicProfileByUsername('missing_user')
+
+    assert.deepEqual(result, {
+      kind: 'not-found',
+      username: 'missing_user',
+      profile: null,
+    })
+  })
+
+  it('does not reveal a private username to an unauthenticated visitor', async () => {
+    responses = [{
+      throw: {
+        code: 'permission-denied',
+      },
+    }]
+
+    const result = await getPublicProfileByUsername('private_user')
+
+    assert.deepEqual(result, {
+      kind: 'private-or-not-found',
+      username: 'private_user',
+      profile: null,
+    })
+  })
+
+  it('recognizes a private profile after an authenticated username lookup', async () => {
+    responses = [
+      snapshot('alice_123', {
+        userId: 'alice',
+        createdAt: { seconds: 1 },
+      }),
+      {
+        throw: {
+          code: 'permission-denied',
+        },
+      },
+    ]
+
+    const result = await getPublicProfileByUsername('alice_123')
+
+    assert.deepEqual(result, {
+      kind: 'private',
+      username: 'alice_123',
+      profile: null,
+    })
+  })
+
+  it('does not expose a private owner mirror as public', async () => {
+    responses = [
+      snapshot('alice_123', {
+        userId: 'alice',
+      }),
+      snapshot(
+        'alice',
+        publicProfile({
+          profileVisibility: 'private',
+        }),
+      ),
+    ]
+
+    const result = await getPublicProfileByUsername('alice_123')
+
+    assert.equal(result.kind, 'private')
+    assert.equal(result.profile, null)
+  })
+
+  for (const username of [
+    '',
+    'ab',
+    'UPPER CASE',
+    'contains/slash',
+    'a'.repeat(21),
+  ]) {
+    it(`rejects invalid username ${JSON.stringify(username)}`, async () => {
+      await assert.rejects(
+        getPublicProfileByUsername(username),
+        {
+          code: 'public-profile/invalid-username',
+        },
+      )
+
+      assert.deepEqual(calls, [])
+    })
+  }
+
+  it('rejects a mismatched public profile mirror', async () => {
+    responses = [
+      snapshot('alice_123', {
+        userId: 'alice',
+      }),
+      snapshot(
+        'alice',
+        publicProfile({
+          username: 'different_user',
+        }),
+      ),
+    ]
+
+    await assert.rejects(
+      getPublicProfileByUsername('alice_123'),
+      {
+        code: 'public-profile/inconsistent',
+      },
+    )
+  })
+
+  it('sanitizes Firestore availability errors', async () => {
+    responses = [{
+      throw: {
+        code: 'unavailable',
+        message: 'RAW_FIREBASE_MESSAGE',
+      },
+    }]
+
+    await assert.rejects(
+      getPublicProfileByUsername('alice_123'),
+      {
+        code: 'public-profile/unavailable',
+      },
+    )
+  })
+})
