@@ -460,6 +460,15 @@ export const en = {
     noCreators: 'No TV creator data yet.',
   },
 
+  tmdbCredits: {
+    ariaLabel: 'Credits',
+    disclaimer: 'This product uses the TMDB API but is not endorsed or certified by TMDB.',
+  },
+
+  mediaImage: {
+    unavailable: 'No image available',
+  },
+
   catalog: {
     home: {
       tagline: 'Discover your movie identity',

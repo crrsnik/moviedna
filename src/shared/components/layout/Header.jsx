@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../../../features/auth/hooks/useAuth.js'
 import { useIncomingFriendRequestCount } from '../../../features/friends/hooks/useIncomingFriendRequestCount.js'
+import LanguageSwitcher from '../../../features/localization/components/LanguageSwitcher.jsx'
 import { useTranslation } from '../../../features/localization/hooks/useTranslation.js'
 
 const linkClasses = 'rounded-md py-2 font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 [&.active]:bg-zinc-800 [&.active]:text-white [&.active]:underline [&.active]:underline-offset-4'
@@ -131,6 +132,8 @@ function Header() {
           className="ml-auto flex min-w-0 items-center justify-end gap-1 sm:gap-2"
           aria-label={t('nav.accountNavigation')}
         >
+          <LanguageSwitcher />
+
           {registrationStatus === 'pending' ? (
             <span
               role="status"

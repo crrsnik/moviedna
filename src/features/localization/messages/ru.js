@@ -460,6 +460,15 @@ export const ru = {
     noCreators: 'Пока нет данных о создателях сериалов.',
   },
 
+  tmdbCredits: {
+    ariaLabel: 'Источники',
+    disclaimer: 'Этот продукт использует API TMDB, но не одобрен и не сертифицирован TMDB.',
+  },
+
+  mediaImage: {
+    unavailable: 'Изображение недоступно',
+  },
+
   catalog: {
     home: {
       tagline: 'Откройте свою киноидентичность',

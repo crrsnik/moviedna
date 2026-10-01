@@ -460,6 +460,15 @@ export const fr = {
     noCreators: 'Aucune donnée sur les créateurs de séries.',
   },
 
+  tmdbCredits: {
+    ariaLabel: 'Crédits',
+    disclaimer: 'Ce produit utilise l’API TMDB, mais n’est ni approuvé ni certifié par TMDB.',
+  },
+
+  mediaImage: {
+    unavailable: 'Aucune image disponible',
+  },
+
   catalog: {
     home: {
       tagline: 'Découvrez votre identité cinématographique',
