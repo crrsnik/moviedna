@@ -2514,3 +2514,189 @@ describe('Stage 12 friendship security rules', { concurrency: false }, () => {
     )
   })
 })
+
+describe('Stage 12 private profile friend access', { concurrency: false }, () => {
+  let privateAccessEnv
+
+  function previewFriendshipId(first, second) {
+    const members = [first, second].sort()
+
+    return createHash('sha256')
+      .update(`${members[0]}:${members[1]}`, 'utf8')
+      .digest('hex')
+      .toUpperCase()
+  }
+
+  function privateUserDb(uid) {
+    return privateAccessEnv
+      .authenticatedContext(uid)
+      .firestore()
+  }
+
+  async function seedPrivatePreview({
+    friendshipStatus = null,
+    requestedBy = 'alice',
+  } = {}) {
+    await privateAccessEnv.withSecurityRulesDisabled(
+      async (context) => {
+        const firestore = context.firestore()
+
+        await setDoc(
+          doc(firestore, 'publicProfiles', 'alice'),
+          {
+            profileVisibility: 'private',
+          },
+        )
+
+        await setDoc(
+          doc(
+            firestore,
+            'publicProfilePreviews',
+            'alice',
+          ),
+          {
+            schemaVersion: 1,
+            dna: {
+              genres: [],
+            },
+            statistics: {
+              totalViewings: 0,
+              movieCount: 0,
+              tvCount: 0,
+            },
+            updatedAt: new Date(),
+          },
+        )
+
+        if (friendshipStatus) {
+          await setDoc(
+            doc(
+              firestore,
+              'friendships',
+              previewFriendshipId(
+                'alice',
+                'bob',
+              ),
+            ),
+            {
+              members: ['alice', 'bob'],
+              requestedBy,
+              status: friendshipStatus,
+            },
+          )
+        }
+      },
+    )
+  }
+
+  before(async () => {
+    privateAccessEnv =
+      await initializeTestEnvironment({
+        projectId,
+        firestore: {
+          host: '127.0.0.1',
+          port: 8080,
+          rules: await readFile(
+            new URL(
+              '../firestore.rules',
+              import.meta.url,
+            ),
+            'utf8',
+          ),
+        },
+      })
+  })
+
+  beforeEach(async () => {
+    await privateAccessEnv.clearFirestore()
+  })
+
+  after(async () => {
+    await privateAccessEnv.cleanup()
+  })
+
+  it('allows an accepted friend to read a private profile preview', async () => {
+    await seedPrivatePreview({
+      friendshipStatus: 'accepted',
+    })
+
+    await assertSucceeds(
+      getDoc(
+        doc(
+          privateUserDb('bob'),
+          'publicProfilePreviews',
+          'alice',
+        ),
+      ),
+    )
+  })
+
+  it('does not grant private preview access to the outgoing requester while pending', async () => {
+    await seedPrivatePreview({
+      friendshipStatus: 'pending',
+      requestedBy: 'bob',
+    })
+
+    await assertFails(
+      getDoc(
+        doc(
+          privateUserDb('bob'),
+          'publicProfilePreviews',
+          'alice',
+        ),
+      ),
+    )
+  })
+
+  it('does not grant private preview access to the recipient while pending', async () => {
+    await seedPrivatePreview({
+      friendshipStatus: 'pending',
+      requestedBy: 'alice',
+    })
+
+    await assertFails(
+      getDoc(
+        doc(
+          privateUserDb('bob'),
+          'publicProfilePreviews',
+          'alice',
+        ),
+      ),
+    )
+  })
+
+  it('revokes private preview access after friendship removal', async () => {
+    await seedPrivatePreview({
+      friendshipStatus: 'accepted',
+    })
+
+    const previewRef = doc(
+      privateUserDb('bob'),
+      'publicProfilePreviews',
+      'alice',
+    )
+
+    await assertSucceeds(
+      getDoc(previewRef),
+    )
+
+    await privateAccessEnv.withSecurityRulesDisabled(
+      async (context) => {
+        await deleteDoc(
+          doc(
+            context.firestore(),
+            'friendships',
+            previewFriendshipId(
+              'alice',
+              'bob',
+            ),
+          ),
+        )
+      },
+    )
+
+    await assertFails(
+      getDoc(previewRef),
+    )
+  })
+})

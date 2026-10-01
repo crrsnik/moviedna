@@ -96,11 +96,6 @@ export function buildPublicStatisticsPreview(events) {
 export function createPublicProfilePreviewHandlers(store) {
   async function movieDnaWrite(event) {
     const uid = eventUid(event)
-
-    if (!(await store.isPublic(uid))) {
-      return { status: 'private' }
-    }
-
     const movieDna = snapshotData(event?.data?.after)
 
     await store.mergePreview(uid, {
@@ -112,11 +107,6 @@ export function createPublicProfilePreviewHandlers(store) {
 
   async function viewingHistoryWrite(event) {
     const uid = eventUid(event)
-
-    if (!(await store.isPublic(uid))) {
-      return { status: 'private' }
-    }
-
     const events = await store.loadViewingHistory(uid)
 
     await store.mergePreview(uid, {
@@ -132,15 +122,20 @@ export function createPublicProfilePreviewHandlers(store) {
     const before = snapshotData(event?.data?.before)
     const after = snapshotData(event?.data?.after)
 
-    const wasPublic = before?.profileVisibility === 'public'
-    const isPublic = after?.profileVisibility === 'public'
-
-    if (wasPublic && !isPublic) {
+    if (!after) {
       await store.deletePreview(uid)
       return { status: 'deleted' }
     }
 
-    if (!wasPublic && isPublic) {
+    const profileCreated = !before
+
+    const visibilityChanged = (
+      before
+      && before.profileVisibility
+        !== after.profileVisibility
+    )
+
+    if (profileCreated || visibilityChanged) {
       const [movieDna, viewingHistory] = await Promise.all([
         store.loadMovieDna(uid),
         store.loadViewingHistory(uid),

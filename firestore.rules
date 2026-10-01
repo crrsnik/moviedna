@@ -247,6 +247,37 @@ service cloud.firestore {
     }
 
 
+    function friendshipDocumentId(firstUserId, secondUserId) {
+      let first = firstUserId < secondUserId
+        ? firstUserId
+        : secondUserId;
+
+      let second = firstUserId < secondUserId
+        ? secondUserId
+        : firstUserId;
+
+      return hashing.sha256(
+        (first + ':' + second).toUtf8()
+      ).toHexString();
+    }
+
+    function hasAcceptedFriendshipWith(userId) {
+      let friendshipId = friendshipDocumentId(
+        request.auth.uid,
+        userId
+      );
+
+      let friendshipPath =
+        /databases/$(database)/documents/friendships/$(friendshipId);
+
+      return isAuthenticated()
+        && request.auth.uid != userId
+        && exists(friendshipPath)
+        && get(friendshipPath).data.status == 'accepted'
+        && request.auth.uid in get(friendshipPath).data.members
+        && userId in get(friendshipPath).data.members;
+    }
+
     function isFriendshipMember(data) {
       return isAuthenticated()
         && data.members is list
@@ -503,9 +534,12 @@ service cloud.firestore {
         && exists(
           /databases/$(database)/documents/publicProfiles/$(userId)
         )
-        && get(
-          /databases/$(database)/documents/publicProfiles/$(userId)
-        ).data.profileVisibility == 'public';
+        && (
+          get(
+            /databases/$(database)/documents/publicProfiles/$(userId)
+          ).data.profileVisibility == 'public'
+          || hasAcceptedFriendshipWith(userId)
+        );
 
       allow list, create, update, delete: if false;
     }

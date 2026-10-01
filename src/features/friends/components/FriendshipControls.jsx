@@ -1,5 +1,3 @@
-import { useFriendship } from '../hooks/useFriendship.js'
-
 const PRIMARY_BUTTON = (
   'rounded-lg bg-violet-500 px-4 py-2 '
   + 'text-sm font-semibold text-white '
@@ -19,6 +17,7 @@ const SECONDARY_BUTTON = (
 
 export default function FriendshipControls({
   targetUserId,
+  friendshipState,
 }) {
   const {
     loading,
@@ -30,7 +29,7 @@ export default function FriendshipControls({
     cancelRequest,
     declineRequest,
     removeFriend,
-  } = useFriendship(targetUserId)
+  } = friendshipState
 
   if (!targetUserId) return null
 
