@@ -389,6 +389,18 @@ service cloud.firestore {
       allow get, list, create, update, delete: if false;
     }
 
+    match /publicProfilePreviews/{userId} {
+      allow get: if isAuthenticated()
+        && exists(
+          /databases/$(database)/documents/publicProfiles/$(userId)
+        )
+        && get(
+          /databases/$(database)/documents/publicProfiles/$(userId)
+        ).data.profileVisibility == 'public';
+
+      allow list, create, update, delete: if false;
+    }
+
     match /publicProfiles/{userId} {
       // Safe profile identity is visible to authenticated MovieDNA users.
       // profileVisibility controls public DNA/statistics, not identity.

@@ -19,6 +19,8 @@ import { createHandlers } from './handlers/createHandlers.js'
 import { createMetadataResolver } from './metadata/metadataCache.js'
 import { createTmdbClient } from './metadata/tmdbClient.js'
 import { createTmdbProxyHandler } from './proxy/createTmdbProxyHandler.js'
+import { createFirestorePublicProfilePreviewStore } from './profilePreview/firestorePublicProfilePreviewStore.js'
+import { createPublicProfilePreviewHandlers } from './profilePreview/publicProfilePreview.js'
 import { createRecommendationHandler } from './recommendations/createRecommendationHandler.js'
 import { createRecommendationPipeline } from './recommendations/recommendationPipeline.js'
 import { createRecommendationTmdbClient } from './recommendations/tmdb/recommendationTmdbClient.js'
@@ -91,6 +93,12 @@ function createRecommendationRuntimeHandler() {
 }
 
 const triggerOptions = { ...RUNTIME_OPTIONS, retry: false, secrets: [tmdbToken] }
+const profilePreviewTriggerOptions = { ...RUNTIME_OPTIONS, retry: false }
+
+function createPublicProfilePreviewRuntimeHandlers() {
+  const store = createFirestorePublicProfilePreviewStore(getFirestore())
+  return createPublicProfilePreviewHandlers(store)
+}
 
 export const onRatingWritten = onDocumentWritten({
   ...triggerOptions,
@@ -106,6 +114,21 @@ export const onSavedMediaWritten = onDocumentWritten({
   ...triggerOptions,
   document: 'users/{uid}/savedMedia/{mediaKey}',
 }, (event) => createRuntimeHandlers().savedMediaWrite(event))
+
+export const onMovieDnaCurrentWritten = onDocumentWritten({
+  ...profilePreviewTriggerOptions,
+  document: 'users/{uid}/movieDna/current',
+}, (event) => createPublicProfilePreviewRuntimeHandlers().movieDnaWrite(event))
+
+export const onViewingHistoryWritten = onDocumentWritten({
+  ...profilePreviewTriggerOptions,
+  document: 'users/{uid}/viewingHistory/{eventId}',
+}, (event) => createPublicProfilePreviewRuntimeHandlers().viewingHistoryWrite(event))
+
+export const onPublicProfileWritten = onDocumentWritten({
+  ...profilePreviewTriggerOptions,
+  document: 'publicProfiles/{uid}',
+}, (event) => createPublicProfilePreviewRuntimeHandlers().publicProfileWrite(event))
 
 export const refreshMovieDna = onCall({
   ...REFRESH_MOVIE_DNA_OPTIONS,

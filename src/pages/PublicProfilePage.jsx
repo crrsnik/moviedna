@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom'
 
 import { PROFILE_AVATARS } from '../features/profile/constants/profileSettings.js'
 import { usePublicProfile } from '../features/profile/hooks/usePublicProfile.js'
+import { usePublicProfilePreview } from '../features/profile/hooks/usePublicProfilePreview.js'
 
 function MessagePanel({ title, children }) {
   return (
@@ -49,6 +50,139 @@ function ProfileIdentity({ profile }) {
   )
 }
 
+function GenrePreview({ genres }) {
+  if (!genres.length) {
+    return (
+      <p className="text-sm text-zinc-400">
+        Not enough MovieDNA evidence yet.
+      </p>
+    )
+  }
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {genres.map((genre) => {
+        const percentage = Math.round(genre.score * 100)
+
+        return (
+          <article
+            key={genre.label}
+            className="rounded-xl border border-zinc-800 bg-zinc-950 p-4"
+          >
+            <div className="flex items-baseline justify-between gap-3">
+              <strong className="break-words">
+                {genre.label}
+              </strong>
+
+              <span className="text-sm text-zinc-300">
+                +{percentage}%
+              </span>
+            </div>
+
+            <progress
+              aria-label={`${genre.label} MovieDNA compatibility`}
+              value={percentage}
+              max="100"
+              className="mt-3 h-2 w-full accent-violet-400"
+            />
+          </article>
+        )
+      })}
+    </div>
+  )
+}
+
+function Stat({ label, value }) {
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
+      <p className="text-sm text-zinc-400">
+        {label}
+      </p>
+
+      <p className="mt-1 text-2xl font-semibold">
+        {value}
+      </p>
+    </div>
+  )
+}
+
+function PublicPreview({ state }) {
+  if (state.loading) {
+    return (
+      <p role="status" className="text-zinc-400">
+        Loading public profile preview…
+      </p>
+    )
+  }
+
+  if (state.error) {
+    return (
+      <p role="alert" className="text-zinc-400">
+        Public profile details could not be loaded.
+      </p>
+    )
+  }
+
+  if (!state.preview) {
+    return (
+      <p className="text-zinc-400">
+        This profile doesn't have a public preview yet.
+      </p>
+    )
+  }
+
+  const { dna, statistics } = state.preview
+
+  return (
+    <>
+      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold">
+            MovieDNA
+          </h2>
+
+          <p className="text-sm text-zinc-400">
+            Strongest positive genre signals.
+          </p>
+        </div>
+
+        <div className="mt-5">
+          <GenrePreview genres={dna.genres} />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold">
+            Statistics
+          </h2>
+
+          <p className="text-sm text-zinc-400">
+            Public viewing totals.
+          </p>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <Stat
+            label="Watched"
+            value={statistics.totalViewings}
+          />
+
+          <Stat
+            label="Movies"
+            value={statistics.movieCount}
+          />
+
+          <Stat
+            label="TV shows"
+            value={statistics.tvCount}
+          />
+        </div>
+      </section>
+    </>
+  )
+}
+
 export default function PublicProfilePage() {
   const { username = '' } = useParams()
 
@@ -57,6 +191,15 @@ export default function PublicProfilePage() {
     result,
     error,
   } = usePublicProfile(username)
+
+  const previewUid = (
+    result?.kind === 'public'
+    && result.profile
+  )
+    ? result.profile.userId
+    : null
+
+  const previewState = usePublicProfilePreview(previewUid)
 
   if (loading) {
     return (
@@ -119,27 +262,7 @@ export default function PublicProfilePage() {
           </p>
         </section>
       ) : (
-        <>
-          <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-            <h2 className="text-xl font-semibold">
-              MovieDNA
-            </h2>
-
-            <p className="mt-2 text-sm text-zinc-400">
-              Public MovieDNA highlights will appear here.
-            </p>
-          </section>
-
-          <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-            <h2 className="text-xl font-semibold">
-              Statistics
-            </h2>
-
-            <p className="mt-2 text-sm text-zinc-400">
-              Public viewing statistics will appear here.
-            </p>
-          </section>
-        </>
+        <PublicPreview state={previewState} />
       )}
     </div>
   )

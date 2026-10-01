@@ -1966,4 +1966,157 @@ describe('Stage 11 profile privacy fields', { concurrency: false }, () => {
     )
   })
 
+
+  it('allows authenticated users to read a preview for a public profile', async () => {
+    const ownerDb = userDb()
+
+    const profileData = profile('alice_123', {
+      profileVisibility: 'public',
+    })
+
+    await assertSucceeds(
+      createPair(ownerDb, {
+        profileData,
+        publicProfileData: publicProfile('alice', profileData),
+      }),
+    )
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), 'publicProfilePreviews', 'alice'),
+        {
+          schemaVersion: 1,
+          dna: {
+            genres: [
+              {
+                label: 'Drama',
+                score: 0.8,
+              },
+            ],
+          },
+          statistics: {
+            totalViewings: 3,
+            movieCount: 2,
+            tvCount: 1,
+          },
+          updatedAt: serverTimestamp(),
+        },
+      )
+    })
+
+    await assertSucceeds(
+      getDoc(
+        doc(
+          userDb('bob'),
+          'publicProfilePreviews',
+          'alice',
+        ),
+      ),
+    )
+  })
+
+  it('denies preview reads when the profile is private', async () => {
+    await assertSucceeds(
+      createPair(userDb()),
+    )
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), 'publicProfilePreviews', 'alice'),
+        {
+          schemaVersion: 1,
+          dna: { genres: [] },
+          statistics: {
+            totalViewings: 0,
+            movieCount: 0,
+            tvCount: 0,
+          },
+          updatedAt: serverTimestamp(),
+        },
+      )
+    })
+
+    await assertFails(
+      getDoc(
+        doc(
+          userDb('bob'),
+          'publicProfilePreviews',
+          'alice',
+        ),
+      ),
+    )
+  })
+
+  it('denies preview reads to unauthenticated visitors', async () => {
+    const profileData = profile('alice_123', {
+      profileVisibility: 'public',
+    })
+
+    await assertSucceeds(
+      createPair(userDb(), {
+        profileData,
+        publicProfileData: publicProfile('alice', profileData),
+      }),
+    )
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), 'publicProfilePreviews', 'alice'),
+        {
+          schemaVersion: 1,
+          dna: { genres: [] },
+          statistics: {
+            totalViewings: 0,
+            movieCount: 0,
+            tvCount: 0,
+          },
+          updatedAt: serverTimestamp(),
+        },
+      )
+    })
+
+    await assertFails(
+      getDoc(
+        doc(
+          testEnv.unauthenticatedContext().firestore(),
+          'publicProfilePreviews',
+          'alice',
+        ),
+      ),
+    )
+  })
+
+  it('denies listing public profile previews', async () => {
+    await assertFails(
+      getDocs(
+        collection(
+          userDb('bob'),
+          'publicProfilePreviews',
+        ),
+      ),
+    )
+  })
+
+  it('denies client writes to public profile previews', async () => {
+    await assertFails(
+      setDoc(
+        doc(
+          userDb(),
+          'publicProfilePreviews',
+          'alice',
+        ),
+        {
+          schemaVersion: 1,
+          dna: { genres: [] },
+          statistics: {
+            totalViewings: 0,
+            movieCount: 0,
+            tvCount: 0,
+          },
+          updatedAt: serverTimestamp(),
+        },
+      ),
+    )
+  })
+
 })
