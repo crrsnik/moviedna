@@ -1,6 +1,7 @@
 import { Navigate, useParams } from 'react-router-dom'
 
 import { useAuth } from '../features/auth/hooks/useAuth.js'
+import FriendshipControls from '../features/friends/components/FriendshipControls.jsx'
 
 import { PROFILE_AVATARS } from '../features/profile/constants/profileSettings.js'
 import { usePublicProfile } from '../features/profile/hooks/usePublicProfile.js'
@@ -256,6 +257,12 @@ export default function PublicProfilePage() {
   return (
     <div className="w-full min-w-0 max-w-4xl self-start space-y-6">
       <ProfileIdentity profile={profile} />
+
+      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+        <FriendshipControls
+          targetUserId={profile.userId}
+        />
+      </section>
 
       {result.kind === 'private' ? (
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">
