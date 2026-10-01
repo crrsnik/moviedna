@@ -4,6 +4,7 @@ import {
 } from 'firebase/firestore'
 
 import { db } from '../../../shared/config/firebase.js'
+import { resolveGenreIdLabel } from '../../dna/services/dimensionLabels.js'
 
 export class PublicProfilePreviewError extends Error {
   constructor(code) {
@@ -48,8 +49,20 @@ function normalizeGenre(value) {
     )
   }
 
+  const storedLabel = value.label.trim()
+
+  const label = /^\d+$/.test(storedLabel)
+    ? resolveGenreIdLabel(storedLabel)
+    : storedLabel
+
+  if (!label) {
+    throw new PublicProfilePreviewError(
+      'public-profile-preview/invalid',
+    )
+  }
+
   return {
-    label: value.label.trim(),
+    label,
     score: value.score,
   }
 }

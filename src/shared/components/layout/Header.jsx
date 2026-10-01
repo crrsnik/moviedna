@@ -43,6 +43,7 @@ function Header() {
           <NavLink className={navigationLinkClasses} to="/movies">Movies</NavLink>
           <NavLink className={navigationLinkClasses} to="/tv">TV Shows</NavLink>
           <NavLink className={navigationLinkClasses} to="/actors">Actors</NavLink>
+          {isAuthenticated && <NavLink className={navigationLinkClasses} to="/users/search">Users</NavLink>}
           {isAuthenticated && <NavLink className={navigationLinkClasses} to="/profile">Profile</NavLink>}
         </nav>
         <nav className="ml-auto flex min-w-0 items-center justify-end gap-1 sm:gap-2" aria-label="Account">

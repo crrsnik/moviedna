@@ -27,6 +27,7 @@ import SearchPage from '../pages/SearchPage.jsx'
 import StatisticsPage from '../pages/StatisticsPage.jsx'
 import TvShowDetailPage from '../pages/TvShowDetailPage.jsx'
 import TvShowsPage from '../pages/TvShowsPage.jsx'
+import UserSearchPage from '../pages/UserSearchPage.jsx'
 
 const router = createBrowserRouter([
   {
@@ -54,6 +55,7 @@ const router = createBrowserRouter([
       {
         element: <ProtectedRoute />,
         children: [
+          { path: 'users/search', element: <UserSearchPage /> },
           { path: 'users/:username', element: <PublicProfilePage /> },
           {
             element: <OnboardingRoute />,

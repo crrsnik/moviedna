@@ -8,6 +8,14 @@ const GENRES = new Map([
   [10768, 'War & Politics'], [10770, 'TV Movie'],
 ])
 
+export function resolveGenreIdLabel(value) {
+  const id = Number(value)
+
+  return Number.isSafeInteger(id)
+    ? GENRES.get(id) ?? null
+    : null
+}
+
 function displayName(type, code, fallback) {
   try {
     return new Intl.DisplayNames(['en'], { type, fallback: 'none' }).of(code) ?? fallback
@@ -27,8 +35,8 @@ function personLabel(label, fallback) {
 export function resolveDimensionLabel(dimension, entry) {
   const stored = entry.label.trim()
   if (dimension === 'genres') {
-    const id = Number(keyValue(entry.key, 'genre:'))
-    return GENRES.get(id) ?? 'Unknown genre'
+    const id = keyValue(entry.key, 'genre:')
+    return resolveGenreIdLabel(id) ?? 'Unknown genre'
   }
   if (dimension === 'mediaTypes') {
     return { movie: 'Movies', tv: 'TV' }[keyValue(entry.key, 'media:')] ?? stored

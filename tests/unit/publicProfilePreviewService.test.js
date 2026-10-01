@@ -144,6 +144,54 @@ describe('public profile preview service', { concurrency: false }, () => {
     ])
   })
 
+  it('normalizes legacy numeric genre labels', async () => {
+    response = snapshot({
+      schemaVersion: 1,
+
+      dna: {
+        genres: [
+          {
+            label: '18',
+            score: 0.8,
+          },
+          {
+            label: '28',
+            score: 0.7,
+          },
+          {
+            label: '878',
+            score: 0.6,
+          },
+        ],
+      },
+
+      statistics: {
+        totalViewings: 3,
+        movieCount: 2,
+        tvCount: 1,
+      },
+
+      updatedAt: timestamp(),
+    })
+
+    const result = await getPublicProfilePreview('alice')
+
+    assert.deepEqual(result.dna.genres, [
+      {
+        label: 'Drama',
+        score: 0.8,
+      },
+      {
+        label: 'Action',
+        score: 0.7,
+      },
+      {
+        label: 'Science Fiction',
+        score: 0.6,
+      },
+    ])
+  })
+
   it('returns null when no preview exists', async () => {
     response = snapshot(null, false)
 
