@@ -3,6 +3,23 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 describe('public profile UI contract', () => {
+  it('redirects the authenticated user away from their own public route', async () => {
+    const page = await readFile(
+      new URL('../../src/pages/PublicProfilePage.jsx', import.meta.url),
+      'utf8',
+    )
+
+    assert.match(
+      page,
+      /result\.profile\.userId === user\?\.uid/,
+    )
+
+    assert.match(
+      page,
+      /<Navigate to="\/profile" replace \/>/,
+    )
+  })
+
   it('keeps user profiles behind authentication', async () => {
     const router = await readFile(
       new URL('../../src/app/router.jsx', import.meta.url),

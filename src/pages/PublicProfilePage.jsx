@@ -1,4 +1,6 @@
-import { useParams } from 'react-router-dom'
+import { Navigate, useParams } from 'react-router-dom'
+
+import { useAuth } from '../features/auth/hooks/useAuth.js'
 
 import { PROFILE_AVATARS } from '../features/profile/constants/profileSettings.js'
 import { usePublicProfile } from '../features/profile/hooks/usePublicProfile.js'
@@ -185,6 +187,7 @@ function PublicPreview({ state }) {
 
 export default function PublicProfilePage() {
   const { username = '' } = useParams()
+  const { user } = useAuth()
 
   const {
     loading,
@@ -192,9 +195,15 @@ export default function PublicProfilePage() {
     error,
   } = usePublicProfile(username)
 
+  const ownProfile = (
+    result?.profile?.userId
+    && result.profile.userId === user?.uid
+  )
+
   const previewUid = (
     result?.kind === 'public'
     && result.profile
+    && !ownProfile
   )
     ? result.profile.userId
     : null
@@ -236,6 +245,10 @@ export default function PublicProfilePage() {
         This user doesn't exist.
       </MessagePanel>
     )
+  }
+
+  if (ownProfile) {
+    return <Navigate to="/profile" replace />
   }
 
   const { profile } = result
