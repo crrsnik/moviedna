@@ -38,7 +38,11 @@ describe('social graph UI contract', () => {
     )
 
     assert.ok(
-      header.includes('>Friends</NavLink>'),
+      header.includes('Friends'),
+    )
+
+    assert.ok(
+      header.includes('to="/friends"'),
     )
   })
 
