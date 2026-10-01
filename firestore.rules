@@ -156,11 +156,28 @@ service cloud.firestore {
     }
 
     function isValidCustomList(data, listId) {
-      let fields = ['name', 'description', 'createdAt', 'updatedAt'];
+      let requiredFields = [
+        'name',
+        'description',
+        'createdAt',
+        'updatedAt'
+      ];
+      let allowedFields = [
+        'name',
+        'description',
+        'visibility',
+        'createdAt',
+        'updatedAt'
+      ];
+      let visibility = data.get('visibility', 'private');
+
       return listId.matches('^[A-Za-z0-9]{20}$')
-        && data.keys().hasAll(fields) && data.keys().hasOnly(fields)
+        && data.keys().hasAll(requiredFields)
+        && data.keys().hasOnly(allowedFields)
         && hasLibraryText(data.name, 60)
-        && data.description is string && data.description.size() <= 300
+        && data.description is string
+        && data.description.size() <= 300
+        && visibility in ['private', 'public']
         && hasLibraryTimestamps(data);
     }
 

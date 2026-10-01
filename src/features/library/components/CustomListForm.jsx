@@ -7,11 +7,28 @@ export default function CustomListForm({ uid, list, onClose, onSaved }) {
   const [name, setName] = useState(list?.name ?? ''), [description, setDescription] = useState(list?.description ?? '')
   const action = useLibraryAction(), id = useId()
   let valid = true
-  try { normalizeListInput({ name, description }) } catch { valid = false }
+  const visibility = list?.visibility ?? 'private'
+  try {
+    normalizeListInput({ name, description, visibility })
+  } catch {
+    valid = false
+  }
   const submit = event => {
     event.preventDefault()
     if (!valid) return
-    action.run(() => list ? mediaLibraryService.updateCustomList(uid, list.id, { name, description }) : mediaLibraryService.createCustomList(uid, { name, description }), result => onSaved(result ?? list.id))
+    action.run(
+      () => list
+        ? mediaLibraryService.updateCustomList(
+          uid,
+          list.id,
+          { name, description, visibility },
+        )
+        : mediaLibraryService.createCustomList(
+          uid,
+          { name, description, visibility },
+        ),
+      result => onSaved(result ?? list?.id),
+    )
   }
   return <LibraryDialog title={list ? 'Edit list' : 'Create list'} pending={action.pending} onClose={onClose}>
     <form onSubmit={submit} className="space-y-4">
