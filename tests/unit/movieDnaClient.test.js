@@ -118,7 +118,7 @@ describe('local safety and accessible UI contract', () => {
       assert.match(dimension, new RegExp(label))
     }
 
-    assert.match(dimension, /Math\.abs/)
+    assert.match(dimension, /sortDnaEntriesForDisplay/)
     assert.match(dimension, /slice\(0, DEFAULT_VISIBLE\)/)
     assert.match(dimension, /Show all/)
     assert.match(dimension, /Show less/)

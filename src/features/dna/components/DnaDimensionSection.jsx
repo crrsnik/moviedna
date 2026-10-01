@@ -1,5 +1,7 @@
 import { useState } from 'react'
 
+import { sortDnaEntriesForDisplay } from '../utils/sortDnaEntriesForDisplay.js'
+
 const DEFAULT_VISIBLE = 4
 
 function compatibility(score) {
@@ -9,25 +11,13 @@ function compatibility(score) {
   return 'Neutral or mixed'
 }
 
-function strongestFirst(entries) {
-  return [...entries].sort((left, right) => {
-    const strength = Math.abs(right.score) - Math.abs(left.score)
-    if (strength !== 0) return strength
-
-    const score = right.score - left.score
-    if (score !== 0) return score
-
-    return left.label.localeCompare(right.label)
-  })
-}
-
 export default function DnaDimensionSection({
   id,
   title,
   entries = [],
 }) {
   const [expanded, setExpanded] = useState(false)
-  const orderedEntries = strongestFirst(entries)
+  const orderedEntries = sortDnaEntriesForDisplay(entries)
   const hasMore = orderedEntries.length > DEFAULT_VISIBLE
   const visibleEntries = expanded
     ? orderedEntries
@@ -94,7 +84,9 @@ export default function DnaDimensionSection({
               onClick={() => setExpanded(value => !value)}
               className="mt-4 rounded text-sm font-medium text-violet-300 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4"
             >
-              {expanded ? 'Show less' : 'Show all'}
+              {expanded
+                ? 'Show less'
+                : `Show all (${orderedEntries.length})`}
             </button>
           )}
         </>
