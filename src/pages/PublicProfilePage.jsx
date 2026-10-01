@@ -7,6 +7,8 @@ import { useFriendship } from '../features/friends/hooks/useFriendship.js'
 import { PROFILE_AVATARS } from '../features/profile/constants/profileSettings.js'
 import { usePublicProfile } from '../features/profile/hooks/usePublicProfile.js'
 import { usePublicProfilePreview } from '../features/profile/hooks/usePublicProfilePreview.js'
+import { usePublicBoards } from '../features/profile/hooks/usePublicBoards.js'
+import PublicBoards from '../features/profile/components/PublicBoards.jsx'
 
 function MessagePanel({ title, children }) {
   return (
@@ -110,7 +112,7 @@ function Stat({ label, value }) {
   )
 }
 
-function PublicPreview({ state }) {
+function PublicPreview({ state, boardsState }) {
   if (state.loading) {
     return (
       <p role="status" className="text-zinc-400">
@@ -183,6 +185,8 @@ function PublicPreview({ state }) {
           />
         </div>
       </section>
+
+      <PublicBoards state={boardsState} />
     </>
   )
 }
@@ -227,6 +231,7 @@ export default function PublicProfilePage() {
     : null
 
   const previewState = usePublicProfilePreview(previewUid)
+  const boardsState = usePublicBoards(previewUid)
 
   if (loading) {
     return (
@@ -304,11 +309,14 @@ export default function PublicProfilePage() {
           </h2>
 
           <p className="mx-auto mt-2 max-w-lg text-sm text-zinc-400">
-            This user's MovieDNA and statistics are private.
+            This user's MovieDNA, statistics, and boards are private.
           </p>
         </section>
       ) : (
-        <PublicPreview state={previewState} />
+        <PublicPreview
+          state={previewState}
+          boardsState={boardsState}
+        />
       )}
     </div>
   )
