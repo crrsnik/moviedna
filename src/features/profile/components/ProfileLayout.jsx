@@ -101,7 +101,7 @@ function ProfileLayout() {
           Statistics
         </NavLink>
         <NavLink className={tabClasses} to="/profile/settings">
-          Settings
+          Profile settings
         </NavLink>
       </nav>
 

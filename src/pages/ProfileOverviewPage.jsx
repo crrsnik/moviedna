@@ -170,43 +170,6 @@ export default function ProfileOverviewPage() {
         )}
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <Link
-          to="/profile/library"
-          className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 hover:border-zinc-600 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4"
-        >
-          <h2 className="text-lg font-semibold">
-            Library
-          </h2>
-          <p className="mt-2 text-sm text-zinc-400">
-            Favorites, watchlist, ratings, and custom lists.
-          </p>
-        </Link>
-
-        <Link
-          to="/profile/history"
-          className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 hover:border-zinc-600 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4"
-        >
-          <h2 className="text-lg font-semibold">
-            History
-          </h2>
-          <p className="mt-2 text-sm text-zinc-400">
-            Browse the movies and TV shows you've watched.
-          </p>
-        </Link>
-
-        <Link
-          to="/profile/settings"
-          className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 hover:border-zinc-600 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4"
-        >
-          <h2 className="text-lg font-semibold">
-            Profile settings
-          </h2>
-          <p className="mt-2 text-sm text-zinc-400">
-            Change your name, avatar, and privacy.
-          </p>
-        </Link>
-      </section>
     </div>
   )
 }
