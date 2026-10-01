@@ -93,6 +93,19 @@ export function buildPublicStatisticsPreview(events) {
   }
 }
 
+export async function rebuildPublicProfilePreview(store, uid) {
+  const [movieDna, viewingHistory] = await Promise.all([
+    store.loadMovieDna(uid),
+    store.loadViewingHistory(uid),
+  ])
+
+  await store.writePreview(uid, {
+    schemaVersion: PROFILE_PREVIEW_SCHEMA_VERSION,
+    dna: buildPublicDnaPreview(movieDna),
+    statistics: buildPublicStatisticsPreview(viewingHistory),
+  })
+}
+
 export function createPublicProfilePreviewHandlers(store) {
   async function movieDnaWrite(event) {
     const uid = eventUid(event)
@@ -136,16 +149,7 @@ export function createPublicProfilePreviewHandlers(store) {
     )
 
     if (profileCreated || visibilityChanged) {
-      const [movieDna, viewingHistory] = await Promise.all([
-        store.loadMovieDna(uid),
-        store.loadViewingHistory(uid),
-      ])
-
-      await store.writePreview(uid, {
-        schemaVersion: PROFILE_PREVIEW_SCHEMA_VERSION,
-        dna: buildPublicDnaPreview(movieDna),
-        statistics: buildPublicStatisticsPreview(viewingHistory),
-      })
+      await rebuildPublicProfilePreview(store, uid)
 
       return { status: 'rebuilt' }
     }
