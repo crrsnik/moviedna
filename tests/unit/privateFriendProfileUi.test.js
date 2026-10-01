@@ -64,7 +64,7 @@ describe('private friend profile UI contract', () => {
 
     assert.match(
       page,
-      /This account is private/,
+      /profile\.public\.privateTitle/,
     )
   })
 

@@ -48,10 +48,10 @@ describe('profile navigation UI', () => {
       'utf8',
     )
 
-    assert.match(overview, /Your MovieDNA/)
-    assert.match(overview, /View full DNA/)
-    assert.match(overview, /Your activity/)
-    assert.match(overview, /View statistics/)
+    assert.match(overview, /profile\.overviewPage\.dnaTitle/)
+    assert.match(overview, /profile\.overviewPage\.viewDna/)
+    assert.match(overview, /profile\.overviewPage\.activityTitle/)
+    assert.match(overview, /profile\.overviewPage\.viewStatistics/)
 
     assert.doesNotMatch(overview, /to=["']\/profile\/library["']/)
     assert.doesNotMatch(overview, /to=["']\/profile\/history["']/)

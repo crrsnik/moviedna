@@ -66,7 +66,9 @@ function ProfileLayout() {
             aria-label={t(
               'profile.avatar',
               {
-                label: avatar.label,
+                label: t(
+                  `profile.avatars.${avatar.id}`,
+                ),
               },
             )}
             role="img"

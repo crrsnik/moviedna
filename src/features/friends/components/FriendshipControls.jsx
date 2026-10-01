@@ -1,3 +1,5 @@
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
+
 const PRIMARY_BUTTON = (
   'rounded-lg bg-violet-500 px-4 py-2 '
   + 'text-sm font-semibold text-white '
@@ -19,6 +21,8 @@ export default function FriendshipControls({
   targetUserId,
   friendshipState,
 }) {
+  const { t } = useTranslation()
+
   const {
     loading,
     busy,
@@ -39,7 +43,7 @@ export default function FriendshipControls({
         role="status"
         className="text-sm text-zinc-400"
       >
-        Loading friendship…
+        {t('social.friendship.loading')}
       </p>
     )
   }
@@ -54,14 +58,14 @@ export default function FriendshipControls({
         onClick={sendRequest}
         className={PRIMARY_BUTTON}
       >
-        {busy ? 'Sending…' : 'Add friend'}
+        {busy ? t('social.friendship.sending') : t('social.friendship.addFriend')}
       </button>
     )
   } else if (status === 'outgoing-pending') {
     controls = (
       <>
         <span className="text-sm font-medium text-zinc-300">
-          Request sent
+          {t('social.friendship.requestSent')}
         </span>
 
         <button
@@ -70,7 +74,7 @@ export default function FriendshipControls({
           onClick={cancelRequest}
           className={SECONDARY_BUTTON}
         >
-          Cancel request
+          {t('social.friends.cancelRequest')}
         </button>
       </>
     )
@@ -78,7 +82,7 @@ export default function FriendshipControls({
     controls = (
       <>
         <span className="text-sm font-medium text-zinc-300">
-          Friend request received
+          {t('social.friendship.requestReceived')}
         </span>
 
         <button
@@ -87,7 +91,7 @@ export default function FriendshipControls({
           onClick={acceptRequest}
           className={PRIMARY_BUTTON}
         >
-          Accept
+          {t('social.friends.accept')}
         </button>
 
         <button
@@ -96,7 +100,7 @@ export default function FriendshipControls({
           onClick={declineRequest}
           className={SECONDARY_BUTTON}
         >
-          Decline
+          {t('social.friends.decline')}
         </button>
       </>
     )
@@ -104,7 +108,7 @@ export default function FriendshipControls({
     controls = (
       <>
         <span className="text-sm font-medium text-emerald-300">
-          Friends
+          {t('social.friendship.friends')}
         </span>
 
         <button
@@ -113,7 +117,7 @@ export default function FriendshipControls({
           onClick={removeFriend}
           className={SECONDARY_BUTTON}
         >
-          Remove friend
+          {t('social.friends.removeFriend')}
         </button>
       </>
     )
@@ -130,7 +134,7 @@ export default function FriendshipControls({
           role="alert"
           className="mt-3 text-sm text-red-300"
         >
-          Friendship action could not be completed.
+          {t('social.friendship.actionError')}
         </p>
       )}
     </div>

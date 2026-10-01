@@ -40,7 +40,7 @@ describe('public profile UI contract', () => {
     )
 
     assert.match(page, /result\.kind === 'private'/)
-    assert.match(page, /This account is private/)
+    assert.match(page, /profile\.public\.privateTitle/)
     assert.match(page, /profile\.displayName/)
     assert.match(page, /profile\.username/)
     assert.match(page, /profile\.avatarId/)

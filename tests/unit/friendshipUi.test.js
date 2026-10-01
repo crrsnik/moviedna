@@ -33,14 +33,14 @@ describe('friendship UI contract', () => {
     )
 
     for (const label of [
-      'Add friend',
-      'Request sent',
-      'Cancel request',
-      'Friend request received',
-      'Accept',
-      'Decline',
-      'Friends',
-      'Remove friend',
+      'social.friendship.addFriend',
+      'social.friendship.requestSent',
+      'social.friends.cancelRequest',
+      'social.friendship.requestReceived',
+      'social.friends.accept',
+      'social.friends.decline',
+      'social.friendship.friends',
+      'social.friends.removeFriend',
     ]) {
       assert.match(
         controls,

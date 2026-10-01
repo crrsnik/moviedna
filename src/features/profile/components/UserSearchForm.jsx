@@ -1,5 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
+
 import {
   getUserSearchError,
   normalizeUserSearchQuery,
@@ -9,6 +11,7 @@ export default function UserSearchForm({
   query = '',
   onSearch,
 }) {
+  const { t } = useTranslation()
   const id = useId()
   const [value, setValue] = useState(
     query ? `@${query}` : '',
@@ -43,7 +46,7 @@ export default function UserSearchForm({
         htmlFor={id}
         className="text-sm font-medium text-zinc-300"
       >
-        Username
+        {t('social.userSearch.username')}
       </label>
 
       <div className="flex flex-col gap-3 sm:flex-row">
@@ -69,7 +72,7 @@ export default function UserSearchForm({
           type="submit"
           className="rounded-lg bg-zinc-100 px-5 py-3 text-sm font-semibold text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
         >
-          Search
+          {t('social.userSearch.search')}
         </button>
       </div>
 
@@ -79,14 +82,18 @@ export default function UserSearchForm({
           role="alert"
           className="text-sm text-rose-200"
         >
-          {error}
+          {t(
+            normalizeUserSearchQuery(value)
+              ? 'social.userSearch.validationFormat'
+              : 'social.userSearch.validationEmpty',
+          )}
         </p>
       ) : (
         <p
           id={`${id}-hint`}
           className="text-sm text-zinc-500"
         >
-          Search by exact MovieDNA username.
+          {t('social.userSearch.hint')}
         </p>
       )}
     </form>

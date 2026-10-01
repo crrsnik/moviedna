@@ -58,13 +58,13 @@ describe('social graph UI contract', () => {
     )
 
     for (const expectedText of [
-      'Friends (',
-      'Incoming requests (',
-      'Sent requests (',
-      'Accept',
-      'Decline',
-      'Cancel request',
-      'Remove friend',
+      'social.friends.friendsTitle',
+      'social.friends.incomingTitle',
+      'social.friends.outgoingTitle',
+      'social.friends.accept',
+      'social.friends.decline',
+      'social.friends.cancelRequest',
+      'social.friends.removeFriend',
     ]) {
       assert.ok(
         page.includes(expectedText),

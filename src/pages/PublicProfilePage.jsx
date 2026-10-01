@@ -1,6 +1,7 @@
 import { Navigate, useParams } from 'react-router-dom'
 
 import { useAuth } from '../features/auth/hooks/useAuth.js'
+import { useTranslation } from '../features/localization/hooks/useTranslation.js'
 import FriendshipControls from '../features/friends/components/FriendshipControls.jsx'
 import { useFriendship } from '../features/friends/hooks/useFriendship.js'
 
@@ -27,6 +28,8 @@ function MessagePanel({ title, children }) {
 }
 
 function ProfileIdentity({ profile }) {
+  const { t } = useTranslation()
+
   const avatar = PROFILE_AVATARS.find(
     ({ id }) => id === profile.avatarId,
   ) ?? PROFILE_AVATARS[0]
@@ -36,7 +39,14 @@ function ProfileIdentity({ profile }) {
       <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
         <div
           role="img"
-          aria-label={`${avatar.label} avatar`}
+          aria-label={t(
+          'profile.avatar',
+          {
+            label: t(
+              `profile.avatars.${avatar.id}`,
+            ),
+          },
+        )}
           className="flex size-28 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950 text-6xl"
         >
           {avatar.symbol}
@@ -57,10 +67,12 @@ function ProfileIdentity({ profile }) {
 }
 
 function GenrePreview({ genres }) {
+  const { t } = useTranslation()
+
   if (!genres.length) {
     return (
       <p className="text-sm text-zinc-400">
-        Not enough MovieDNA evidence yet.
+        {t('profile.public.dnaEmpty')}
       </p>
     )
   }
@@ -86,7 +98,12 @@ function GenrePreview({ genres }) {
             </div>
 
             <progress
-              aria-label={`${genre.label} MovieDNA compatibility`}
+              aria-label={t(
+                'profile.public.dnaCompatibility',
+                {
+                  label: genre.label,
+                },
+              )}
               value={percentage}
               max="100"
               className="mt-3 h-2 w-full accent-violet-400"
@@ -113,10 +130,12 @@ function Stat({ label, value }) {
 }
 
 function PublicPreview({ state, boardsState }) {
+  const { t } = useTranslation()
+
   if (state.loading) {
     return (
       <p role="status" className="text-zinc-400">
-        Loading public profile preview…
+        {t('profile.public.previewLoading')}
       </p>
     )
   }
@@ -124,7 +143,7 @@ function PublicPreview({ state, boardsState }) {
   if (state.error) {
     return (
       <p role="alert" className="text-zinc-400">
-        Public profile details could not be loaded.
+        {t('profile.public.previewError')}
       </p>
     )
   }
@@ -132,7 +151,7 @@ function PublicPreview({ state, boardsState }) {
   if (!state.preview) {
     return (
       <p className="text-zinc-400">
-        This profile doesn't have a public preview yet.
+        {t('profile.public.previewMissing')}
       </p>
     )
   }
@@ -143,12 +162,10 @@ function PublicPreview({ state, boardsState }) {
     <>
       <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
         <div className="space-y-1">
-          <h2 className="text-xl font-semibold">
-            MovieDNA
-          </h2>
+          <h2 className="text-xl font-semibold">{t('profile.public.dnaTitle')}</h2>
 
           <p className="text-sm text-zinc-400">
-            Strongest positive genre signals.
+            {t('profile.public.dnaDescription')}
           </p>
         </div>
 
@@ -159,28 +176,26 @@ function PublicPreview({ state, boardsState }) {
 
       <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
         <div className="space-y-1">
-          <h2 className="text-xl font-semibold">
-            Statistics
-          </h2>
+          <h2 className="text-xl font-semibold">{t('profile.public.statisticsTitle')}</h2>
 
           <p className="text-sm text-zinc-400">
-            Public viewing totals.
+            {t('profile.public.statisticsDescription')}
           </p>
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <Stat
-            label="Watched"
+            label={t('profile.public.watched')}
             value={statistics.totalViewings}
           />
 
           <Stat
-            label="Movies"
+            label={t('profile.public.movies')}
             value={statistics.movieCount}
           />
 
           <Stat
-            label="TV shows"
+            label={t('profile.public.tvShows')}
             value={statistics.tvCount}
           />
         </div>
@@ -192,6 +207,7 @@ function PublicPreview({ state, boardsState }) {
 }
 
 export default function PublicProfilePage() {
+  const { t } = useTranslation()
   const { username = '' } = useParams()
   const { user } = useAuth()
 
@@ -237,7 +253,7 @@ export default function PublicProfilePage() {
     return (
       <div className="w-full self-start">
         <p role="status" className="text-zinc-400">
-          Loading profile…
+          {t('profile.public.loading')}
         </p>
       </div>
     )
@@ -246,15 +262,27 @@ export default function PublicProfilePage() {
   if (error) {
     if (error.code === 'public-profile/invalid-username') {
       return (
-        <MessagePanel title="Profile not found">
-          This user doesn't exist.
+        <MessagePanel
+          title={t(
+            'profile.public.notFoundTitle',
+          )}
+        >
+          {t(
+            'profile.public.notFoundDescription',
+          )}
         </MessagePanel>
       )
     }
 
     return (
-      <MessagePanel title="Profile unavailable">
-        We couldn't load this profile right now.
+      <MessagePanel
+        title={t(
+          'profile.public.unavailableTitle',
+        )}
+      >
+        {t(
+          'profile.public.unavailableDescription',
+        )}
       </MessagePanel>
     )
   }
@@ -264,9 +292,15 @@ export default function PublicProfilePage() {
     || !result?.profile
   ) {
     return (
-      <MessagePanel title="Profile not found">
-        This user doesn't exist.
-      </MessagePanel>
+      <MessagePanel
+          title={t(
+            'profile.public.notFoundTitle',
+          )}
+        >
+          {t(
+            'profile.public.notFoundDescription',
+          )}
+        </MessagePanel>
     )
   }
 
@@ -291,7 +325,7 @@ export default function PublicProfilePage() {
         && friendshipState.loading ? (
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">
           <p role="status" className="text-zinc-400">
-            Checking profile access…
+            {t('profile.public.checkingAccess')}
           </p>
         </section>
       ) : result.kind === 'private'
@@ -304,12 +338,10 @@ export default function PublicProfilePage() {
             🔒
           </div>
 
-          <h2 className="mt-3 text-xl font-semibold">
-            This account is private
-          </h2>
+          <h2 className="mt-3 text-xl font-semibold">{t('profile.public.privateTitle')}</h2>
 
           <p className="mx-auto mt-2 max-w-lg text-sm text-zinc-400">
-            This user's MovieDNA, statistics, and boards are private.
+            {t('profile.public.privateDescription')}
           </p>
         </section>
       ) : (
