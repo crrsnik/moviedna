@@ -71,10 +71,12 @@ export function createMediaLibraryService({ auth, db, doc, collection, query, wh
         if (!saved && !value) return
         const favorite = field === 'favorite' ? value : saved?.favorite ?? false
         const watchlist = field === 'watchlist' ? value : saved?.watchlist ?? false
+        const watched = saved?.watched ?? false
         const listIds = saved?.listIds ?? []
-        if (!favorite && !watchlist && !listIds.length) tx.delete(target)
-        else if (saved) tx.update(target, { title: snapshot.title, posterPath: snapshot.posterPath, releaseYear: snapshot.releaseYear, [field]: value, updatedAt: serverTimestamp() })
-        else tx.set(target, { ...snapshot, favorite, watchlist, listIds, createdAt: serverTimestamp(), updatedAt: serverTimestamp() })
+
+        if (!favorite && !watchlist && !watched && !listIds.length) tx.delete(target)
+        else if (saved) tx.update(target, { title: snapshot.title, posterPath: snapshot.posterPath, releaseYear: snapshot.releaseYear, [field]: value, watched, updatedAt: serverTimestamp() })
+        else tx.set(target, { ...snapshot, favorite, watchlist, watched: false, listIds, createdAt: serverTimestamp(), updatedAt: serverTimestamp() })
       })
       // An already-dispatched commit cannot be cancelled; never apply it to a new session's UI.
       requireOwner(uid, session)

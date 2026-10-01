@@ -183,15 +183,19 @@ service cloud.firestore {
     }
 
     function isValidSavedMedia(data, mediaKey) {
-      let fields = ['tmdbId', 'mediaType', 'title', 'posterPath', 'releaseYear',
-                    'favorite', 'watchlist', 'listIds', 'createdAt', 'updatedAt'];
-      return data.keys().hasAll(fields) && data.keys().hasOnly(fields)
+      let requiredFields = ['tmdbId', 'mediaType', 'title', 'posterPath', 'releaseYear',
+                            'favorite', 'watchlist', 'listIds', 'createdAt', 'updatedAt'];
+      let allowedFields = ['tmdbId', 'mediaType', 'title', 'posterPath', 'releaseYear',
+                           'favorite', 'watchlist', 'watched', 'listIds', 'createdAt', 'updatedAt'];
+      let watched = data.get('watched', false);
+
+      return data.keys().hasAll(requiredFields) && data.keys().hasOnly(allowedFields)
         && isValidMediaIdentity(data, mediaKey) && isValidMediaSnapshot(data)
-        && data.favorite is bool && data.watchlist is bool
+        && data.favorite is bool && data.watchlist is bool && watched is bool
         // No iteration/existence guarantee for individual list IDs; see data model.
         && data.listIds is list && data.listIds.size() <= 20
         && data.listIds.toSet().size() == data.listIds.size()
-        && (data.favorite || data.watchlist || data.listIds.size() > 0)
+        && (data.favorite || data.watchlist || watched || data.listIds.size() > 0)
         && hasLibraryTimestamps(data);
     }
 

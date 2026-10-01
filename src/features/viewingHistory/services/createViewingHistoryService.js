@@ -1,4 +1,8 @@
 import {
+  getMediaKey,
+} from '../../library/validation/libraryValidation.js'
+
+import {
   normalizeViewingEvent,
   normalizeViewingHistory,
 } from './normalizeViewingHistory.js'
@@ -203,6 +207,19 @@ export function createViewingHistoryService({
             )
           }
 
+          const savedMediaRef = doc(
+            db,
+            'users',
+            uid,
+            'savedMedia',
+            getMediaKey(media.mediaType, media.tmdbId),
+          )
+
+          const savedMedia =
+            await transaction.get(savedMediaRef)
+
+          owner(uid, session)
+
           transaction.set(reference, {
             schemaVersion: 1,
             ...media,
@@ -210,6 +227,30 @@ export function createViewingHistoryService({
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           })
+
+          if (savedMedia.exists()) {
+            transaction.update(savedMediaRef, {
+              title: media.title,
+              posterPath: media.posterPath,
+              releaseYear: media.releaseYear,
+              watched: true,
+              updatedAt: serverTimestamp(),
+            })
+          } else {
+            transaction.set(savedMediaRef, {
+              tmdbId: media.tmdbId,
+              mediaType: media.mediaType,
+              title: media.title,
+              posterPath: media.posterPath,
+              releaseYear: media.releaseYear,
+              favorite: false,
+              watchlist: false,
+              watched: true,
+              listIds: [],
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            })
+          }
         },
       )
     },

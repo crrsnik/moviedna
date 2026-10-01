@@ -81,11 +81,56 @@ export function createRatingService({ auth, db, doc, collection, onSnapshot, run
         if (!profile.exists() || profile.data()?.onboardingCompleted !== true) throw new RatingError('incomplete-profile')
         const existing = await tx.get(target)
         owner(uid, session)
+
+        const savedMediaRef = doc(
+          db,
+          'users',
+          uid,
+          'savedMedia',
+          key,
+        )
+
+        const savedMedia = await tx.get(savedMediaRef)
+        owner(uid, session)
+
         if (existing.exists()) {
           const saved = normalizeRating(existing)
           if (saved.key !== key) throw new RatingError('identity-mismatch')
-          tx.update(target, { title: media.title, posterPath: media.posterPath, releaseYear: media.releaseYear, score, updatedAt: serverTimestamp() })
-        } else tx.set(target, { ...media, score, createdAt: serverTimestamp(), updatedAt: serverTimestamp() })
+          tx.update(target, {
+            title: media.title,
+            posterPath: media.posterPath,
+            releaseYear: media.releaseYear,
+            score,
+            updatedAt: serverTimestamp(),
+          })
+        } else {
+          tx.set(target, {
+            ...media,
+            score,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          })
+        }
+
+        if (savedMedia.exists()) {
+          tx.update(savedMediaRef, {
+            title: media.title,
+            posterPath: media.posterPath,
+            releaseYear: media.releaseYear,
+            watched: true,
+            updatedAt: serverTimestamp(),
+          })
+        } else {
+          tx.set(savedMediaRef, {
+            ...media,
+            favorite: false,
+            watchlist: false,
+            watched: true,
+            listIds: [],
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          })
+        }
       })
     },
     deleteRating(uid, key) {

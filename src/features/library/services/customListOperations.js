@@ -15,8 +15,8 @@ export function customListOperations({ db, doc, collection, query, where, limit,
     return key
   }
   function writeMembership(tx, target, saved, ids) {
-    if (!saved.favorite && !saved.watchlist && !ids.length) tx.delete(target)
-    else tx.update(target, { listIds: ids, updatedAt: serverTimestamp() })
+    if (!saved.favorite && !saved.watchlist && !saved.watched && !ids.length) tx.delete(target)
+    else tx.update(target, { watched: saved.watched, listIds: ids, updatedAt: serverTimestamp() })
   }
   async function remove(uid, key, id, session) {
     const target = ref(uid, key)
@@ -84,9 +84,9 @@ export function customListOperations({ db, doc, collection, query, where, limit,
           }
           if (!saved && !ids.length) return
           if (saved) {
-            if (!saved.favorite && !saved.watchlist && !ids.length) tx.delete(target)
-            else tx.update(target, { title: snapshot.title, posterPath: snapshot.posterPath, releaseYear: snapshot.releaseYear, listIds: ids, updatedAt: serverTimestamp() })
-          } else tx.set(target, { ...snapshot, favorite: false, watchlist: false, listIds: ids, createdAt: serverTimestamp(), updatedAt: serverTimestamp() })
+            if (!saved.favorite && !saved.watchlist && !saved.watched && !ids.length) tx.delete(target)
+            else tx.update(target, { title: snapshot.title, posterPath: snapshot.posterPath, releaseYear: snapshot.releaseYear, watched: saved.watched, listIds: ids, updatedAt: serverTimestamp() })
+          } else tx.set(target, { ...snapshot, favorite: false, watchlist: false, watched: false, listIds: ids, createdAt: serverTimestamp(), updatedAt: serverTimestamp() })
         })
       })
     },

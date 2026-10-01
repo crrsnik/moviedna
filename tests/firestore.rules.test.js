@@ -650,6 +650,38 @@ describe('Media library security rules', { concurrency: false }, () => {
   for (const [key, patch] of [['movie_1', { tmdbId: 1 }], ['tv_1396', { tmdbId: 1396, mediaType: 'tv' }], ['movie_999999999999', { tmdbId: 999999999999 }]]) it(`savedMedia: valid ${key}`, async () => {
     await assertSucceeds(setDoc(doc(userDb(), 'users/alice/savedMedia', key), savedMedia(patch)))
   })
+
+  it('savedMedia: accepts legacy document without watched', async () => {
+    const target = doc(userDb(), 'users/alice/savedMedia/movie_123')
+    await assertSucceeds(setDoc(target, savedMedia()))
+  })
+
+  it('savedMedia: accepts watched-only document', async () => {
+    const target = doc(userDb(), 'users/alice/savedMedia/movie_123')
+    await assertSucceeds(setDoc(target, savedMedia({
+      favorite: false,
+      watchlist: false,
+      watched: true,
+      listIds: [],
+    })))
+  })
+
+  for (const watched of [null, 0, 1, 'true', [], {}]) {
+    it(`savedMedia: rejects invalid watched ${JSON.stringify(watched)}`, async () => {
+      const target = doc(userDb(), 'users/alice/savedMedia/movie_123')
+      await assertFails(setDoc(target, savedMedia({ watched })))
+    })
+  }
+
+  it('savedMedia: rejects empty memberships with watched false', async () => {
+    const target = doc(userDb(), 'users/alice/savedMedia/movie_123')
+    await assertFails(setDoc(target, savedMedia({
+      favorite: false,
+      watchlist: false,
+      watched: false,
+      listIds: [],
+    })))
+  })
   for (const key of ['movie_0', 'movie_0123', 'movie_1000000000000', 'person_123', 'Movie_123', 'movie_-1', 'movie_1.5', 'movie_1e3', 'movie_123 ', 'movie_１２３', 'tv_123', 'movie_124']) it(`savedMedia: invalid/mismatched key ${key}`, async () => {
     await assertFails(setDoc(doc(userDb(), 'users/alice/savedMedia', key), savedMedia()))
   })

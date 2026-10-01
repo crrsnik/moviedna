@@ -160,6 +160,7 @@ export function createRecommendationPipeline({
   async function run({
     dna,
     rated = [],
+    watched = [],
     hidden = [],
   } = {}) {
     const sourcePlan = buildRecommendationSourcePlan({
@@ -181,7 +182,7 @@ export function createRecommendationPipeline({
     const eligible = excludeKnownMedia(
       pool.candidates,
       {
-        rated,
+        rated: [...rated, ...watched],
         hidden,
       },
     )

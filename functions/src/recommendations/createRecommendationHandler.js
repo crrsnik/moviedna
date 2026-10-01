@@ -90,6 +90,9 @@ export function createRecommendationHandler({
       return await pipeline.run({
         dna: context.dna,
         rated: context.rated,
+        watched: Array.isArray(context.watched)
+          ? context.watched
+          : [],
         hidden: [],
       })
     } catch (error) {

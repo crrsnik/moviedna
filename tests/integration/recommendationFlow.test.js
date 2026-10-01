@@ -186,7 +186,7 @@ describe(
       }
     })
 
-    it('loads private context, excludes rated media before enrichment, ranks candidates and produces a client-safe response', async () => {
+    it('loads private context, excludes known media before enrichment, ranks candidates and produces a client-safe response', async () => {
       const uid = 'recommendation-integration-user'
 
       const user = db
@@ -209,6 +209,34 @@ describe(
           tmdbId: 101,
           mediaType: 'movie',
           score: 10,
+        })
+
+      // Legacy onboarding opinion: must still count as watched even if
+      // savedMedia was created before the watched migration.
+      await user
+        .collection('onboardingResponses')
+        .doc('201')
+        .set({
+          tmdbId: 201,
+          mediaType: 'movie',
+          reaction: 'like',
+        })
+
+      await user
+        .collection('savedMedia')
+        .doc('movie_202')
+        .set({
+          tmdbId: 202,
+          mediaType: 'movie',
+          watched: true,
+        })
+
+      await user
+        .collection('viewingHistory')
+        .doc('AbCdEf0123456789GhIj')
+        .set({
+          tmdbId: 203,
+          mediaType: 'movie',
         })
 
       const store = createFirestoreAdapter(db)
@@ -278,6 +306,24 @@ describe(
         }],
       )
 
+      assert.deepEqual(
+        context.watched,
+        [
+          {
+            tmdbId: 201,
+            mediaType: 'movie',
+          },
+          {
+            tmdbId: 202,
+            mediaType: 'movie',
+          },
+          {
+            tmdbId: 203,
+            mediaType: 'movie',
+          },
+        ],
+      )
+
       const raw = await handler({
         auth: { uid },
         app: {
@@ -291,7 +337,6 @@ describe(
       assert.deepEqual(
         resolvedMediaKeys,
         [
-          'movie_201',
           'tv_301',
         ],
       )
@@ -301,24 +346,28 @@ describe(
         false,
       )
 
+      assert.equal(
+        resolvedMediaKeys.includes('movie_201'),
+        false,
+      )
+
       assert.deepEqual(
         client.results.map(
           item => item.mediaKey,
         ),
         [
-          'movie_201',
           'tv_301',
         ],
       )
 
       assert.equal(
         client.results[0].posterPath,
-        '/movie-201.jpg',
+        '/tv-301.jpg',
       )
 
       assert.equal(
         client.results[0].releaseDate,
-        '2024-02-20',
+        '2024-03-10',
       )
 
       assert.ok(
