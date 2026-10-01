@@ -550,6 +550,40 @@ service cloud.firestore {
       allow get, list, create, update, delete: if false;
     }
 
+    match /publicBoards/{userId} {
+      allow get, list, create, update, delete: if false;
+
+      match /boards/{listId} {
+        allow get, list: if isAuthenticated()
+          && exists(
+            /databases/$(database)/documents/publicProfiles/$(userId)
+          )
+          && (
+            get(
+              /databases/$(database)/documents/publicProfiles/$(userId)
+            ).data.profileVisibility == 'public'
+            || hasAcceptedFriendshipWith(userId)
+          );
+
+        allow create, update, delete: if false;
+
+        match /items/{mediaKey} {
+          allow get, list: if isAuthenticated()
+            && exists(
+              /databases/$(database)/documents/publicProfiles/$(userId)
+            )
+            && (
+              get(
+                /databases/$(database)/documents/publicProfiles/$(userId)
+              ).data.profileVisibility == 'public'
+              || hasAcceptedFriendshipWith(userId)
+            );
+
+          allow create, update, delete: if false;
+        }
+      }
+    }
+
     match /publicProfilePreviews/{userId} {
       allow get: if isAuthenticated()
         && exists(

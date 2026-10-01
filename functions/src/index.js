@@ -21,6 +21,8 @@ import { createTmdbClient } from './metadata/tmdbClient.js'
 import { createTmdbProxyHandler } from './proxy/createTmdbProxyHandler.js'
 import { createFirestorePublicProfilePreviewStore } from './profilePreview/firestorePublicProfilePreviewStore.js'
 import { createPublicProfilePreviewHandlers } from './profilePreview/publicProfilePreview.js'
+import { createFirestorePublicBoardStore } from './publicBoards/firestorePublicBoardStore.js'
+import { createPublicBoardHandlers } from './publicBoards/publicBoards.js'
 import { createRecommendationHandler } from './recommendations/createRecommendationHandler.js'
 import { createRecommendationPipeline } from './recommendations/recommendationPipeline.js'
 import { createRecommendationTmdbClient } from './recommendations/tmdb/recommendationTmdbClient.js'
@@ -100,6 +102,11 @@ function createPublicProfilePreviewRuntimeHandlers() {
   return createPublicProfilePreviewHandlers(store)
 }
 
+function createPublicBoardRuntimeHandlers() {
+  const store = createFirestorePublicBoardStore(getFirestore())
+  return createPublicBoardHandlers(store)
+}
+
 export const onRatingWritten = onDocumentWritten({
   ...triggerOptions,
   document: 'users/{uid}/ratings/{mediaKey}',
@@ -113,7 +120,25 @@ export const onOnboardingSummaryWritten = onDocumentWritten({
 export const onSavedMediaWritten = onDocumentWritten({
   ...triggerOptions,
   document: 'users/{uid}/savedMedia/{mediaKey}',
-}, (event) => createRuntimeHandlers().savedMediaWrite(event))
+}, async (event) => {
+  const [movieDna, publicBoards] = await Promise.all([
+    createRuntimeHandlers().savedMediaWrite(event),
+    createPublicBoardRuntimeHandlers().savedMediaWrite(event),
+  ])
+
+  return {
+    movieDna,
+    publicBoards,
+  }
+})
+
+export const onCustomListWritten = onDocumentWritten({
+  ...profilePreviewTriggerOptions,
+  document: 'users/{uid}/lists/{listId}',
+}, (event) => (
+  createPublicBoardRuntimeHandlers()
+    .customListWrite(event)
+))
 
 export const onMovieDnaCurrentWritten = onDocumentWritten({
   ...profilePreviewTriggerOptions,
