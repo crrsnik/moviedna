@@ -62,10 +62,6 @@ function DnaPreview({ state }) {
               className="mt-3 h-2 w-full accent-violet-400"
             />
 
-            <p className="mt-2 text-xs text-zinc-500">
-              Evidence from {entry.evidenceCount}{' '}
-              {entry.evidenceCount === 1 ? 'title' : 'titles'}
-            </p>
           </article>
         )
       })}

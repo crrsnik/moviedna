@@ -87,13 +87,48 @@ describe('local safety and accessible UI contract', () => {
     assert.equal(LOCAL_FIREBASE_CONFIG.projectId, 'demo-moviedna'); assert.deepEqual(LOCAL_EMULATORS, { auth: 'http://127.0.0.1:9099', firestoreHost: '127.0.0.1', firestorePort: 8080, functionsHost: '127.0.0.1', functionsPort: 5001 })
     assert.equal(isLocalFirebaseMode({ VITE_MOVIEDNA_LOCAL: 'true' }), true); assert.equal(isLocalFirebaseMode({ MODE: 'production' }), false)
   })
-  it('renders all dimensions and text compatibility with accessible status/progress contracts', async () => {
+  it('renders curated human-readable DNA dimensions with accessible expandable sections', async () => {
     const page = await readFile(new URL('../../src/pages/DnaPage.jsx', import.meta.url), 'utf8')
     const dimension = await readFile(new URL('../../src/features/dna/components/DnaDimensionSection.jsx', import.meta.url), 'utf8')
     const state = await readFile(new URL('../../src/features/dna/components/DnaStatePanel.jsx', import.meta.url), 'utf8')
-    for (const name of MOVIEDNA_DIMENSIONS) assert.match(page, new RegExp(`['"]${name}['"]`))
-    for (const label of ['Strong match', 'Positive match', 'Neutral or mixed', 'Lower compatibility']) assert.match(dimension, new RegExp(label))
-    assert.match(dimension, /<progress/); assert.match(state, /aria-live=/); assert.match(page, /<h1/)
+
+    const visibleDimensions = [
+      'genres',
+      'mediaTypes',
+      'decades',
+      'countries',
+      'directors',
+      'actors',
+    ]
+
+    for (const name of visibleDimensions) {
+      assert.match(page, new RegExp(`['"]${name}['"]`))
+    }
+
+    for (const name of MOVIEDNA_DIMENSIONS.filter(name => !visibleDimensions.includes(name))) {
+      assert.doesNotMatch(page, new RegExp(`['"]${name}['"]`))
+    }
+
+    for (const label of [
+      'Strong match',
+      'Positive match',
+      'Neutral or mixed',
+      'Lower compatibility',
+    ]) {
+      assert.match(dimension, new RegExp(label))
+    }
+
+    assert.match(dimension, /Math\.abs/)
+    assert.match(dimension, /slice\(0, DEFAULT_VISIBLE\)/)
+    assert.match(dimension, /Show all/)
+    assert.match(dimension, /Show less/)
+    assert.match(dimension, /aria-expanded=/)
+    assert.match(dimension, /<progress/)
+    assert.doesNotMatch(dimension, /Evidence from/)
+    assert.doesNotMatch(dimension, /confidence/)
+    assert.doesNotMatch(page, /DnaOverview/)
+    assert.match(state, /aria-live=/)
+    assert.match(page, /<h1/)
   })
   it('keeps the compact mobile header accessible without a visible account email row', async () => {
     const header = await readFile(new URL('../../src/shared/components/layout/Header.jsx', import.meta.url), 'utf8')
