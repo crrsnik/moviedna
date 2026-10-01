@@ -12,24 +12,34 @@ describe('profile navigation UI', () => {
       'utf8',
     )
 
-    for (const [path, label] of [
-      ['/profile', 'Overview'],
-      ['/profile/library', 'Library'],
-      ['/profile/dna', 'My DNA'],
-      ['/profile/history', 'History'],
-      ['/profile/stats', 'Statistics'],
-      ['/profile/settings', 'Profile settings'],
-      ['/profile/account', 'Account settings'],
+    for (const [path, key] of [
+      ['/profile', 'profile.overview'],
+      ['/profile/library', 'profile.library'],
+      ['/profile/dna', 'profile.dna'],
+      ['/profile/history', 'profile.history'],
+      ['/profile/stats', 'profile.statistics'],
+      ['/profile/settings', 'profile.profileSettings'],
+      ['/profile/account', 'profile.accountSettings'],
     ]) {
       assert.match(
         layout,
-        new RegExp(`to=["']${path}["'][^>]*>[\\s\\S]*?${label}`),
+        new RegExp(
+          `to=["']${path}["'][\\s\\S]*?t\\(['"]${key.replace('.', '\\.')}['"]\\)`,
+        ),
       )
     }
 
-    assert.match(layout, /aria-label="Profile navigation"/)
+    assert.match(
+      layout,
+      /aria-label=\{t\('profile\.navigation'\)\}/,
+    )
+
     assert.match(layout, /overflow-x-auto/)
-    assert.match(layout, />\s*Edit profile\s*</)
+
+    assert.match(
+      layout,
+      /t\('profile\.editProfile'\)/,
+    )
   })
 
   it('keeps overview focused on previews instead of duplicate navigation cards', async () => {

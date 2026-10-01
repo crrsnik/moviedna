@@ -131,14 +131,53 @@ describe('local safety and accessible UI contract', () => {
     assert.match(page, /<h1/)
   })
   it('keeps the compact mobile header accessible without a visible account email row', async () => {
-    const header = await readFile(new URL('../../src/shared/components/layout/Header.jsx', import.meta.url), 'utf8')
-    for (const [path, label] of [['/movies', 'Movies'], ['/tv', 'TV Shows'], ['/actors', 'Actors'], ['/profile', 'Profile']]) {
-      assert.match(header, new RegExp(`to=["']${path}["'][^>]*>${label}<`))
+    const header = await readFile(
+      new URL(
+        '../../src/shared/components/layout/Header.jsx',
+        import.meta.url,
+      ),
+      'utf8',
+    )
+
+    for (const path of [
+      '/movies',
+      '/tv',
+      '/actors',
+      '/profile',
+    ]) {
+      assert.match(
+        header,
+        new RegExp(`to=["']${path}["']`),
+      )
     }
-    assert.match(header, /sr-only md:not-sr-only/)
-    assert.match(header, /user\.email \|\| user\.displayName/)
-    assert.match(header, /Log out/)
-    assert.match(header, /grid-cols-\[auto_1fr\]/)
+
+    for (const key of [
+      'nav.movies',
+      'nav.tvShows',
+      'nav.actors',
+      'nav.profile',
+      'nav.logout',
+    ]) {
+      assert.ok(
+        header.includes(`t('${key}')`),
+        `Expected Header to use ${key}`,
+      )
+    }
+
+    assert.match(
+      header,
+      /sr-only md:not-sr-only/,
+    )
+
+    assert.match(
+      header,
+      /user\.email[\s\S]*?\|\| user\.displayName/,
+    )
+
+    assert.match(
+      header,
+      /grid-cols-\[auto_1fr\]/,
+    )
   })
   it('keeps seed fail-closed and free of TMDB network code', async () => {
     const seed = await readFile(new URL('../../scripts/seedDnaLocal.js', import.meta.url), 'utf8')

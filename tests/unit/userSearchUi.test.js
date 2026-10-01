@@ -37,10 +37,9 @@ describe('user search routing', () => {
   it('shows the Users navigation entry only to authenticated users', async () => {
     const source = await readFile(headerPath, 'utf8')
 
-    assert.ok(
-      source.includes(
-        '{isAuthenticated && <NavLink className={navigationLinkClasses} to="/users/search">Users</NavLink>}',
-      ),
+    assert.match(
+      source,
+      /\{isAuthenticated && \([\s\S]*?to="\/users\/search"[\s\S]*?t\('nav\.users'\)/,
     )
   })
 })

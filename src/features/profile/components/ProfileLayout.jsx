@@ -1,6 +1,13 @@
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import {
+  Link,
+  NavLink,
+  Outlet,
+} from 'react-router-dom'
 
-import { PROFILE_AVATARS } from '../constants/profileSettings.js'
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
+import {
+  PROFILE_AVATARS,
+} from '../constants/profileSettings.js'
 import { useUserProfile } from '../hooks/useUserProfile.js'
 
 const tabClasses = ({ isActive }) => [
@@ -12,6 +19,8 @@ const tabClasses = ({ isActive }) => [
 ].join(' ')
 
 function ProfileLayout() {
+  const { t } = useTranslation()
+
   const {
     profile,
     isProfileLoading,
@@ -21,8 +30,11 @@ function ProfileLayout() {
   if (isProfileLoading) {
     return (
       <div className="w-full self-start">
-        <p role="status" className="text-zinc-400">
-          Loading profile…
+        <p
+          role="status"
+          className="text-zinc-400"
+        >
+          {t('profile.loading')}
         </p>
       </div>
     )
@@ -31,8 +43,11 @@ function ProfileLayout() {
   if (profileError || !profile) {
     return (
       <div className="w-full self-start">
-        <p role="alert" className="text-red-300">
-          We couldn't load your profile.
+        <p
+          role="alert"
+          className="text-red-300"
+        >
+          {t('profile.loadError')}
         </p>
       </div>
     )
@@ -48,7 +63,12 @@ function ProfileLayout() {
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           <div
             className="flex size-24 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950 text-5xl"
-            aria-label={`${avatar.label} avatar`}
+            aria-label={t(
+              'profile.avatar',
+              {
+                label: avatar.label,
+              },
+            )}
             role="img"
           >
             {avatar.symbol}
@@ -62,8 +82,8 @@ function ProfileLayout() {
 
               <span className="rounded-full border border-zinc-700 px-2.5 py-1 text-xs font-medium text-zinc-300">
                 {profile.profileVisibility === 'public'
-                  ? 'Public profile'
-                  : 'Private profile'}
+                  ? t('profile.publicProfile')
+                  : t('profile.privateProfile')}
               </span>
             </div>
 
@@ -75,36 +95,64 @@ function ProfileLayout() {
               to="/profile/settings"
               className="mt-4 inline-flex rounded-md border border-zinc-600 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100"
             >
-              Edit profile
+              {t('profile.editProfile')}
             </Link>
           </div>
         </div>
       </section>
 
       <nav
-        aria-label="Profile navigation"
+        aria-label={t('profile.navigation')}
         className="flex gap-1 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900 p-2"
       >
-        <NavLink end className={tabClasses} to="/profile">
-          Overview
+        <NavLink
+          end
+          className={tabClasses}
+          to="/profile"
+        >
+          {t('profile.overview')}
         </NavLink>
-        <NavLink className={tabClasses} to="/profile/library">
-          Library
+
+        <NavLink
+          className={tabClasses}
+          to="/profile/library"
+        >
+          {t('profile.library')}
         </NavLink>
-        <NavLink className={tabClasses} to="/profile/dna">
-          My DNA
+
+        <NavLink
+          className={tabClasses}
+          to="/profile/dna"
+        >
+          {t('profile.dna')}
         </NavLink>
-        <NavLink className={tabClasses} to="/profile/history">
-          History
+
+        <NavLink
+          className={tabClasses}
+          to="/profile/history"
+        >
+          {t('profile.history')}
         </NavLink>
-        <NavLink className={tabClasses} to="/profile/stats">
-          Statistics
+
+        <NavLink
+          className={tabClasses}
+          to="/profile/stats"
+        >
+          {t('profile.statistics')}
         </NavLink>
-        <NavLink className={tabClasses} to="/profile/settings">
-          Profile settings
+
+        <NavLink
+          className={tabClasses}
+          to="/profile/settings"
+        >
+          {t('profile.profileSettings')}
         </NavLink>
-        <NavLink className={tabClasses} to="/profile/account">
-          Account settings
+
+        <NavLink
+          className={tabClasses}
+          to="/profile/account"
+        >
+          {t('profile.accountSettings')}
         </NavLink>
       </nav>
 

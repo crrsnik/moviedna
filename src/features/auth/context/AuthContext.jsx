@@ -1,12 +1,14 @@
 import { createContext, useEffect, useState } from 'react'
 import AuthLoadingScreen from '../components/AuthLoadingScreen.jsx'
 import { logoutUser, subscribeToAuthState } from '../services/authService.js'
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
 
 // Context is shared with useAuth; this module also owns its provider.
 // oxlint-disable-next-line react/only-export-components
 export const AuthContext = createContext(undefined)
 
 export function AuthProvider({ children }) {
+  const { t } = useTranslation()
   const [registrationStatus, setRegistrationStatus] = useState('idle')
   const [user, setUser] = useState(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
@@ -53,7 +55,7 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={value}>
       {isAuthLoading ? <AuthLoadingScreen /> : authError ? (
         <main className="flex min-h-svh items-center justify-center bg-zinc-950 p-6 text-center text-zinc-100">
-          <p role="alert">{authError}</p>
+          <p role="alert">{t('auth.sessionRestoreError')}</p>
         </main>
       ) : children}
     </AuthContext.Provider>

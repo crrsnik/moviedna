@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom'
 import { requestPasswordReset } from '../services/passwordResetService.js'
 import { getPasswordResetErrorMessage, PASSWORD_RESET_SUCCESS_MESSAGE } from '../services/passwordResetErrors.js'
 import { validatePasswordReset } from '../validation/passwordResetValidation.js'
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
+import { translateAuthMessage } from '../../localization/core/authUiMessages.js'
 
 function ForgotPasswordForm() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState(null)
   const [serverError, setServerError] = useState(null)
@@ -47,12 +50,12 @@ function ForgotPasswordForm() {
     <div className="space-y-5">
       {isSuccess ? (
         <p role="status" aria-live="polite" className="rounded-md border border-zinc-700 bg-zinc-900 p-4 text-zinc-200">
-          {PASSWORD_RESET_SUCCESS_MESSAGE}
+          {translateAuthMessage(t, PASSWORD_RESET_SUCCESS_MESSAGE)}
         </p>
       ) : (
         <form onSubmit={handleSubmit} noValidate aria-busy={isSubmitting} className="space-y-5">
           <div className="space-y-2">
-            <label htmlFor="password-reset-email" className="block text-sm font-medium text-zinc-200">Email</label>
+            <label htmlFor="password-reset-email" className="block text-sm font-medium text-zinc-200">{t('auth.fields.email')}</label>
             <input
               ref={emailRef}
               id="password-reset-email"
@@ -67,16 +70,16 @@ function ForgotPasswordForm() {
               aria-describedby={emailError ? 'password-reset-email-error' : undefined}
               className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 disabled:opacity-70 aria-invalid:border-red-400"
             />
-            {emailError && <p id="password-reset-email-error" className="text-sm text-red-300">{emailError}</p>}
+            {emailError && <p id="password-reset-email-error" className="text-sm text-red-300">{translateAuthMessage(t, emailError)}</p>}
           </div>
-          {serverError && <p role="alert" className="text-sm text-red-300">{serverError}</p>}
+          {serverError && <p role="alert" className="text-sm text-red-300">{translateAuthMessage(t, serverError)}</p>}
           <button type="submit" disabled={isSubmitting} className="w-full rounded-md bg-zinc-100 px-4 py-3 font-semibold text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100 disabled:cursor-wait disabled:opacity-60">
-            {isSubmitting ? 'Sending…' : 'Send reset instructions'}
+            {isSubmitting ? t('auth.passwordReset.submitting') : t('auth.passwordReset.submit')}
           </button>
         </form>
       )}
       <p className="text-center text-sm">
-        <Link to="/login" className="rounded text-zinc-100 underline underline-offset-4 hover:text-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100">Back to log in</Link>
+        <Link to="/login" className="rounded text-zinc-100 underline underline-offset-4 hover:text-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100">{t('auth.passwordReset.backToLogin')}</Link>
       </p>
     </div>
   )

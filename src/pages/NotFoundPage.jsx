@@ -1,10 +1,13 @@
 import PagePlaceholder from '../shared/components/PagePlaceholder.jsx'
+import { useTranslation } from '../features/localization/hooks/useTranslation.js'
 
 function NotFoundPage() {
+  const { t } = useTranslation()
+
   return (
     <PagePlaceholder
-      title="Page not found"
-      subtitle="The page you are looking for does not exist."
+      title={t('notFound.title')}
+      subtitle={t('notFound.subtitle')}
     />
   )
 }

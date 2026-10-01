@@ -37,12 +37,14 @@ describe('social graph UI contract', () => {
       header.includes('to="/friends"'),
     )
 
-    assert.ok(
-      header.includes('Friends'),
+    assert.match(
+      header,
+      /t\('nav\.friends'\)/,
     )
 
-    assert.ok(
-      header.includes('to="/friends"'),
+    assert.match(
+      header,
+      /\{isAuthenticated && \(/,
     )
   })
 

@@ -44,7 +44,7 @@ describe('friend request badge UI contract', () => {
 
     assert.match(
       header,
-      /incoming friend requests/,
+      /t\(\s*'nav\.incomingFriendRequests'/,
     )
 
     assert.match(
