@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useMovieDna } from '../features/dna/hooks/useMovieDna.js'
+import { selectDnaPreviewTraits } from '../features/dna/utils/selectDnaPreviewTraits.js'
 import { calculateViewingStats } from '../features/statistics/core/calculateViewingStats.js'
 import { useViewingHistory } from '../features/viewingHistory/hooks/useViewingHistory.js'
 import { localDateString } from '../features/viewingHistory/validation/viewingHistoryValidation.js'
@@ -17,37 +18,35 @@ function DnaPreview({ state }) {
     )
   }
 
-  const genres = [...(state.current.dimensions?.genres ?? [])]
-    .filter(entry => (
-      entry
-      && typeof entry.label === 'string'
-      && typeof entry.score === 'number'
-      && entry.score > 0
-    ))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 4)
+  const traits = selectDnaPreviewTraits(
+    state.current.dimensions,
+  )
 
-  if (!genres.length) {
+  if (!traits.length) {
     return (
       <p className="text-sm text-zinc-400">
-        Not enough genre evidence yet.
+        Not enough positive DNA signals yet.
       </p>
     )
   }
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {genres.map((entry) => {
-        const percent = Math.round(entry.score * 100)
+      {traits.map((trait) => {
+        const percent = Math.round(trait.score * 100)
 
         return (
           <article
-            key={entry.key}
+            key={`${trait.dimension}:${trait.key}`}
             className="rounded-xl border border-zinc-800 bg-zinc-950 p-4"
           >
-            <div className="flex items-baseline justify-between gap-3">
+            <p className="text-xs font-medium text-zinc-500">
+              {trait.category}
+            </p>
+
+            <div className="mt-1 flex items-baseline justify-between gap-3">
               <h3 className="font-semibold">
-                {entry.label}
+                {trait.label}
               </h3>
 
               <span className="text-sm font-medium text-zinc-300">
@@ -56,12 +55,11 @@ function DnaPreview({ state }) {
             </div>
 
             <progress
-              aria-label={`${entry.label} MovieDNA compatibility`}
+              aria-label={`${trait.label} MovieDNA compatibility`}
               value={percent}
               max="100"
               className="mt-3 h-2 w-full accent-violet-400"
             />
-
           </article>
         )
       })}
@@ -105,7 +103,7 @@ export default function ProfileOverviewPage() {
             </h2>
 
             <p className="mt-1 text-sm text-zinc-400">
-              A preview of your strongest positive genre signals.
+              A snapshot of the strongest patterns across your MovieDNA.
             </p>
           </div>
 
