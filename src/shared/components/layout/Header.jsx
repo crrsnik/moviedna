@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../features/auth/hooks/useAuth.js'
+import { useIncomingFriendRequestCount } from '../../../features/friends/hooks/useIncomingFriendRequestCount.js'
 
 const linkClasses = 'rounded-md py-2 font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 [&.active]:bg-zinc-800 [&.active]:text-white [&.active]:underline [&.active]:underline-offset-4'
 const navigationLinkClasses = `${linkClasses} px-2 text-xs sm:px-3 sm:text-sm`
@@ -8,6 +9,8 @@ const accountActionClasses = `${linkClasses} px-2 text-xs sm:px-3 sm:text-sm`
 
 function Header() {
   const { user, isAuthenticated, logout, registrationStatus } = useAuth()
+  const incomingFriendRequestCount =
+    useIncomingFriendRequestCount()
   const navigate = useNavigate()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [logoutError, setLogoutError] = useState(null)
@@ -44,6 +47,25 @@ function Header() {
           <NavLink className={navigationLinkClasses} to="/tv">TV Shows</NavLink>
           <NavLink className={navigationLinkClasses} to="/actors">Actors</NavLink>
           {isAuthenticated && <NavLink className={navigationLinkClasses} to="/users/search">Users</NavLink>}
+          {isAuthenticated && (
+            <NavLink
+              className={`${navigationLinkClasses} inline-flex items-center gap-1.5`}
+              to="/friends"
+            >
+              Friends
+
+              {incomingFriendRequestCount > 0 && (
+                <span
+                  aria-label={`${incomingFriendRequestCount} incoming friend requests`}
+                  className="inline-flex min-w-5 items-center justify-center rounded-full bg-violet-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+                >
+                  {incomingFriendRequestCount > 99
+                    ? '99+'
+                    : incomingFriendRequestCount}
+                </span>
+              )}
+            </NavLink>
+          )}
           {isAuthenticated && <NavLink className={navigationLinkClasses} to="/profile">Profile</NavLink>}
         </nav>
         <nav className="ml-auto flex min-w-0 items-center justify-end gap-1 sm:gap-2" aria-label="Account">

@@ -93,14 +93,22 @@ export function buildPublicStatisticsPreview(events) {
   }
 }
 
+export async function rebuildPublicProfilePreview(store, uid) {
+  const [movieDna, viewingHistory] = await Promise.all([
+    store.loadMovieDna(uid),
+    store.loadViewingHistory(uid),
+  ])
+
+  await store.writePreview(uid, {
+    schemaVersion: PROFILE_PREVIEW_SCHEMA_VERSION,
+    dna: buildPublicDnaPreview(movieDna),
+    statistics: buildPublicStatisticsPreview(viewingHistory),
+  })
+}
+
 export function createPublicProfilePreviewHandlers(store) {
   async function movieDnaWrite(event) {
     const uid = eventUid(event)
-
-    if (!(await store.isPublic(uid))) {
-      return { status: 'private' }
-    }
-
     const movieDna = snapshotData(event?.data?.after)
 
     await store.mergePreview(uid, {
@@ -112,11 +120,6 @@ export function createPublicProfilePreviewHandlers(store) {
 
   async function viewingHistoryWrite(event) {
     const uid = eventUid(event)
-
-    if (!(await store.isPublic(uid))) {
-      return { status: 'private' }
-    }
-
     const events = await store.loadViewingHistory(uid)
 
     await store.mergePreview(uid, {
@@ -132,25 +135,21 @@ export function createPublicProfilePreviewHandlers(store) {
     const before = snapshotData(event?.data?.before)
     const after = snapshotData(event?.data?.after)
 
-    const wasPublic = before?.profileVisibility === 'public'
-    const isPublic = after?.profileVisibility === 'public'
-
-    if (wasPublic && !isPublic) {
+    if (!after) {
       await store.deletePreview(uid)
       return { status: 'deleted' }
     }
 
-    if (!wasPublic && isPublic) {
-      const [movieDna, viewingHistory] = await Promise.all([
-        store.loadMovieDna(uid),
-        store.loadViewingHistory(uid),
-      ])
+    const profileCreated = !before
 
-      await store.writePreview(uid, {
-        schemaVersion: PROFILE_PREVIEW_SCHEMA_VERSION,
-        dna: buildPublicDnaPreview(movieDna),
-        statistics: buildPublicStatisticsPreview(viewingHistory),
-      })
+    const visibilityChanged = (
+      before
+      && before.profileVisibility
+        !== after.profileVisibility
+    )
+
+    if (profileCreated || visibilityChanged) {
+      await rebuildPublicProfilePreview(store, uid)
 
       return { status: 'rebuilt' }
     }

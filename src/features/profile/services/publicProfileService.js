@@ -41,6 +41,16 @@ function validUid(value) {
   )
 }
 
+function normalizeUserId(value) {
+  if (!validUid(value)) {
+    throw new PublicProfileLookupError(
+      'public-profile/invalid-user-id',
+    )
+  }
+
+  return value
+}
+
 function normalizePublicProfile(snapshot) {
   if (!snapshot.exists()) {
     throw new PublicProfileLookupError('public-profile/inconsistent')
@@ -89,6 +99,21 @@ function mapError(error) {
   }
 
   return new PublicProfileLookupError('public-profile/unknown')
+}
+
+
+export async function getPublicProfileByUserId(value) {
+  try {
+    const userId = normalizeUserId(value)
+
+    const profileSnapshot = await getDoc(
+      doc(db, 'publicProfiles', userId),
+    )
+
+    return normalizePublicProfile(profileSnapshot)
+  } catch (error) {
+    throw mapError(error)
+  }
 }
 
 export async function getPublicProfileByUsername(value) {

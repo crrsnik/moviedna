@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, it } from 'node:test'
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing'
@@ -2119,4 +2120,583 @@ describe('Stage 11 profile privacy fields', { concurrency: false }, () => {
     )
   })
 
+})
+
+describe('Stage 12 friendship security rules', { concurrency: false }, () => {
+  before(async () => {
+    testEnv = await initializeTestEnvironment({
+      projectId,
+      firestore: {
+        host: '127.0.0.1',
+        port: 8080,
+        rules: await readFile(
+          new URL('../firestore.rules', import.meta.url),
+          'utf8',
+        ),
+      },
+    })
+  })
+
+  beforeEach(async () => {
+    await testEnv.clearFirestore()
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore()
+      const batch = writeBatch(db)
+
+      for (const uid of ['alice', 'bob', 'charlie']) {
+        batch.set(
+          doc(db, 'publicProfiles', uid),
+          { userId: uid },
+        )
+      }
+
+      await batch.commit()
+    })
+  })
+
+  after(async () => {
+    await testEnv?.cleanup()
+  })
+
+  const orderedMembers = (first, second) =>
+    [first, second].sort((a, b) => a.localeCompare(b))
+
+  const friendshipId = (first, second) => {
+    const [memberA, memberB] = orderedMembers(first, second)
+
+    return createHash('sha256')
+      .update(`${memberA}:${memberB}`, 'utf8')
+      .digest('hex')
+      .toUpperCase()
+  }
+
+  const friendshipRef = (
+    db,
+    first = 'alice',
+    second = 'bob',
+  ) => doc(
+    db,
+    'friendships',
+    friendshipId(first, second),
+  )
+
+  const friendshipData = (
+    requestedBy = 'alice',
+    otherUser = 'bob',
+    overrides = {},
+  ) => ({
+    members: orderedMembers(requestedBy, otherUser),
+    requestedBy,
+    status: 'pending',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    acceptedAt: null,
+    ...overrides,
+  })
+
+  async function createPendingFriendship(
+    requester = 'alice',
+    recipient = 'bob',
+  ) {
+    const db = userDb(requester)
+
+    await assertSucceeds(
+      setDoc(
+        friendshipRef(db, requester, recipient),
+        friendshipData(requester, recipient),
+      ),
+    )
+  }
+
+  it('creates one canonical pair ID regardless of direction', () => {
+    assert.equal(
+      friendshipId('alice', 'bob'),
+      friendshipId('bob', 'alice'),
+    )
+
+    assert.match(
+      friendshipId('alice', 'bob'),
+      /^[A-F0-9]{64}$/,
+    )
+  })
+
+  it('allows an authenticated user to create a pending request', async () => {
+    const db = userDb('alice')
+
+    await assertSucceeds(
+      setDoc(
+        friendshipRef(db),
+        friendshipData(),
+      ),
+    )
+  })
+
+  it('denies unauthenticated friendship creation', async () => {
+    const db = testEnv.unauthenticatedContext().firestore()
+
+    await assertFails(
+      setDoc(
+        friendshipRef(db),
+        friendshipData(),
+      ),
+    )
+  })
+
+  it('denies creating a request on behalf of another user', async () => {
+    const db = userDb('charlie')
+
+    await assertFails(
+      setDoc(
+        friendshipRef(db),
+        friendshipData('alice', 'bob'),
+      ),
+    )
+  })
+
+  it('denies sending a friend request to yourself', async () => {
+    const db = userDb('alice')
+
+    await assertFails(
+      setDoc(
+        friendshipRef(db, 'alice', 'alice'),
+        friendshipData('alice', 'alice'),
+      ),
+    )
+  })
+
+  it('denies a request when the other public profile does not exist', async () => {
+    const db = userDb('alice')
+
+    await assertFails(
+      setDoc(
+        friendshipRef(db, 'alice', 'missing-user'),
+        friendshipData('alice', 'missing-user'),
+      ),
+    )
+  })
+
+  it('denies creating an already accepted friendship', async () => {
+    const db = userDb('alice')
+
+    await assertFails(
+      setDoc(
+        friendshipRef(db),
+        friendshipData('alice', 'bob', {
+          status: 'accepted',
+          acceptedAt: serverTimestamp(),
+        }),
+      ),
+    )
+  })
+
+  it('prevents a reversed duplicate friendship', async () => {
+    await createPendingFriendship('alice', 'bob')
+
+    const bobDb = userDb('bob')
+
+    await assertFails(
+      setDoc(
+        friendshipRef(bobDb, 'bob', 'alice'),
+        friendshipData('bob', 'alice'),
+      ),
+    )
+  })
+
+  it('allows both participants to read the friendship', async () => {
+    await createPendingFriendship()
+
+    await assertSucceeds(
+      getDoc(
+        friendshipRef(userDb('alice')),
+      ),
+    )
+
+    await assertSucceeds(
+      getDoc(
+        friendshipRef(userDb('bob')),
+      ),
+    )
+  })
+
+  it('denies friendship reads to unrelated users', async () => {
+    await createPendingFriendship()
+
+    await assertFails(
+      getDoc(
+        friendshipRef(userDb('charlie')),
+      ),
+    )
+  })
+
+  it('allows a participant to query only their friendships', async () => {
+    await createPendingFriendship()
+
+    const db = userDb('alice')
+
+    await assertSucceeds(
+      getDocs(
+        query(
+          collection(db, 'friendships'),
+          where('members', 'array-contains', 'alice'),
+        ),
+      ),
+    )
+  })
+
+  it('denies listing friendships without a member constraint', async () => {
+    await createPendingFriendship()
+
+    await assertFails(
+      getDocs(
+        collection(
+          userDb('alice'),
+          'friendships',
+        ),
+      ),
+    )
+  })
+
+  it('denies querying another users friendships', async () => {
+    await createPendingFriendship()
+
+    const db = userDb('charlie')
+
+    await assertFails(
+      getDocs(
+        query(
+          collection(db, 'friendships'),
+          where('members', 'array-contains', 'alice'),
+        ),
+      ),
+    )
+  })
+
+  it('denies the requester accepting their own request', async () => {
+    await createPendingFriendship()
+
+    const db = userDb('alice')
+
+    await assertFails(
+      updateDoc(
+        friendshipRef(db),
+        {
+          status: 'accepted',
+          acceptedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+      ),
+    )
+  })
+
+  it('allows only the recipient to accept a pending request', async () => {
+    await createPendingFriendship()
+
+    const db = userDb('bob')
+
+    await assertSucceeds(
+      updateDoc(
+        friendshipRef(db),
+        {
+          status: 'accepted',
+          acceptedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+      ),
+    )
+
+    const snapshot = await assertSucceeds(
+      getDoc(friendshipRef(db)),
+    )
+
+    assert.equal(snapshot.data().status, 'accepted')
+    assert.ok(snapshot.data().acceptedAt instanceof Timestamp)
+  })
+
+  it('denies tampering with friendship identity while accepting', async () => {
+    await createPendingFriendship()
+
+    const db = userDb('bob')
+
+    await assertFails(
+      updateDoc(
+        friendshipRef(db),
+        {
+          requestedBy: 'bob',
+          status: 'accepted',
+          acceptedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+      ),
+    )
+  })
+
+  it('denies reverting an accepted friendship to pending', async () => {
+    await createPendingFriendship()
+
+    const bobDb = userDb('bob')
+
+    await assertSucceeds(
+      updateDoc(
+        friendshipRef(bobDb),
+        {
+          status: 'accepted',
+          acceptedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+      ),
+    )
+
+    const aliceDb = userDb('alice')
+
+    await assertFails(
+      updateDoc(
+        friendshipRef(aliceDb),
+        {
+          status: 'pending',
+          acceptedAt: null,
+          updatedAt: serverTimestamp(),
+        },
+      ),
+    )
+  })
+
+  it('allows the requester to cancel a pending request', async () => {
+    await createPendingFriendship()
+
+    const db = userDb('alice')
+
+    await assertSucceeds(
+      deleteDoc(friendshipRef(db)),
+    )
+  })
+
+  it('allows the recipient to decline a pending request', async () => {
+    await createPendingFriendship()
+
+    const db = userDb('bob')
+
+    await assertSucceeds(
+      deleteDoc(friendshipRef(db)),
+    )
+  })
+
+  it('denies unrelated users deleting a friendship', async () => {
+    await createPendingFriendship()
+
+    const db = userDb('charlie')
+
+    await assertFails(
+      deleteDoc(friendshipRef(db)),
+    )
+  })
+
+  it('allows either participant to unfriend after acceptance', async () => {
+    await createPendingFriendship()
+
+    const bobDb = userDb('bob')
+
+    await assertSucceeds(
+      updateDoc(
+        friendshipRef(bobDb),
+        {
+          status: 'accepted',
+          acceptedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+      ),
+    )
+
+    await assertSucceeds(
+      deleteDoc(
+        friendshipRef(userDb('alice')),
+      ),
+    )
+  })
+})
+
+describe('Stage 12 private profile friend access', { concurrency: false }, () => {
+  let privateAccessEnv
+
+  function previewFriendshipId(first, second) {
+    const members = [first, second].sort()
+
+    return createHash('sha256')
+      .update(`${members[0]}:${members[1]}`, 'utf8')
+      .digest('hex')
+      .toUpperCase()
+  }
+
+  function privateUserDb(uid) {
+    return privateAccessEnv
+      .authenticatedContext(uid)
+      .firestore()
+  }
+
+  async function seedPrivatePreview({
+    friendshipStatus = null,
+    requestedBy = 'alice',
+  } = {}) {
+    await privateAccessEnv.withSecurityRulesDisabled(
+      async (context) => {
+        const firestore = context.firestore()
+
+        await setDoc(
+          doc(firestore, 'publicProfiles', 'alice'),
+          {
+            profileVisibility: 'private',
+          },
+        )
+
+        await setDoc(
+          doc(
+            firestore,
+            'publicProfilePreviews',
+            'alice',
+          ),
+          {
+            schemaVersion: 1,
+            dna: {
+              genres: [],
+            },
+            statistics: {
+              totalViewings: 0,
+              movieCount: 0,
+              tvCount: 0,
+            },
+            updatedAt: new Date(),
+          },
+        )
+
+        if (friendshipStatus) {
+          await setDoc(
+            doc(
+              firestore,
+              'friendships',
+              previewFriendshipId(
+                'alice',
+                'bob',
+              ),
+            ),
+            {
+              members: ['alice', 'bob'],
+              requestedBy,
+              status: friendshipStatus,
+            },
+          )
+        }
+      },
+    )
+  }
+
+  before(async () => {
+    privateAccessEnv =
+      await initializeTestEnvironment({
+        projectId,
+        firestore: {
+          host: '127.0.0.1',
+          port: 8080,
+          rules: await readFile(
+            new URL(
+              '../firestore.rules',
+              import.meta.url,
+            ),
+            'utf8',
+          ),
+        },
+      })
+  })
+
+  beforeEach(async () => {
+    await privateAccessEnv.clearFirestore()
+  })
+
+  after(async () => {
+    await privateAccessEnv.cleanup()
+  })
+
+  it('allows an accepted friend to read a private profile preview', async () => {
+    await seedPrivatePreview({
+      friendshipStatus: 'accepted',
+    })
+
+    await assertSucceeds(
+      getDoc(
+        doc(
+          privateUserDb('bob'),
+          'publicProfilePreviews',
+          'alice',
+        ),
+      ),
+    )
+  })
+
+  it('does not grant private preview access to the outgoing requester while pending', async () => {
+    await seedPrivatePreview({
+      friendshipStatus: 'pending',
+      requestedBy: 'bob',
+    })
+
+    await assertFails(
+      getDoc(
+        doc(
+          privateUserDb('bob'),
+          'publicProfilePreviews',
+          'alice',
+        ),
+      ),
+    )
+  })
+
+  it('does not grant private preview access to the recipient while pending', async () => {
+    await seedPrivatePreview({
+      friendshipStatus: 'pending',
+      requestedBy: 'alice',
+    })
+
+    await assertFails(
+      getDoc(
+        doc(
+          privateUserDb('bob'),
+          'publicProfilePreviews',
+          'alice',
+        ),
+      ),
+    )
+  })
+
+  it('revokes private preview access after friendship removal', async () => {
+    await seedPrivatePreview({
+      friendshipStatus: 'accepted',
+    })
+
+    const previewRef = doc(
+      privateUserDb('bob'),
+      'publicProfilePreviews',
+      'alice',
+    )
+
+    await assertSucceeds(
+      getDoc(previewRef),
+    )
+
+    await privateAccessEnv.withSecurityRulesDisabled(
+      async (context) => {
+        await deleteDoc(
+          doc(
+            context.firestore(),
+            'friendships',
+            previewFriendshipId(
+              'alice',
+              'bob',
+            ),
+          ),
+        )
+      },
+    )
+
+    await assertFails(
+      getDoc(previewRef),
+    )
+  })
 })

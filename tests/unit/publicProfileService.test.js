@@ -7,6 +7,7 @@ const key = '__moviednaPublicProfileServiceTest'
 const db = {}
 let server
 let getPublicProfileByUsername
+let getPublicProfileByUserId
 let calls
 let responses
 
@@ -87,11 +88,15 @@ describe('Public profile service', { concurrency: false }, () => {
       }],
     })
 
-    getPublicProfileByUsername = (
-      await server.ssrLoadModule(
-        '/src/features/profile/services/publicProfileService.js',
-      )
-    ).getPublicProfileByUsername
+    const service = await server.ssrLoadModule(
+      '/src/features/profile/services/publicProfileService.js',
+    )
+
+    getPublicProfileByUsername =
+      service.getPublicProfileByUsername
+
+    getPublicProfileByUserId =
+      service.getPublicProfileByUserId
   })
 
   beforeEach(() => {
@@ -102,6 +107,39 @@ describe('Public profile service', { concurrency: false }, () => {
   after(async () => {
     await server?.close()
     delete globalThis[key]
+  })
+
+  it('loads a safe public profile directly by user ID', async () => {
+    responses = [
+      snapshot('alice', publicProfile()),
+    ]
+
+    const result = await getPublicProfileByUserId(
+      'alice',
+    )
+
+    assert.equal(result.userId, 'alice')
+    assert.equal(result.username, 'alice_123')
+    assert.equal(result.displayName, 'Alice')
+
+    assert.deepEqual(
+      calls,
+      [
+        ['doc', 'publicProfiles/alice'],
+        ['getDoc', 'publicProfiles/alice'],
+      ],
+    )
+  })
+
+  it('rejects an invalid public-profile user ID', async () => {
+    await assert.rejects(
+      getPublicProfileByUserId('contains/slash'),
+      {
+        code: 'public-profile/invalid-user-id',
+      },
+    )
+
+    assert.deepEqual(calls, [])
   })
 
   it('loads a public profile by username', async () => {

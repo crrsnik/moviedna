@@ -1,6 +1,8 @@
 import { Navigate, useParams } from 'react-router-dom'
 
 import { useAuth } from '../features/auth/hooks/useAuth.js'
+import FriendshipControls from '../features/friends/components/FriendshipControls.jsx'
+import { useFriendship } from '../features/friends/hooks/useFriendship.js'
 
 import { PROFILE_AVATARS } from '../features/profile/constants/profileSettings.js'
 import { usePublicProfile } from '../features/profile/hooks/usePublicProfile.js'
@@ -200,10 +202,26 @@ export default function PublicProfilePage() {
     && result.profile.userId === user?.uid
   )
 
-  const previewUid = (
-    result?.kind === 'public'
-    && result.profile
+  const targetUserId = (
+    result?.profile?.userId
     && !ownProfile
+  )
+    ? result.profile.userId
+    : null
+
+  const friendshipState = useFriendship(
+    targetUserId,
+  )
+
+  const canViewPreview = (
+    result?.kind === 'public'
+    || friendshipState.status === 'friends'
+  )
+
+  const previewUid = (
+    result?.profile
+    && !ownProfile
+    && canViewPreview
   )
     ? result.profile.userId
     : null
@@ -257,7 +275,22 @@ export default function PublicProfilePage() {
     <div className="w-full min-w-0 max-w-4xl self-start space-y-6">
       <ProfileIdentity profile={profile} />
 
-      {result.kind === 'private' ? (
+      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+        <FriendshipControls
+          targetUserId={profile.userId}
+          friendshipState={friendshipState}
+        />
+      </section>
+
+      {result.kind === 'private'
+        && friendshipState.loading ? (
+        <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">
+          <p role="status" className="text-zinc-400">
+            Checking profile access…
+          </p>
+        </section>
+      ) : result.kind === 'private'
+        && friendshipState.status !== 'friends' ? (
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">
           <div
             aria-hidden="true"

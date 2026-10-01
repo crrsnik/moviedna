@@ -10,6 +10,7 @@ import AppLayout from '../shared/components/layout/AppLayout.jsx'
 import ActorsPage from '../pages/ActorsPage.jsx'
 import DnaPage from '../pages/DnaPage.jsx'
 import ForgotPasswordPage from '../pages/ForgotPasswordPage.jsx'
+import FriendsPage from '../pages/FriendsPage.jsx'
 import HistoryPage from '../pages/HistoryPage.jsx'
 import HomePage from '../pages/HomePage.jsx'
 import LibraryPage from '../pages/LibraryPage.jsx'
@@ -56,6 +57,7 @@ const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           { path: 'users/search', element: <UserSearchPage /> },
+          { path: 'friends', element: <FriendsPage /> },
           { path: 'users/:username', element: <PublicProfilePage /> },
           {
             element: <OnboardingRoute />,

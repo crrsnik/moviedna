@@ -147,11 +147,10 @@ describe('public profile preview projection', () => {
     assert.equal('title' in result, false)
   })
 
-  it('does not build DNA preview while the profile is private', async () => {
+  it('updates DNA projection while the profile is private', async () => {
     const calls = []
 
     const handlers = createPublicProfilePreviewHandlers({
-      isPublic: async () => false,
       mergePreview: async (...args) => calls.push(args),
     })
 
@@ -174,17 +173,30 @@ describe('public profile preview projection', () => {
     })
 
     assert.deepEqual(result, {
-      status: 'private',
+      status: 'updated',
     })
 
-    assert.deepEqual(calls, [])
+    assert.deepEqual(calls, [
+      [
+        'alice',
+        {
+          dna: {
+            genres: [
+              {
+                label: 'Drama',
+                score: 0.8,
+              },
+            ],
+          },
+        },
+      ],
+    ])
   })
 
   it('updates DNA projection after a public DNA write', async () => {
     const calls = []
 
     const handlers = createPublicProfilePreviewHandlers({
-      isPublic: async () => true,
       mergePreview: async (...args) => calls.push(args),
     })
 
@@ -231,8 +243,6 @@ describe('public profile preview projection', () => {
     const writes = []
 
     const handlers = createPublicProfilePreviewHandlers({
-      isPublic: async () => true,
-
       loadViewingHistory: async () => [
         {
           schemaVersion: 1,
@@ -336,11 +346,30 @@ describe('public profile preview projection', () => {
     ])
   })
 
-  it('deletes the projection when a profile becomes private', async () => {
-    const deleted = []
+  it('rebuilds the projection when a profile becomes private', async () => {
+    const writes = []
 
     const handlers = createPublicProfilePreviewHandlers({
-      deletePreview: async (...args) => deleted.push(args),
+      loadMovieDna: async () => ({
+        dimensions: {
+          genres: [
+            {
+              label: 'Drama',
+              score: 0.7,
+            },
+          ],
+        },
+      }),
+
+      loadViewingHistory: async () => [
+        {
+          schemaVersion: 1,
+          mediaType: 'tv',
+          watchedDate: '2026-09-01',
+        },
+      ],
+
+      writePreview: async (...args) => writes.push(args),
     })
 
     const result = await handlers.publicProfileWrite({
@@ -358,11 +387,29 @@ describe('public profile preview projection', () => {
     })
 
     assert.deepEqual(result, {
-      status: 'deleted',
+      status: 'rebuilt',
     })
 
-    assert.deepEqual(deleted, [
-      ['alice'],
+    assert.deepEqual(writes, [
+      [
+        'alice',
+        {
+          schemaVersion: 1,
+          dna: {
+            genres: [
+              {
+                label: 'Drama',
+                score: 0.7,
+              },
+            ],
+          },
+          statistics: {
+            totalViewings: 1,
+            movieCount: 0,
+            tvCount: 1,
+          },
+        },
+      ],
     ])
   })
 })
