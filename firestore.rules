@@ -246,6 +246,77 @@ service cloud.firestore {
       return data.authorUsername == profile.username && data.authorDisplayName == profile.displayName;
     }
 
+
+    function isFriendshipMember(data) {
+      return isAuthenticated()
+        && data.members is list
+        && request.auth.uid in data.members;
+    }
+
+    function isValidFriendship(data, friendshipId) {
+      let fields = [
+        'members',
+        'requestedBy',
+        'status',
+        'createdAt',
+        'updatedAt',
+        'acceptedAt'
+      ];
+
+      return data.keys().hasAll(fields)
+        && data.keys().hasOnly(fields)
+        && data.members is list
+        && data.members.size() == 2
+        && data.members[0] is string
+        && data.members[1] is string
+        // Canonical ordering guarantees A-B and B-A are the same pair.
+        && data.members[0] < data.members[1]
+        && friendshipId
+          == hashing.sha256(
+            (data.members[0] + ':' + data.members[1]).toUtf8()
+          ).toHexString()
+        && exists(
+          /databases/$(database)/documents/publicProfiles/$(data.members[0])
+        )
+        && exists(
+          /databases/$(database)/documents/publicProfiles/$(data.members[1])
+        )
+        && data.requestedBy is string
+        && data.requestedBy in data.members
+        && data.status in ['pending', 'accepted']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && (
+          (
+            data.status == 'pending'
+            && data.acceptedAt == null
+          )
+          || (
+            data.status == 'accepted'
+            && data.acceptedAt is timestamp
+          )
+        );
+    }
+
+    function isValidFriendshipAcceptance(data, previous, friendshipId) {
+      return isValidFriendship(data, friendshipId)
+        && previous.status == 'pending'
+        && previous.acceptedAt == null
+        && previous.requestedBy != request.auth.uid
+        && request.auth.uid in previous.members
+        && data.diff(previous).affectedKeys().hasOnly([
+          'status',
+          'updatedAt',
+          'acceptedAt'
+        ])
+        && data.members == previous.members
+        && data.requestedBy == previous.requestedBy
+        && data.createdAt == previous.createdAt
+        && data.status == 'accepted'
+        && data.acceptedAt == request.time
+        && data.updatedAt == request.time;
+    }
+
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list, delete: if false;
@@ -366,6 +437,44 @@ service cloud.firestore {
           && getAfter(/databases/$(database)/documents/users/$(userId)).data.onboardingCompleted == true
           && getAfter(/databases/$(database)/documents/users/$(userId)).data.updatedAt == request.time;
       }
+    }
+
+
+    match /friendships/{friendshipId} {
+      // Only the two participants may inspect their relationship.
+      // A query must therefore constrain `members` to the signed-in UID.
+      allow get: if isFriendshipMember(resource.data);
+
+      // Queries must constrain members with:
+      // where('members', 'array-contains', request.auth.uid)
+      allow list: if isAuthenticated()
+        && request.auth.uid in resource.data.members;
+
+      // A relationship always begins as a pending request created
+      // by the authenticated requester.
+      allow create: if isAuthenticated()
+        && request.resource.data.requestedBy == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.acceptedAt == null
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && isValidFriendship(
+          request.resource.data,
+          friendshipId
+        );
+
+      // The only client-side update is pending -> accepted,
+      // performed by the recipient, never by the requester.
+      allow update: if isAuthenticated()
+        && isValidFriendshipAcceptance(
+          request.resource.data,
+          resource.data,
+          friendshipId
+        );
+
+      // Sender may cancel, recipient may decline, and either
+      // participant may unfriend after acceptance.
+      allow delete: if isFriendshipMember(resource.data);
     }
 
     match /mediaComments/{mediaKey}/comments/{commentAuthorId} {
