@@ -3,9 +3,12 @@ import {
   useState,
 } from 'react'
 
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
+
 import { normalizeListInput } from '../validation/customListValidation.js'
 import { mediaLibraryService } from '../services/mediaLibraryService.js'
 import { useLibraryAction } from '../hooks/useLibraryAction.js'
+
 import LibraryDialog, {
   libraryButton,
 } from './LibraryDialog.jsx'
@@ -16,17 +19,21 @@ export default function CustomListForm({
   onClose,
   onSaved,
 }) {
+  const { t } = useTranslation()
+
   const [name, setName] = useState(
     list?.name ?? '',
   )
 
-  const [description, setDescription] = useState(
-    list?.description ?? '',
-  )
+  const [description, setDescription] =
+    useState(
+      list?.description ?? '',
+    )
 
-  const [visibility, setVisibility] = useState(
-    list?.visibility ?? 'private',
-  )
+  const [visibility, setVisibility] =
+    useState(
+      list?.visibility ?? 'private',
+    )
 
   const action = useLibraryAction()
   const id = useId()
@@ -49,33 +56,43 @@ export default function CustomListForm({
     if (!valid) return
 
     action.run(
-      () => list
-        ? mediaLibraryService.updateCustomList(
-          uid,
-          list.id,
-          {
-            name,
-            description,
-            visibility,
-          },
+      () => (
+        list
+          ? mediaLibraryService
+            .updateCustomList(
+              uid,
+              list.id,
+              {
+                name,
+                description,
+                visibility,
+              },
+            )
+          : mediaLibraryService
+            .createCustomList(
+              uid,
+              {
+                name,
+                description,
+                visibility,
+              },
+            )
+      ),
+      result => (
+        onSaved(
+          result ?? list?.id,
         )
-        : mediaLibraryService.createCustomList(
-          uid,
-          {
-            name,
-            description,
-            visibility,
-          },
-        ),
-      result => onSaved(
-        result ?? list?.id,
       ),
     )
   }
 
   return (
     <LibraryDialog
-      title={list ? 'Edit list' : 'Create list'}
+      title={
+        list
+          ? t('library.form.editTitle')
+          : t('library.form.createTitle')
+      }
       pending={action.pending}
       onClose={onClose}
     >
@@ -88,7 +105,7 @@ export default function CustomListForm({
             htmlFor={`${id}-name`}
             className="block"
           >
-            Name
+            {t('library.form.name')}
           </label>
 
           <input
@@ -99,9 +116,13 @@ export default function CustomListForm({
             value={name}
             disabled={action.pending}
             onChange={event => (
-              setName(event.target.value)
+              setName(
+                event.target.value,
+              )
             )}
-            aria-describedby={`${id}-name-help`}
+            aria-describedby={
+              `${id}-name-help`
+            }
             className="mt-1 w-full rounded border border-zinc-600 bg-zinc-950 p-2 focus-visible:outline-2"
           />
 
@@ -109,7 +130,12 @@ export default function CustomListForm({
             id={`${id}-name-help`}
             className="text-sm text-zinc-400"
           >
-            {name.length}/60 · A name is required.
+            {t(
+              'library.form.nameHelp',
+              {
+                count: name.length,
+              },
+            )}
           </p>
         </div>
 
@@ -118,7 +144,9 @@ export default function CustomListForm({
             htmlFor={`${id}-description`}
             className="block"
           >
-            Description
+            {t(
+              'library.form.description',
+            )}
           </label>
 
           <textarea
@@ -127,9 +155,13 @@ export default function CustomListForm({
             value={description}
             disabled={action.pending}
             onChange={event => (
-              setDescription(event.target.value)
+              setDescription(
+                event.target.value,
+              )
             )}
-            aria-describedby={`${id}-description-help`}
+            aria-describedby={
+              `${id}-description-help`
+            }
             className="mt-1 w-full rounded border border-zinc-600 bg-zinc-950 p-2 focus-visible:outline-2"
           />
 
@@ -137,7 +169,13 @@ export default function CustomListForm({
             id={`${id}-description-help`}
             className="text-sm text-zinc-400"
           >
-            {description.length}/300
+            {t(
+              'library.form.descriptionHelp',
+              {
+                count:
+                  description.length,
+              },
+            )}
           </p>
         </div>
 
@@ -146,7 +184,9 @@ export default function CustomListForm({
           className="space-y-3"
         >
           <legend className="font-medium">
-            Visibility
+            {t(
+              'library.form.visibility',
+            )}
           </legend>
 
           <label className="flex items-start gap-3 rounded-lg border border-zinc-700 p-3">
@@ -154,18 +194,26 @@ export default function CustomListForm({
               type="radio"
               name={`${id}-visibility`}
               value="private"
-              checked={visibility === 'private'}
-              onChange={() => setVisibility('private')}
+              checked={
+                visibility === 'private'
+              }
+              onChange={() => (
+                setVisibility('private')
+              )}
               className="mt-1"
             />
 
             <span>
               <strong className="block">
-                Private
+                {t(
+                  'library.form.private',
+                )}
               </strong>
 
               <span className="text-sm text-zinc-400">
-                Only you can access this list.
+                {t(
+                  'library.form.privateDescription',
+                )}
               </span>
             </span>
           </label>
@@ -175,18 +223,26 @@ export default function CustomListForm({
               type="radio"
               name={`${id}-visibility`}
               value="public"
-              checked={visibility === 'public'}
-              onChange={() => setVisibility('public')}
+              checked={
+                visibility === 'public'
+              }
+              onChange={() => (
+                setVisibility('public')
+              )}
               className="mt-1"
             />
 
             <span>
               <strong className="block">
-                Public
+                {t(
+                  'library.form.public',
+                )}
               </strong>
 
               <span className="text-sm text-zinc-400">
-                Shown on your profile to people who can view your profile content.
+                {t(
+                  'library.form.publicDescription',
+                )}
               </span>
             </span>
           </label>
@@ -194,7 +250,7 @@ export default function CustomListForm({
 
         {action.error && (
           <p role="alert">
-            {action.error}
+            {t('library.errors.action')}
           </p>
         )}
 
@@ -205,21 +261,32 @@ export default function CustomListForm({
             disabled={action.pending}
             onClick={onClose}
           >
-            Cancel
+            {t('common.cancel')}
           </button>
 
           <button
             type="submit"
             className={libraryButton}
-            disabled={!valid || action.pending}
+            disabled={
+              !valid
+              || action.pending
+            }
           >
             {action.pending
               ? list
-                ? 'Saving…'
-                : 'Creating…'
+                ? t(
+                  'library.form.saving',
+                )
+                : t(
+                  'library.form.creating',
+                )
               : list
-                ? 'Save changes'
-                : 'Create'}
+                ? t(
+                  'library.form.saveChanges',
+                )
+                : t(
+                  'library.form.create',
+                )}
           </button>
         </div>
       </form>

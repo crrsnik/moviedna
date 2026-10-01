@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
 
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
+
 import {
   librarySelectionParams,
 } from '../validation/customListValidation.js'
@@ -13,10 +15,14 @@ export default function CustomListsNavigation({
   selection,
   onCreate,
 }) {
+  const { t } = useTranslation()
+
   return (
     <div className="space-y-3">
       <nav
-        aria-label="Custom lists"
+        aria-label={t(
+          'library.lists.navigation',
+        )}
         className="flex max-w-full flex-wrap gap-2"
       >
         {lists.data?.map(list => (
@@ -44,9 +50,11 @@ export default function CustomListsNavigation({
             {list.visibility === 'public' && (
               <span
                 className="text-xs text-violet-300"
-                aria-label="Public board"
+                aria-label={t(
+                  'library.lists.publicBoard',
+                )}
               >
-                Public
+                {t('library.lists.public')}
               </span>
             )}
           </Link>
@@ -55,14 +63,14 @@ export default function CustomListsNavigation({
 
       {lists.loading && (
         <p role="status">
-          Loading lists…
+          {t('library.lists.loading')}
         </p>
       )}
 
       {lists.error && (
         <div>
           <p role="alert">
-            {lists.error}
+            {t('library.errors.load')}
           </p>
 
           <button
@@ -70,7 +78,7 @@ export default function CustomListsNavigation({
             className={libraryButton}
             onClick={lists.retry}
           >
-            Retry lists
+            {t('library.lists.retry')}
           </button>
         </div>
       )}
@@ -80,7 +88,7 @@ export default function CustomListsNavigation({
         className={libraryButton}
         onClick={onCreate}
       >
-        Create list
+        {t('library.lists.create')}
       </button>
     </div>
   )

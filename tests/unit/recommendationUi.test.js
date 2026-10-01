@@ -68,7 +68,7 @@ describe('recommendation UI contract', () => {
 
     assert.match(section, /aria-live=/)
     assert.match(section, /role="alert"/)
-    assert.match(section, /Retry/)
+    assert.match(section, /t\('common\.retry'\)/)
     assert.match(section, /useRecommendations/)
   })
 
