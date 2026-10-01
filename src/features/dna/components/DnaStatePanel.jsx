@@ -1,6 +1,6 @@
 const messages = {
   loading: ['Loading your MovieDNA…', 'Your private profile is being loaded.'],
-  empty: ['Your MovieDNA is not ready yet', 'Add ratings or complete onboarding to create your profile.'],
+  empty: ['Your MovieDNA is not ready yet', 'Add ratings, favorites, or onboarding reactions to build your profile.'],
   running: ['Building your MovieDNA…', 'Your first profile is being calculated locally.'],
   insufficient: ['More signals are needed', 'Rate or favorite more movies and TV shows to strengthen your profile.'],
   malformed: ['This MovieDNA version cannot be displayed', 'Refresh the page later after the profile has been recalculated.'],

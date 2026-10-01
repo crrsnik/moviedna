@@ -12,7 +12,7 @@ export function validateCommentInput(input) {
 }
 export function validateCommentProfile(uid, profile) {
   try {
-    if (!profile || profile.id !== uid || profile.onboardingCompleted !== true
+    if (!profile || profile.id !== uid || typeof profile.onboardingCompleted !== 'boolean'
       || !/^[a-z0-9_]{3,20}$/.test(profile.username) || typeof profile.username !== 'string'
       || typeof profile.displayName !== 'string' || !profile.displayName.trim() || profile.displayName.length > 50
       || typeof profile.bio !== 'string' || !(profile.photoURL === null || typeof profile.photoURL === 'string')) throw new Error()

@@ -1,9 +1,11 @@
+import { useNavigate } from 'react-router-dom'
 import { useOnboarding } from '../hooks/useOnboarding.js'
 import { MAX_RESPONSES } from '../validation/onboardingValidation.js'
 import SwipeMovieCard from './SwipeMovieCard.jsx'
 import OnboardingActions from './OnboardingActions.jsx'
 
 function OnboardingExperience() {
+  const navigate = useNavigate()
   const { currentMovie, progress, isLoading, isSaving, isCompleting, loadError, actionError, retry, reactToMovie, complete } = useOnboarding()
   const busy = isSaving || isCompleting
   const reachedLimit = progress.responseCount >= MAX_RESPONSES
@@ -14,6 +16,18 @@ function OnboardingExperience() {
         <h1 id="onboarding-title" className="text-3xl font-semibold tracking-tight sm:text-4xl">Teach MovieDNA your taste</h1>
         <p className="text-sm leading-relaxed text-zinc-400">Your reactions will help shape future recommendations. Like, dislike, or skip a movie.</p>
       </div>
+
+      <div className="text-center">
+        <button
+          type="button"
+          onClick={() => navigate('/', { replace: true })}
+          disabled={busy}
+          className="rounded px-4 py-2 text-sm text-zinc-400 underline underline-offset-4 hover:text-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100 disabled:opacity-40"
+        >
+          Skip for now
+        </button>
+      </div>
+
       {isLoading ? <p role="status" className="py-12 text-center text-zinc-400">Loading your movies and saved progress…</p> : (
         <>
           <div className="space-y-2 text-center text-sm text-zinc-300">

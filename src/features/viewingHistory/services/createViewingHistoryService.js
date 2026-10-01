@@ -200,7 +200,7 @@ export function createViewingHistoryService({
 
           if (
             !profile.exists()
-            || profile.data()?.onboardingCompleted !== true
+            || typeof profile.data()?.onboardingCompleted !== 'boolean'
           ) {
             throw new ViewingHistoryError(
               'incomplete-profile',

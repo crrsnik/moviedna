@@ -199,9 +199,9 @@ service cloud.firestore {
         && hasLibraryTimestamps(data);
     }
 
-    function hasCompletedProfile(userId) {
+    function hasProfile(userId) {
       return exists(/databases/$(database)/documents/users/$(userId))
-        && get(/databases/$(database)/documents/users/$(userId)).data.onboardingCompleted == true;
+        && get(/databases/$(database)/documents/users/$(userId)).data.onboardingCompleted is bool;
     }
 
     function isValidRating(data, mediaKey) {
@@ -418,10 +418,10 @@ service cloud.firestore {
 
       match /ratings/{mediaKey} {
         allow get, list, delete: if isOwner(userId);
-        allow create: if isOwner(userId) && hasCompletedProfile(userId)
+        allow create: if isOwner(userId) && hasProfile(userId)
           && isValidRating(request.resource.data, mediaKey)
           && request.resource.data.createdAt == request.time;
-        allow update: if isOwner(userId) && hasCompletedProfile(userId)
+        allow update: if isOwner(userId) && hasProfile(userId)
           && isValidRating(request.resource.data, mediaKey)
           && request.resource.data.tmdbId == resource.data.tmdbId
           && request.resource.data.mediaType == resource.data.mediaType
@@ -432,12 +432,12 @@ service cloud.firestore {
         allow get, list, delete: if isOwner(userId);
 
         allow create: if isOwner(userId)
-          && hasCompletedProfile(userId)
+          && hasProfile(userId)
           && isValidViewingEvent(request.resource.data, eventId)
           && request.resource.data.createdAt == request.time;
 
         allow update: if isOwner(userId)
-          && hasCompletedProfile(userId)
+          && hasProfile(userId)
           && isValidViewingEvent(request.resource.data, eventId)
           && request.resource.data.createdAt == resource.data.createdAt
           && request.resource.data.diff(resource.data).affectedKeys()
@@ -517,7 +517,7 @@ service cloud.firestore {
       // Ordering is a client contract; Rules guarantee only the bounded page size.
       allow list: if 'limit' in request.query && request.query.limit is int
         && request.query.limit >= 1 && request.query.limit <= 20;
-      allow create: if isOwner(commentAuthorId) && hasCompletedProfile(commentAuthorId)
+      allow create: if isOwner(commentAuthorId) && hasProfile(commentAuthorId)
         && isValidComment(request.resource.data, mediaKey)
         && matchesAuthorProfile(request.resource.data, commentAuthorId)
         && request.resource.data.createdAt == request.time;

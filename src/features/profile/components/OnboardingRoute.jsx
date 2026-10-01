@@ -15,7 +15,7 @@ function OnboardingRoute({ requireCompleted = false }) {
       </div>
     )
   }
-  if (requireCompleted) return hasCompletedOnboarding ? <Outlet /> : <Navigate to="/onboarding" replace />
+  if (requireCompleted) return <Outlet />
   return hasCompletedOnboarding ? <Navigate to="/" replace /> : <Outlet />
 }
 

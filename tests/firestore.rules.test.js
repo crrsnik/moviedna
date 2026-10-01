@@ -797,20 +797,70 @@ describe('Ratings and comments security model', { concurrency: false }, () => {
         const target = ref(userDb()); await setDoc(target, make())
         await assertFails(updateDoc(target, kind === 'rating' ? { score: 9 } : { text: 'Edited' }))
       })
-      for (const state of ['missing', 'incomplete']) it(`rejects create with ${state} profile`, async () => {
-        await testEnv.withSecurityRulesDisabled(async c => {
-          if (state === 'missing') await deleteDoc(doc(c.firestore(), 'users/alice'))
-          else await updateDoc(doc(c.firestore(), 'users/alice'), { onboardingCompleted: false })
-        })
-        await assertFails(setDoc(ref(userDb()), make()))
+      it('rejects create with missing profile', async () => {
+        await testEnv.withSecurityRulesDisabled(
+          c => deleteDoc(
+            doc(c.firestore(), 'users/alice'),
+          ),
+        )
+
+        await assertFails(
+          setDoc(
+            ref(userDb()),
+            make(),
+          ),
+        )
       })
-      it('does not accept profile completion in the same batch', async () => {
-        await seedCompletedProfile({ onboardingCompleted: false })
-        const db = userDb(), batch = writeBatch(db)
-        batch.set(summaryRef(db), summaryData()); batch.update(doc(db, 'users/alice'), completionPatch())
-        batch.set(ref(db), make())
-        await assertFails(batch.commit())
-        assert.equal((await getDoc(doc(db, 'users/alice'))).data().onboardingCompleted, false)
+
+      it('allows create with incomplete onboarding', async () => {
+        await testEnv.withSecurityRulesDisabled(
+          c => updateDoc(
+            doc(c.firestore(), 'users/alice'),
+            { onboardingCompleted: false },
+          ),
+        )
+
+        await assertSucceeds(
+          setDoc(
+            ref(userDb()),
+            make(),
+          ),
+        )
+      })
+
+      it('allows profile completion in the same batch', async () => {
+        await seedCompletedProfile({
+          onboardingCompleted: false,
+        })
+
+        const db = userDb()
+        const batch = writeBatch(db)
+
+        batch.set(
+          summaryRef(db),
+          summaryData(),
+        )
+
+        batch.update(
+          doc(db, 'users/alice'),
+          completionPatch(),
+        )
+
+        batch.set(
+          ref(db),
+          make(),
+        )
+
+        await assertSucceeds(batch.commit())
+
+        assert.equal(
+          (
+            await getDoc(
+              doc(db, 'users/alice'),
+            )
+          ).data().onboardingCompleted,
+          true,
+        )
       })
       for (const identity of ['guest', 'bob']) for (const operation of ['create', 'update', 'delete']) {
         it(`rejects ${identity} ${operation} for author path`, async () => {
@@ -858,11 +908,67 @@ describe('Ratings and comments security model', { concurrency: false }, () => {
       await setDoc(ratingRef(userDb()), ratingData())
       await assertFails(getDocs(query(collectionGroup(userDb(), 'ratings'), limit(20))))
     })
-    for (const state of ['missing', 'incomplete']) it(`denies rating update with ${state} profile but permits owner get/delete`, async () => {
-      const db = userDb(), target = ratingRef(db); await setDoc(target, ratingData())
-      await testEnv.withSecurityRulesDisabled(c => state === 'missing' ? deleteDoc(doc(c.firestore(), 'users/alice')) : updateDoc(doc(c.firestore(), 'users/alice'), { onboardingCompleted: false }))
-      await assertFails(updateDoc(target, { score: 8, updatedAt: serverTimestamp() }))
-      await assertSucceeds(getDoc(target)); await assertSucceeds(deleteDoc(target))
+    it('denies rating update with missing profile but permits owner get/delete', async () => {
+      const db = userDb()
+      const target = ratingRef(db)
+
+      await setDoc(
+        target,
+        ratingData(),
+      )
+
+      await testEnv.withSecurityRulesDisabled(
+        c => deleteDoc(
+          doc(c.firestore(), 'users/alice'),
+        ),
+      )
+
+      await assertFails(
+        updateDoc(
+          target,
+          {
+            score: 8,
+            updatedAt: serverTimestamp(),
+          },
+        ),
+      )
+
+      await assertSucceeds(getDoc(target))
+      await assertSucceeds(deleteDoc(target))
+    })
+
+    it('allows rating update with incomplete onboarding', async () => {
+      const db = userDb()
+      const target = ratingRef(db)
+
+      await setDoc(
+        target,
+        ratingData(),
+      )
+
+      await testEnv.withSecurityRulesDisabled(
+        c => updateDoc(
+          doc(c.firestore(), 'users/alice'),
+          { onboardingCompleted: false },
+        ),
+      )
+
+      await assertSucceeds(
+        updateDoc(
+          target,
+          {
+            score: 8,
+            updatedAt: serverTimestamp(),
+          },
+        ),
+      )
+
+      assert.equal(
+        (
+          await getDoc(target)
+        ).data().score,
+        8,
+      )
     })
     const invalidRating = [
       ...[0, 11, -1, 1.5, '5', null, true].map(score => ({ score })),
@@ -1298,11 +1404,11 @@ describe(
       )
     })
 
-    it('requires a completed profile for creation', async () => {
+    it('allows creation with incomplete onboarding', async () => {
       await testEnv.clearFirestore()
       await seedPair()
 
-      await assertFails(
+      await assertSucceeds(
         setDoc(
           viewingRef(userDb()),
           viewingData(),

@@ -78,7 +78,7 @@ export function createRatingService({ auth, db, doc, collection, onSnapshot, run
       return mutate(uid, key, async (tx, target, session) => {
         const profile = await tx.get(doc(db, 'users', uid))
         owner(uid, session)
-        if (!profile.exists() || profile.data()?.onboardingCompleted !== true) throw new RatingError('incomplete-profile')
+        if (!profile.exists() || typeof profile.data()?.onboardingCompleted !== 'boolean') throw new RatingError('incomplete-profile')
         const existing = await tx.get(target)
         owner(uid, session)
 

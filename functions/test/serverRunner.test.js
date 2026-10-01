@@ -100,9 +100,31 @@ describe('source collection and merge', () => {
     })), [])
   })
 
-  it('rejects incomplete onboarding', () => {
-    assert.throws(() => collectDnaSources(sourceSnapshot({ profile: { ...profile, onboardingCompleted: false } })),
-      (error) => error.code === SERVER_ERROR_CODES.ONBOARDING_REQUIRED)
+  it('allows incomplete onboarding but rejects malformed onboarding state', () => {
+    assert.deepEqual(
+      collectDnaSources(
+        sourceSnapshot({
+          profile: {
+            ...profile,
+            onboardingCompleted: false,
+          },
+        }),
+      ),
+      [],
+    )
+
+    assert.throws(
+      () => collectDnaSources(
+        sourceSnapshot({
+          profile: {
+            ...profile,
+            onboardingCompleted: 'false',
+          },
+        }),
+      ),
+      (error) =>
+        error.code === SERVER_ERROR_CODES.INVALID_PROFILE,
+    )
   })
 
   it('rejects malformed identity and rating', () => {

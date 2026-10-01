@@ -32,14 +32,9 @@ export function collectDnaSources(snapshot, maximum = MAX_SOURCE_ITEMS) {
     || !/^[a-z0-9_]{3,20}$/.test(snapshot.profile.username)
     || typeof snapshot.profile.displayName !== 'string'
     || !snapshot.profile.displayName.trim()
-    || snapshot.profile.displayName.length > 50) {
+    || snapshot.profile.displayName.length > 50
+    || typeof snapshot.profile.onboardingCompleted !== 'boolean') {
     throw new MovieDnaServerError(SERVER_ERROR_CODES.INVALID_PROFILE)
-  }
-  if (snapshot.profile.onboardingCompleted !== true
-    || snapshot.onboardingSummary?.version !== 1
-    || snapshot.onboardingSummary?.status !== 'completed'
-    || snapshot.onboardingSummary?.userId !== snapshot.uid) {
-    throw new MovieDnaServerError(SERVER_ERROR_CODES.ONBOARDING_REQUIRED)
   }
   const ratings = ensureUniqueDocuments(snapshot.ratings ?? [])
   const responses = ensureUniqueDocuments(snapshot.onboardingResponses ?? [])
