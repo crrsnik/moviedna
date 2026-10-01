@@ -20,6 +20,7 @@ import NotFoundPage from '../pages/NotFoundPage.jsx'
 import OnboardingPage from '../pages/OnboardingPage.jsx'
 import PersonDetailPage from '../pages/PersonDetailPage.jsx'
 import ProfileOverviewPage from '../pages/ProfileOverviewPage.jsx'
+import PublicProfilePage from '../pages/PublicProfilePage.jsx'
 import ProfileSettingsPage from '../pages/ProfileSettingsPage.jsx'
 import RegisterPage from '../pages/RegisterPage.jsx'
 import SearchPage from '../pages/SearchPage.jsx'
@@ -53,6 +54,7 @@ const router = createBrowserRouter([
       {
         element: <ProtectedRoute />,
         children: [
+          { path: 'users/:username', element: <PublicProfilePage /> },
           {
             element: <OnboardingRoute />,
             children: [

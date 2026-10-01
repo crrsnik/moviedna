@@ -80,6 +80,10 @@ function normalizePublicProfile(snapshot) {
 function mapError(error) {
   if (error instanceof PublicProfileLookupError) return error
 
+  if (error?.code === 'permission-denied') {
+    return new PublicProfileLookupError('public-profile/permission-denied')
+  }
+
   if (error?.code === 'unavailable') {
     return new PublicProfileLookupError('public-profile/unavailable')
   }
@@ -88,85 +92,45 @@ function mapError(error) {
 }
 
 export async function getPublicProfileByUsername(value) {
-  const username = normalizeUsername(value)
-
-  let usernameSnapshot
-
   try {
-    usernameSnapshot = await getDoc(
+    const username = normalizeUsername(value)
+
+    const usernameSnapshot = await getDoc(
       doc(db, 'usernames', username),
     )
-  } catch (error) {
-    /*
-     * For an unauthenticated visitor, Firestore deliberately makes a
-     * private username unreadable. Do not reveal whether that username
-     * exists or not.
-     */
-    if (error?.code === 'permission-denied') {
+
+    if (!usernameSnapshot.exists()) {
       return {
-        kind: 'private-or-not-found',
+        kind: 'not-found',
         username,
         profile: null,
       }
     }
 
-    throw mapError(error)
-  }
+    const userId = usernameSnapshot.data()?.userId
 
-  if (!usernameSnapshot.exists()) {
-    return {
-      kind: 'not-found',
-      username,
-      profile: null,
+    if (!validUid(userId)) {
+      throw new PublicProfileLookupError('public-profile/invalid')
     }
-  }
 
-  const reservation = usernameSnapshot.data()
-  const userId = reservation?.userId
-
-  if (!validUid(userId)) {
-    throw new PublicProfileLookupError('public-profile/invalid')
-  }
-
-  let profileSnapshot
-
-  try {
-    profileSnapshot = await getDoc(
+    const profileSnapshot = await getDoc(
       doc(db, 'publicProfiles', userId),
     )
-  } catch (error) {
-    if (error?.code === 'permission-denied') {
-      return {
-        kind: 'private',
-        username,
-        profile: null,
-      }
+
+    const profile = normalizePublicProfile(profileSnapshot)
+
+    if (profile.username !== username) {
+      throw new PublicProfileLookupError('public-profile/inconsistent')
     }
 
-    throw mapError(error)
-  }
-
-  const profile = normalizePublicProfile(profileSnapshot)
-
-  if (profile.username !== username) {
-    throw new PublicProfileLookupError('public-profile/inconsistent')
-  }
-
-  /*
-   * Owners can read their own mirror even when it is private.
-   * Do not accidentally classify that document as publicly visible.
-   */
-  if (profile.profileVisibility !== 'public') {
     return {
-      kind: 'private',
+      kind: profile.profileVisibility === 'public'
+        ? 'public'
+        : 'private',
       username,
-      profile: null,
+      profile,
     }
-  }
-
-  return {
-    kind: 'public',
-    username,
-    profile,
+  } catch (error) {
+    throw mapError(error)
   }
 }

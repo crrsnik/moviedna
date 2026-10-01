@@ -390,10 +390,9 @@ service cloud.firestore {
     }
 
     match /publicProfiles/{userId} {
-      // Owners may always read their mirror. Everyone else may read only
-      // profiles whose owner explicitly made them public.
-      allow get: if isOwner(userId)
-        || resource.data.profileVisibility == 'public';
+      // Safe profile identity is visible to authenticated MovieDNA users.
+      // profileVisibility controls public DNA/statistics, not identity.
+      allow get: if isAuthenticated();
 
       // Public profile discovery/search is intentionally not enabled yet.
       allow list: if false;
@@ -424,16 +423,7 @@ service cloud.firestore {
     }
 
     match /usernames/{username} {
-      allow get: if isAuthenticated()
-        || (
-          resource.data.userId is string
-          && exists(
-            /databases/$(database)/documents/publicProfiles/$(resource.data.userId)
-          )
-          && get(
-            /databases/$(database)/documents/publicProfiles/$(resource.data.userId)
-          ).data.profileVisibility == 'public'
-        );
+      allow get: if isAuthenticated();
       allow list, update, delete: if false;
       allow create: if isAuthenticated()
         && isValidUsername(username)

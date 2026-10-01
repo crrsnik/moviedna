@@ -1502,13 +1502,20 @@ describe('Stage 11 profile privacy fields', { concurrency: false }, () => {
     )
   })
 
-  it('denies other users and unauthenticated users from reading a private profile', async () => {
-    await assertSucceeds(createPair(userDb()))
+  it('allows authenticated users to read private profile identity but denies guests', async () => {
+    const ownerDb = userDb()
 
-    await assertFails(
+    await assertSucceeds(
+      createPair(ownerDb),
+    )
+
+    const otherDb = userDb('bob')
+    const guestDb = testEnv.unauthenticatedContext().firestore()
+
+    await assertSucceeds(
       getDoc(
         doc(
-          userDb('bob'),
+          otherDb,
           'publicProfiles',
           'alice',
         ),
@@ -1518,7 +1525,7 @@ describe('Stage 11 profile privacy fields', { concurrency: false }, () => {
     await assertFails(
       getDoc(
         doc(
-          testEnv.unauthenticatedContext().firestore(),
+          guestDb,
           'publicProfiles',
           'alice',
         ),
@@ -1526,32 +1533,43 @@ describe('Stage 11 profile privacy fields', { concurrency: false }, () => {
     )
   })
 
-  it('allows authenticated and unauthenticated reads of a public profile', async () => {
-    const privateProfile = profile(
-      undefined,
-      { profileVisibility: 'public' },
+  it('allows authenticated users to read public profile identity but denies guests', async () => {
+    const ownerDb = userDb()
+
+    const profileData = profile(
+      'alice_123',
+      {
+        profileVisibility: 'public',
+      },
     )
 
     await assertSucceeds(
-      createPair(userDb(), {
-        profileData: privateProfile,
+      createPair(ownerDb, {
+        profileData,
+        publicProfileData: publicProfile(
+          'alice',
+          profileData,
+        ),
       }),
     )
+
+    const otherDb = userDb('bob')
+    const guestDb = testEnv.unauthenticatedContext().firestore()
 
     await assertSucceeds(
       getDoc(
         doc(
-          userDb('bob'),
+          otherDb,
           'publicProfiles',
           'alice',
         ),
       ),
     )
 
-    await assertSucceeds(
+    await assertFails(
       getDoc(
         doc(
-          testEnv.unauthenticatedContext().firestore(),
+          guestDb,
           'publicProfiles',
           'alice',
         ),
@@ -1775,12 +1793,21 @@ describe('Stage 11 profile privacy fields', { concurrency: false }, () => {
     )
   })
 
-  it('changing visibility to public immediately permits public reads', async () => {
+  it('changing visibility to public keeps identity available to authenticated users only', async () => {
     const db = userDb()
-    await assertSucceeds(createPair(db))
+
+    await assertSucceeds(
+      createPair(db),
+    )
 
     const current = (
-      await getDoc(doc(db, 'users', 'alice'))
+      await getDoc(
+        doc(
+          db,
+          'users',
+          'alice',
+        ),
+      )
     ).data()
 
     const batch = writeBatch(db)
@@ -1806,12 +1833,27 @@ describe('Stage 11 profile privacy fields', { concurrency: false }, () => {
       },
     )
 
-    await assertSucceeds(batch.commit())
+    await assertSucceeds(
+      batch.commit(),
+    )
+
+    const otherDb = userDb('bob')
+    const guestDb = testEnv.unauthenticatedContext().firestore()
 
     await assertSucceeds(
       getDoc(
         doc(
-          testEnv.unauthenticatedContext().firestore(),
+          otherDb,
+          'publicProfiles',
+          'alice',
+        ),
+      ),
+    )
+
+    await assertFails(
+      getDoc(
+        doc(
+          guestDb,
           'publicProfiles',
           'alice',
         ),
@@ -1819,8 +1861,7 @@ describe('Stage 11 profile privacy fields', { concurrency: false }, () => {
     )
   })
 
-
-  it('allows an unauthenticated exact username lookup for a public profile', async () => {
+  it('denies an unauthenticated exact username lookup even for a public profile', async () => {
     const ownerDb = userDb()
 
     const profileData = profile(
@@ -1842,7 +1883,7 @@ describe('Stage 11 profile privacy fields', { concurrency: false }, () => {
 
     const guestDb = testEnv.unauthenticatedContext().firestore()
 
-    await assertSucceeds(
+    await assertFails(
       getDoc(
         doc(
           guestDb,

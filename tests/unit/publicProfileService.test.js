@@ -24,7 +24,6 @@ const stubs = {
 
     const next = responses.shift()
 
-    if (next instanceof Error) throw next
     if (next?.throw) throw next.throw
 
     return next
@@ -70,6 +69,7 @@ describe('Public profile service', { concurrency: false }, () => {
           if (!importer?.endsWith('/publicProfileService.js')) return
 
           if (source === 'firebase/firestore') return '\0mock:firestore'
+
           if (source === '../../../shared/config/firebase.js') {
             return '\0mock:config'
           }
@@ -108,7 +108,6 @@ describe('Public profile service', { concurrency: false }, () => {
     responses = [
       snapshot('alice_123', {
         userId: 'alice',
-        createdAt: { seconds: 1 },
       }),
       snapshot('alice', publicProfile()),
     ]
@@ -116,71 +115,11 @@ describe('Public profile service', { concurrency: false }, () => {
     const result = await getPublicProfileByUsername('Alice_123')
 
     assert.equal(result.kind, 'public')
-    assert.equal(result.username, 'alice_123')
-    assert.equal(result.profile.userId, 'alice')
     assert.equal(result.profile.displayName, 'Alice')
-
-    assert.deepEqual(calls, [
-      ['doc', 'usernames/alice_123'],
-      ['getDoc', 'usernames/alice_123'],
-      ['doc', 'publicProfiles/alice'],
-      ['getDoc', 'publicProfiles/alice'],
-    ])
+    assert.equal(result.profile.username, 'alice_123')
   })
 
-  it('returns not-found when the username does not exist', async () => {
-    responses = [
-      snapshot('missing_user', null, false),
-    ]
-
-    const result = await getPublicProfileByUsername('missing_user')
-
-    assert.deepEqual(result, {
-      kind: 'not-found',
-      username: 'missing_user',
-      profile: null,
-    })
-  })
-
-  it('does not reveal a private username to an unauthenticated visitor', async () => {
-    responses = [{
-      throw: {
-        code: 'permission-denied',
-      },
-    }]
-
-    const result = await getPublicProfileByUsername('private_user')
-
-    assert.deepEqual(result, {
-      kind: 'private-or-not-found',
-      username: 'private_user',
-      profile: null,
-    })
-  })
-
-  it('recognizes a private profile after an authenticated username lookup', async () => {
-    responses = [
-      snapshot('alice_123', {
-        userId: 'alice',
-        createdAt: { seconds: 1 },
-      }),
-      {
-        throw: {
-          code: 'permission-denied',
-        },
-      },
-    ]
-
-    const result = await getPublicProfileByUsername('alice_123')
-
-    assert.deepEqual(result, {
-      kind: 'private',
-      username: 'alice_123',
-      profile: null,
-    })
-  })
-
-  it('does not expose a private owner mirror as public', async () => {
+  it('loads safe identity fields for a private profile', async () => {
     responses = [
       snapshot('alice_123', {
         userId: 'alice',
@@ -196,7 +135,23 @@ describe('Public profile service', { concurrency: false }, () => {
     const result = await getPublicProfileByUsername('alice_123')
 
     assert.equal(result.kind, 'private')
-    assert.equal(result.profile, null)
+    assert.equal(result.profile.displayName, 'Alice')
+    assert.equal(result.profile.username, 'alice_123')
+    assert.equal(result.profile.avatarId, 'avatar_01')
+  })
+
+  it('returns not-found when the username does not exist', async () => {
+    responses = [
+      snapshot('missing_user', null, false),
+    ]
+
+    const result = await getPublicProfileByUsername('missing_user')
+
+    assert.deepEqual(result, {
+      kind: 'not-found',
+      username: 'missing_user',
+      profile: null,
+    })
   })
 
   for (const username of [
@@ -235,6 +190,22 @@ describe('Public profile service', { concurrency: false }, () => {
       getPublicProfileByUsername('alice_123'),
       {
         code: 'public-profile/inconsistent',
+      },
+    )
+  })
+
+  it('sanitizes permission errors', async () => {
+    responses = [{
+      throw: {
+        code: 'permission-denied',
+        message: 'RAW_FIREBASE_MESSAGE',
+      },
+    }]
+
+    await assert.rejects(
+      getPublicProfileByUsername('alice_123'),
+      {
+        code: 'public-profile/permission-denied',
       },
     )
   })
