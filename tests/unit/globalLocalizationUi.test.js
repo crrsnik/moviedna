@@ -88,7 +88,7 @@ describe('global localization UI', () => {
     assert.match(profile, /useTranslation/)
     assert.match(profile, /t\('profile\.library'\)/)
     assert.match(profile, /t\('profile\.statistics'\)/)
-    assert.match(profile, /t\('profile\.accountSettings'\)/)
+    assert.match(header, /t\('profile\.accountSettings'\)/)
   })
 
   it('localizes the auth forms without changing validators', async () => {

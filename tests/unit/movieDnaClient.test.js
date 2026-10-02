@@ -130,7 +130,7 @@ describe('local safety and accessible UI contract', () => {
     assert.match(state, /aria-live=/)
     assert.match(page, /<h1/)
   })
-  it('keeps the compact mobile header accessible without a visible account email row', async () => {
+  it('keeps compact catalog navigation with an accessible profile menu', async () => {
     const header = await readFile(
       new URL(
         '../../src/shared/components/layout/Header.jsx',
@@ -144,6 +144,8 @@ describe('local safety and accessible UI contract', () => {
       '/tv',
       '/actors',
       '/profile',
+      '/friends',
+      '/profile/account',
     ]) {
       assert.match(
         header,
@@ -156,6 +158,8 @@ describe('local safety and accessible UI contract', () => {
       'nav.tvShows',
       'nav.actors',
       'nav.profile',
+      'nav.friends',
+      'profile.accountSettings',
       'nav.logout',
     ]) {
       assert.ok(
@@ -164,14 +168,21 @@ describe('local safety and accessible UI contract', () => {
       )
     }
 
+    assert.match(header, /aria-haspopup="menu"/)
     assert.match(
       header,
-      /sr-only md:not-sr-only/,
+      /aria-expanded=\{menuOpen\}/,
+    )
+    assert.match(header, /role="menu"/)
+
+    assert.doesNotMatch(
+      header,
+      /user\.email/,
     )
 
-    assert.match(
+    assert.doesNotMatch(
       header,
-      /user\.email[\s\S]*?\|\| user\.displayName/,
+      /to="\/users\/search"/,
     )
 
     assert.match(
@@ -179,6 +190,7 @@ describe('local safety and accessible UI contract', () => {
       /grid-cols-\[auto_1fr\]/,
     )
   })
+
   it('keeps seed fail-closed and free of TMDB network code', async () => {
     const seed = await readFile(new URL('../../scripts/seedDnaLocal.js', import.meta.url), 'utf8')
     assert.match(seed, /Refusing to seed/); assert.doesNotMatch(seed, /api\.themoviedb\.org|TMDB_READ_ACCESS_TOKEN/)

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 
 import { useTranslation } from '../features/localization/hooks/useTranslation.js'
+import UserSearchPanel from '../features/profile/components/UserSearchPanel.jsx'
 
 import { useSocialGraph } from '../features/friends/hooks/useSocialGraph.js'
 import {
@@ -213,6 +214,8 @@ export default function FriendsPage() {
           {t('social.friends.description')}
         </p>
       </div>
+
+      <UserSearchPanel />
 
       {actionError && (
         <p

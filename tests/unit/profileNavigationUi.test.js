@@ -18,8 +18,6 @@ describe('profile navigation UI', () => {
       ['/profile/dna', 'profile.dna'],
       ['/profile/history', 'profile.history'],
       ['/profile/stats', 'profile.statistics'],
-      ['/profile/settings', 'profile.profileSettings'],
-      ['/profile/account', 'profile.accountSettings'],
     ]) {
       assert.match(
         layout,
@@ -39,6 +37,16 @@ describe('profile navigation UI', () => {
     assert.match(
       layout,
       /t\('profile\.editProfile'\)/,
+    )
+
+    assert.doesNotMatch(
+      layout,
+      /t\('profile\.profileSettings'\)/,
+    )
+
+    assert.doesNotMatch(
+      layout,
+      /t\('profile\.accountSettings'\)/,
     )
   })
 

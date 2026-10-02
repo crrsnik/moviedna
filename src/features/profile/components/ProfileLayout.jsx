@@ -142,20 +142,6 @@ function ProfileLayout() {
         >
           {t('profile.statistics')}
         </NavLink>
-
-        <NavLink
-          className={tabClasses}
-          to="/profile/settings"
-        >
-          {t('profile.profileSettings')}
-        </NavLink>
-
-        <NavLink
-          className={tabClasses}
-          to="/profile/account"
-        >
-          {t('profile.accountSettings')}
-        </NavLink>
       </nav>
 
       <Outlet />

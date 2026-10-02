@@ -44,7 +44,12 @@ describe('social graph UI contract', () => {
 
     assert.match(
       header,
-      /\{isAuthenticated && \(/,
+      /isAuthenticated \? \(/,
+    )
+
+    assert.match(
+      header,
+      /role="menu"/,
     )
   })
 
