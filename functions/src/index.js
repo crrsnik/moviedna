@@ -1,11 +1,21 @@
 import { getApps, initializeApp } from 'firebase-admin/app'
 import { getAppCheck } from 'firebase-admin/app-check'
+import { getAuth } from 'firebase-admin/auth'
 import { getFirestore } from 'firebase-admin/firestore'
 import { defineSecret } from 'firebase-functions/params'
 import { onDocumentWritten } from 'firebase-functions/v2/firestore'
 import { onCall, onRequest } from 'firebase-functions/v2/https'
 
 import { createFirestoreAdapter } from './adapters/firestoreAdapter.js'
+import {
+  createDeleteAccountHandler,
+} from './accountDeletion/deleteAccountHandler.js'
+import {
+  createFirestoreAccountDeletionStore,
+} from './accountDeletion/firestoreAccountDeletionStore.js'
+import {
+  createUserEventGuard,
+} from './accountDeletion/userEventGuard.js'
 import {
   RECOMMENDATION_OPTIONS,
   REFRESH_MOVIE_DNA_OPTIONS,
@@ -43,6 +53,36 @@ function createRuntimeFetch() {
   return async () => {
     throw new MovieDnaServerError(SERVER_ERROR_CODES.TMDB_UNAVAILABLE)
   }
+}
+
+function createDeleteAccountRuntimeHandler() {
+  const db = getFirestore()
+
+  const store = (
+    createFirestoreAccountDeletionStore(db)
+  )
+
+  return createDeleteAccountHandler({
+    deleteUserData: uid => (
+      store.deleteUserData(uid)
+    ),
+
+    deleteAuthUser: async uid => {
+      await getAuth().deleteUser(uid)
+    },
+  })
+}
+
+async function runForActiveUser(
+  event,
+  operation,
+) {
+  return createUserEventGuard(
+    getFirestore(),
+  )(
+    event,
+    operation,
+  )
 }
 
 function createRuntimeHandlers() {
@@ -110,50 +150,92 @@ function createPublicBoardRuntimeHandlers() {
 export const onRatingWritten = onDocumentWritten({
   ...triggerOptions,
   document: 'users/{uid}/ratings/{mediaKey}',
-}, (event) => createRuntimeHandlers().sourceWrite(event))
+}, event => runForActiveUser(
+  event,
+  () => createRuntimeHandlers().sourceWrite(event),
+))
 
 export const onOnboardingSummaryWritten = onDocumentWritten({
   ...triggerOptions,
   document: 'users/{uid}/onboarding/summary',
-}, (event) => createRuntimeHandlers().sourceWrite(event))
+}, event => runForActiveUser(
+  event,
+  () => createRuntimeHandlers().sourceWrite(event),
+))
 
 export const onSavedMediaWritten = onDocumentWritten({
   ...triggerOptions,
   document: 'users/{uid}/savedMedia/{mediaKey}',
-}, async (event) => {
-  const [movieDna, publicBoards] = await Promise.all([
-    createRuntimeHandlers().savedMediaWrite(event),
-    createPublicBoardRuntimeHandlers().savedMediaWrite(event),
-  ])
+}, event => runForActiveUser(
+  event,
+  async () => {
+    const [
+      movieDna,
+      publicBoards,
+    ] = await Promise.all([
+      createRuntimeHandlers().savedMediaWrite(event),
+      createPublicBoardRuntimeHandlers()
+        .savedMediaWrite(event),
+    ])
 
-  return {
-    movieDna,
-    publicBoards,
-  }
-})
+    return {
+      movieDna,
+      publicBoards,
+    }
+  },
+))
 
 export const onCustomListWritten = onDocumentWritten({
   ...profilePreviewTriggerOptions,
   document: 'users/{uid}/lists/{listId}',
-}, (event) => (
-  createPublicBoardRuntimeHandlers()
-    .customListWrite(event)
+}, event => runForActiveUser(
+  event,
+  () => (
+    createPublicBoardRuntimeHandlers()
+      .customListWrite(event)
+  ),
 ))
 
 export const onMovieDnaCurrentWritten = onDocumentWritten({
   ...profilePreviewTriggerOptions,
   document: 'users/{uid}/movieDna/current',
-}, (event) => createPublicProfilePreviewRuntimeHandlers().movieDnaWrite(event))
+}, event => runForActiveUser(
+  event,
+  () => (
+    createPublicProfilePreviewRuntimeHandlers()
+      .movieDnaWrite(event)
+  ),
+))
 
 export const onViewingHistoryWritten = onDocumentWritten({
   ...profilePreviewTriggerOptions,
   document: 'users/{uid}/viewingHistory/{eventId}',
-}, (event) => createPublicProfilePreviewRuntimeHandlers().viewingHistoryWrite(event))
+}, event => runForActiveUser(
+  event,
+  () => (
+    createPublicProfilePreviewRuntimeHandlers()
+      .viewingHistoryWrite(event)
+  ),
+))
 
 export const onPublicProfileWritten = onDocumentWritten({
   ...profilePreviewTriggerOptions,
   document: 'publicProfiles/{uid}',
-}, (event) => createPublicProfilePreviewRuntimeHandlers().publicProfileWrite(event))
+}, event => runForActiveUser(
+  event,
+  () => (
+    createPublicProfilePreviewRuntimeHandlers()
+      .publicProfileWrite(event)
+  ),
+))
+
+export const deleteAccount = onCall({
+  ...RUNTIME_OPTIONS,
+  enforceAppCheck:
+    process.env.FUNCTIONS_EMULATOR !== 'true',
+}, request => (
+  createDeleteAccountRuntimeHandler()(request)
+))
 
 export const refreshMovieDna = onCall({
   ...REFRESH_MOVIE_DNA_OPTIONS,

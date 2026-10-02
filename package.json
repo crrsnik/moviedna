@@ -25,8 +25,9 @@
     "test:functions": "npm --prefix functions test",
     "check:functions": "npm --prefix functions run check",
     "test:dna:integration": "firebase emulators:exec --only firestore,functions --project demo-moviedna \"node --test tests/integration/movieDnaFunctions.test.js\"",
-    "test:local": "npm run test:unit && npm run test:functions && npm run test:rules && npm run test:dna:integration && npm run test:recommendations:integration && npm run lint && npm run check:functions && npm run build",
-    "test:recommendations:integration": "firebase emulators:exec --only firestore --project demo-moviedna \"node --test tests/integration/recommendationFlow.test.js\""
+    "test:local": "npm run test:unit && npm run test:functions && npm run test:rules && npm run test:dna:integration && npm run test:recommendations:integration && npm run test:account-deletion:integration && npm run lint && npm run check:functions && npm run build",
+    "test:recommendations:integration": "firebase emulators:exec --only firestore --project demo-moviedna \"node --test tests/integration/recommendationFlow.test.js\"",
+    "test:account-deletion:integration": "firebase emulators:exec --only auth,firestore,functions --project demo-moviedna \"node --test tests/integration/accountDeletionFunctions.test.js\""
   },
   "dependencies": {
     "firebase": "^12.19.0",
