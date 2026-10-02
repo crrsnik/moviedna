@@ -120,6 +120,7 @@ export const fr = {
     library: 'Bibliothèque',
     dna: 'Mon DNA',
     history: 'Historique',
+    ratings: 'Notes',
     statistics: 'Statistiques',
     profileSettings: 'Paramètres du profil',
     accountSettings: 'Paramètres du compte',

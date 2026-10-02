@@ -138,6 +138,13 @@ function ProfileLayout() {
 
         <NavLink
           className={tabClasses}
+          to="/profile/ratings"
+        >
+          {t('profile.ratings')}
+        </NavLink>
+
+        <NavLink
+          className={tabClasses}
           to="/profile/stats"
         >
           {t('profile.statistics')}

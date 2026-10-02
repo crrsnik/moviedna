@@ -120,6 +120,7 @@ export const ru = {
     library: 'Библиотека',
     dna: 'Мой DNA',
     history: 'История',
+    ratings: 'Оценки',
     statistics: 'Статистика',
     profileSettings: 'Настройки профиля',
     accountSettings: 'Настройки аккаунта',

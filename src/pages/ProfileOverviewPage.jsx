@@ -1,9 +1,12 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 
+import { useAuth } from '../features/auth/hooks/useAuth.js'
 import { useMovieDna } from '../features/dna/hooks/useMovieDna.js'
 import { selectDnaPreviewTraits } from '../features/dna/utils/selectDnaPreviewTraits.js'
 import { useTranslation } from '../features/localization/hooks/useTranslation.js'
+import PublicBoards from '../features/profile/components/PublicBoards.jsx'
+import { usePublicBoards } from '../features/profile/hooks/usePublicBoards.js'
 import { calculateViewingStats } from '../features/statistics/core/calculateViewingStats.js'
 import { useViewingHistory } from '../features/viewingHistory/hooks/useViewingHistory.js'
 import { localDateString } from '../features/viewingHistory/validation/viewingHistoryValidation.js'
@@ -118,8 +121,10 @@ function Stat({ label, value }) {
 
 export default function ProfileOverviewPage() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const dnaState = useMovieDna()
   const history = useViewingHistory()
+  const publicBoards = usePublicBoards(user.uid)
   const today = localDateString()
 
   const stats = useMemo(
@@ -245,6 +250,13 @@ export default function ProfileOverviewPage() {
           </div>
         )}
       </section>
+
+      <PublicBoards
+        state={publicBoards}
+        boardHref={board => (
+          `/profile/library?view=list&listId=${board.id}`
+        )}
+      />
     </div>
   )
 }

@@ -120,6 +120,7 @@ export const en = {
     library: 'Library',
     dna: 'My DNA',
     history: 'History',
+    ratings: 'Ratings',
     statistics: 'Statistics',
     profileSettings: 'Profile settings',
     accountSettings: 'Account settings',

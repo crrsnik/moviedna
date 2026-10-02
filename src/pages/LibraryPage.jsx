@@ -1,5 +1,3 @@
-import UserRatings from '../features/ratings/components/UserRatings.jsx'
-
 import {
   useEffect,
   useState,
@@ -7,6 +5,7 @@ import {
 
 import {
   Link,
+  Navigate,
   useSearchParams,
 } from 'react-router-dom'
 
@@ -61,6 +60,15 @@ function Library({ uid }) {
     canonical,
     setParams,
   ])
+
+  if (selection.view === 'ratings') {
+    return (
+      <Navigate
+        to="/profile/ratings"
+        replace
+      />
+    )
+  }
 
   const selected = lists.data?.find(
     list => list.id === selection.listId,
@@ -173,8 +181,6 @@ function Library({ uid }) {
                 </div>
               )
             )
-          ) : selection.view === 'ratings' ? (
-            <UserRatings uid={uid} />
           ) : (
             <>
               <h2 className="text-2xl font-semibold">

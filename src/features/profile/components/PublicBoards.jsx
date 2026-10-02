@@ -51,6 +51,7 @@ function BoardCover({ board }) {
 export default function PublicBoards({
   state,
   username,
+  boardHref,
 }) {
   const { t } = useTranslation()
 
@@ -121,9 +122,11 @@ export default function PublicBoards({
             className="min-w-0"
           >
             <Link
-              to={`/users/${encodeURIComponent(
-                username,
-              )}/boards/${board.id}`}
+              to={boardHref
+                ? boardHref(board)
+                : `/users/${encodeURIComponent(
+                    username,
+                  )}/boards/${board.id}`}
               className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
             >
               <div className="overflow-hidden rounded-xl bg-zinc-950 transition-transform duration-200 group-hover:-translate-y-0.5">

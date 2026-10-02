@@ -410,14 +410,6 @@ export default function LibraryBoardsHome({
         )}
       </section>
 
-      <Link
-        to={`?${librarySelectionParams({
-          view: 'ratings',
-        })}`}
-        className="inline-flex text-sm font-medium text-zinc-400 hover:text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-4"
-      >
-        {t('library.views.ratings')} →
-      </Link>
     </div>
   )
 }

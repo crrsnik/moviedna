@@ -21,6 +21,7 @@ import NotFoundPage from '../pages/NotFoundPage.jsx'
 import OnboardingPage from '../pages/OnboardingPage.jsx'
 import PersonDetailPage from '../pages/PersonDetailPage.jsx'
 import ProfileOverviewPage from '../pages/ProfileOverviewPage.jsx'
+import ProfileRatingsPage from '../pages/ProfileRatingsPage.jsx'
 import PublicProfilePage from '../pages/PublicProfilePage.jsx'
 import PublicBoardPage from '../pages/PublicBoardPage.jsx'
 import ProfileSettingsPage from '../pages/ProfileSettingsPage.jsx'
@@ -85,6 +86,7 @@ const router = createBrowserRouter([
                   { path: 'library', element: <LibraryPage /> },
                   { path: 'dna', element: <DnaPage /> },
                   { path: 'history', element: <HistoryPage /> },
+                  { path: 'ratings', element: <ProfileRatingsPage /> },
                   { path: 'stats', element: <StatisticsPage /> },
                   { path: 'settings', element: <ProfileSettingsPage /> },
                   { path: 'account', element: <AccountSettingsPage /> },
