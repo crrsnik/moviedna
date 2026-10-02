@@ -36,23 +36,27 @@ function validConcurrency(value) {
 async function executeSourceRequest(
   sourceClient,
   request,
+  language,
 ) {
   switch (request.type) {
     case 'trending':
       return sourceClient.getTrending(
         request.mediaType,
+        language,
       )
 
     case 'popular':
       return sourceClient.getPopular(
         request.mediaType,
         request.page,
+        language,
       )
 
     case 'topRated':
       return sourceClient.getTopRated(
         request.mediaType,
         request.page,
+        language,
       )
 
     case 'genre':
@@ -60,6 +64,7 @@ async function executeSourceRequest(
         request.mediaType,
         request.genreId,
         request.page,
+        language,
       )
 
     default:
@@ -72,6 +77,7 @@ async function executeSourceRequest(
 async function collectSources(
   sourceClient,
   requests,
+  language,
   concurrency,
 ) {
   const results = new Array(requests.length)
@@ -88,6 +94,7 @@ async function collectSources(
           value: await executeSourceRequest(
             sourceClient,
             requests[index],
+            language,
           ),
         }
       } catch (error) {
@@ -162,6 +169,7 @@ export function createRecommendationPipeline({
     rated = [],
     watched = [],
     hidden = [],
+    language = 'en-US',
   } = {}) {
     const sourcePlan = buildRecommendationSourcePlan({
       dna,
@@ -171,6 +179,7 @@ export function createRecommendationPipeline({
     const collected = await collectSources(
       sourceClient,
       sourcePlan.requests,
+      language,
       sourceConcurrency,
     )
 

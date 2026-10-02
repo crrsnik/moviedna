@@ -44,7 +44,7 @@ describe('Browse proxy allowlist', () => {
     '/movie/popular?language=en-US&page=1&include_adult=false',
     '/movie/popular?language=en-US&page=1&page=2',
     '/movie/popular?language=en-US&page=501',
-    '/movie/popular?language=fr-FR&page=1',
+    '/movie/popular?language=de-DE&page=1',
     '/movie/popular?language=en-US&page=1&target=elsewhere',
     '/genre/movie/list?language=en-US&page=1',
     '/discover/movie?language=en-US&page=1',

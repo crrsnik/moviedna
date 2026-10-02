@@ -25,7 +25,7 @@ describe('Search service with mocked fetch', () => {
     await assert.rejects(searchCatalog({ query }), { code: 'request' })
     assert.equal(fetchMock.mock.callCount(), 0)
   })
-  it('rejects other languages', async () => { await assert.rejects(searchCatalog({ query: 'Alien', language: 'fr-FR' }), { code: 'request' }); assert.equal(fetchMock.mock.callCount(), 0) })
+  it('rejects unsupported languages', async () => { await assert.rejects(searchCatalog({ query: 'Alien', language: 'de-DE' }), { code: 'request' }); assert.equal(fetchMock.mock.callCount(), 0) })
   it('normalizes invalid type/page before requesting', async () => {
     await searchCatalog({ query: 'Alien', type: 'unknown', page: -2 })
     assert.match(fetchMock.mock.calls[0].arguments[0], /search\/multi.*page=1/)

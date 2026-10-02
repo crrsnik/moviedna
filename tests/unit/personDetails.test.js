@@ -14,7 +14,7 @@ describe('Person routes and proxy contract', () => {
   const url = (path = '/person/1', params = `language=en-US&append_to_response=${PERSON_DETAIL_APPEND}`) => new URL(`http://localhost/api/tmdb${path}?${params}`)
   it('allows exact person append', () => assert.ok(isAllowedPersonDetailRequest(url())))
   for (const path of ['/person/01', '/person/0', '/person/1/images', '/movie/1', '/tv/1', '/person/1/']) it(`rejects ${path}`, () => assert.equal(isAllowedPersonDetailRequest(url(path)), false))
-  for (const params of ['language=en-US', `language=fr-FR&append_to_response=${PERSON_DETAIL_APPEND}`, `language=en-US&append_to_response=${PERSON_DETAIL_APPEND}&page=1`, `language=en-US&append_to_response=${PERSON_DETAIL_APPEND}&language=en-US`, 'language=en-US&append_to_response=credits']) it(`rejects query ${params}`, () => assert.equal(isAllowedPersonDetailRequest(url('/person/1', params)), false))
+  for (const params of ['language=en-US', `language=de-DE&append_to_response=${PERSON_DETAIL_APPEND}`, `language=en-US&append_to_response=${PERSON_DETAIL_APPEND}&page=1`, `language=en-US&append_to_response=${PERSON_DETAIL_APPEND}&language=en-US`, 'language=en-US&append_to_response=credits']) it(`rejects query ${params}`, () => assert.equal(isAllowedPersonDetailRequest(url('/person/1', params)), false))
   it('builds only movie/TV routes', () => {
     assert.equal(getMediaDetailPath({ id: 2, mediaType: 'movie' }), '/movies/2')
     assert.equal(getMediaDetailPath({ id: 2, mediaType: 'tv' }), '/tv/2')

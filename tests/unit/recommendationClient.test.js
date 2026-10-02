@@ -182,7 +182,7 @@ describe('recommendation callable service', () => {
     const value = await service.getRecommendations()
 
     assert.equal(value.results.length, 1)
-    assert.deepEqual(calls, [[]])
+    assert.deepEqual(calls, [['en-US']])
   })
 
   it('preserves safe Firebase callable codes without leaking raw messages', async () => {

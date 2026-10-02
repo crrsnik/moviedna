@@ -58,6 +58,7 @@ describe('recommendation callable handler', () => {
       rated,
       watched: [],
       hidden: [],
+      language: 'en-US',
     }])
   })
 

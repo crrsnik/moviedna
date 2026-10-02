@@ -123,7 +123,7 @@ describe('TMDB proxy request contract', () => {
     ['decimal page', 'query=Alien&language=en-US&page=1.5&include_adult=false'],
     ['scientific page', 'query=Alien&language=en-US&page=1e2&include_adult=false'],
     ['leading-zero page', 'query=Alien&language=en-US&page=01&include_adult=false'],
-    ['wrong language', 'query=Alien&language=fr-FR&page=1&include_adult=false'],
+    ['wrong language', 'query=Alien&language=de-DE&page=1&include_adult=false'],
     ['mixed-case parameter', 'query=Alien&Language=en-US&page=1&include_adult=false'],
     ['adult numeric bypass', 'query=Alien&language=en-US&page=1&include_adult=1'],
     ['adult mixed-case bypass', 'query=Alien&language=en-US&page=1&include_adult=False'],

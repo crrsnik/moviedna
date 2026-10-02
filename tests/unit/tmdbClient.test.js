@@ -69,7 +69,7 @@ describe('TMDB client with mocked fetch', () => {
     })
   }
   it('rejects query injection and unexpected language types', async () => {
-    for (const language of ['fr-FR', 'en-US&api_key=anything', {}, null]) await assert.rejects(getTmdb(path, { language }), { code: 'request' })
+    for (const language of ['de-DE', 'en-US&api_key=anything', {}, null]) await assert.rejects(getTmdb(path, { language }), { code: 'request' })
     assert.equal(fetchMock.mock.callCount(), 0)
   })
   it('never displays raw unknown messages', () => {

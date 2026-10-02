@@ -13,6 +13,16 @@ const DETAIL_APPEND = Object.freeze({
 })
 const MAX_PAGE = 500
 
+const ALLOWED_LANGUAGES = new Set([
+  'en-US',
+  'fr-FR',
+  'ru-RU',
+])
+
+function validLanguage(value) {
+  return ALLOWED_LANGUAGES.has(value)
+}
+
 function exactParameters(params, expected) {
   return [...params].length === expected.length
     && expected.every((key) => params.getAll(key).length === 1)
@@ -52,20 +62,20 @@ export function validateTmdbProxyRequest(rawUrl, method = 'GET') {
   if (LIST_PATHS.has(path)) {
     const trending = path.startsWith('/trending/movie/') || path.startsWith('/trending/tv/')
     const expected = trending ? ['language'] : ['language', 'page']
-    if (!exactParameters(params, expected) || params.get('language') !== 'en-US'
+    if (!exactParameters(params, expected) || !validLanguage(params.get('language'))
       || (!trending && !validPage(params.get('page')))) return null
   } else if (SEARCH_PATHS.has(path)) {
     const query = params.get('query')
     if (!exactParameters(params, ['query', 'language', 'page', 'include_adult'])
       || normalizedQuery(query) !== query || query.length < 2 || query.length > 100
-      || params.get('language') !== 'en-US' || !validPage(params.get('page'))
+      || !validLanguage(params.get('language')) || !validPage(params.get('page'))
       || params.get('include_adult') !== 'false') return null
   } else if (GENRE_PATHS.has(path)) {
-    if (!exactParameters(params, ['language']) || params.get('language') !== 'en-US') return null
+    if (!exactParameters(params, ['language']) || !validLanguage(params.get('language'))) return null
   } else if (path === '/discover/movie' || path === '/discover/tv') {
     const tail = path === '/discover/movie' ? 'include_video' : 'include_null_first_air_dates'
     const expected = ['language', 'page', 'sort_by', 'include_adult', 'with_genres', tail]
-    if (!exactParameters(params, expected) || params.get('language') !== 'en-US'
+    if (!exactParameters(params, expected) || !validLanguage(params.get('language'))
       || !validPage(params.get('page')) || params.get('sort_by') !== 'popularity.desc'
       || params.get('include_adult') !== 'false' || !validPositiveId(params.get('with_genres'))
       || params.get(tail) !== 'false') return null
@@ -73,7 +83,7 @@ export function validateTmdbProxyRequest(rawUrl, method = 'GET') {
     const match = path.match(/^\/(movie|tv|person)\/([^/]+)$/)
     if (!match || !validPositiveId(match[2])
       || !exactParameters(params, ['language', 'append_to_response'])
-      || params.get('language') !== 'en-US'
+      || !validLanguage(params.get('language'))
       || params.get('append_to_response') !== DETAIL_APPEND[match[1]]) return null
   }
 

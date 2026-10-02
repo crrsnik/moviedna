@@ -7,6 +7,8 @@ import {
 import { useAuth } from '../../auth/hooks/useAuth.js'
 import { useMovieDna } from '../../dna/hooks/useMovieDna.js'
 import { useViewingHistory } from '../../viewingHistory/hooks/useViewingHistory.js'
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
+import { toTmdbLanguage } from '../../../shared/config/tmdb.js'
 import { recommendationRevision } from './recommendationLifecycle.js'
 import { deriveRecommendationState } from './recommendationState.js'
 import { recommendationCache } from '../services/recommendationCache.js'
@@ -15,6 +17,8 @@ import { recommendationService } from '../services/recommendationService.js'
 export function useRecommendations() {
   const { user } = useAuth()
   const dna = useMovieDna()
+  const { locale } = useTranslation()
+  const language = toTmdbLanguage(locale)
 
   const uid = user?.uid ?? null
   const history = useViewingHistory()
@@ -36,32 +40,38 @@ export function useRecommendations() {
     )
     : null
 
+  // Recommendations with the same DNA revision but a different
+  // display language must not share a cached response.
+  const localizedRevision = revision
+    ? `${revision}\u0000${language}`
+    : null
+
   const [retryState, setRetryState] = useState({
     revision: null,
     count: 0,
   })
 
   const retryAttempt =
-    retryState.revision === revision
+    retryState.revision === localizedRevision
       ? retryState.count
       : 0
 
   const [snapshot, setSnapshot] = useState({
     uid,
-    revision,
-    loading: Boolean(uid && revision),
+    revision: localizedRevision,
+    loading: Boolean(uid && localizedRevision),
     data: null,
     error: null,
   })
 
   useEffect(() => {
-    if (!uid || !revision) {
+    if (!uid || !localizedRevision) {
       return undefined
     }
 
     const cached = recommendationCache.get(
       uid,
-      revision,
+      localizedRevision,
     )
 
     if (
@@ -70,7 +80,7 @@ export function useRecommendations() {
     ) {
       setSnapshot({
         uid,
-        revision,
+        revision: localizedRevision,
         loading: false,
         data: cached,
         error: null,
@@ -83,7 +93,7 @@ export function useRecommendations() {
 
     setSnapshot({
       uid,
-      revision,
+      revision: localizedRevision,
       loading: true,
       data: null,
       error: null,
@@ -92,9 +102,11 @@ export function useRecommendations() {
     recommendationCache
       .load(
         uid,
-        revision,
+        localizedRevision,
         () =>
-          recommendationService.getRecommendations(),
+          recommendationService.getRecommendations(
+            language,
+          ),
         {
           force: retryAttempt > 0,
         },
@@ -104,7 +116,7 @@ export function useRecommendations() {
 
         setSnapshot({
           uid,
-          revision,
+          revision: localizedRevision,
           loading: false,
           data,
           error: null,
@@ -115,7 +127,7 @@ export function useRecommendations() {
 
         setSnapshot({
           uid,
-          revision,
+          revision: localizedRevision,
           loading: false,
           data: null,
           error,
@@ -127,29 +139,30 @@ export function useRecommendations() {
     }
   }, [
     uid,
-    revision,
+    localizedRevision,
     retryAttempt,
+    language,
   ])
 
   const retry = useCallback(() => {
-    if (!uid || !revision) return
+    if (!uid || !localizedRevision) return
 
     setRetryState(previous => ({
-      revision,
+      revision: localizedRevision,
       count:
-        previous.revision === revision
+        previous.revision === localizedRevision
           ? previous.count + 1
           : 1,
     }))
   }, [
     uid,
-    revision,
+    localizedRevision,
   ])
 
-  const cached = uid && revision
+  const cached = uid && localizedRevision
     ? recommendationCache.get(
         uid,
-        revision,
+        localizedRevision,
       )
     : null
 
@@ -167,7 +180,7 @@ export function useRecommendations() {
       loading: false,
       data: null,
       error: {
-        code: 'viewing-history-unavailable',
+        code: 'watched-media-unavailable',
       },
       unavailable: false,
     }
@@ -213,7 +226,7 @@ export function useRecommendations() {
     }
   } else if (
     snapshot.uid === uid
-    && snapshot.revision === revision
+    && snapshot.revision === localizedRevision
   ) {
     effectiveSnapshot = snapshot
   } else if (cached !== null) {
