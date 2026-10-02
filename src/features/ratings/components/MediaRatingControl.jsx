@@ -8,9 +8,12 @@ import { useUserProfile } from '../../profile/hooks/useUserProfile.js'
 import { useTranslation } from '../../localization/hooks/useTranslation.js'
 
 import {
-  detailToSnapshot,
   getMediaKey,
 } from '../../library/validation/libraryValidation.js'
+
+import {
+  detailToViewingSnapshot,
+} from '../../viewingHistory/validation/viewingHistoryValidation.js'
 
 import { libraryButton } from '../../library/components/LibraryDialog.jsx'
 
@@ -229,7 +232,7 @@ export default function MediaRatingControl({
   let mediaKey
 
   try {
-    media = detailToSnapshot(
+    media = detailToViewingSnapshot(
       mediaType,
       detail,
     )

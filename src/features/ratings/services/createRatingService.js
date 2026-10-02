@@ -3,7 +3,23 @@ import { ratingMediaSnapshot, validateScore, validateRatingKey } from '../valida
 import { normalizeRating, normalizeUserRatings } from './normalizeRating.js'
 import { RatingError, toRatingError } from './ratingErrors.js'
 
-// Only this injected boundary knows Firestore. It never touches savedMedia.
+import {
+  localDateString,
+  validateViewingEventId,
+  viewingHistoryMediaSnapshot,
+} from '../../viewingHistory/validation/viewingHistoryValidation.js'
+
+function ratingViewingEventId(media) {
+  const prefix = media.mediaType === 'movie'
+    ? 'RM'
+    : 'RT'
+
+  return validateViewingEventId(
+    `${prefix}${String(media.tmdbId).padStart(18, '0')}`,
+  )
+}
+
+// Only this injected boundary knows Firestore.
 export function createRatingService({ auth, db, doc, collection, onSnapshot, runTransaction, serverTimestamp }) {
   const pending = new Map(), subscriptions = new Map()
   function owner(uid, session = auth.currentUser) {
@@ -73,8 +89,18 @@ export function createRatingService({ auth, db, doc, collection, onSnapshot, run
     async saveRating(uid, input, score) {
       owner(uid)
       const media = ratingMediaSnapshot(input)
+      const viewing = viewingHistoryMediaSnapshot(input)
+      const watchedDate = localDateString()
+
       validateScore(score)
-      const key = getMediaKey(media.mediaType, media.tmdbId)
+
+      const key = getMediaKey(
+        media.mediaType,
+        media.tmdbId,
+      )
+
+      const viewingEventId =
+        ratingViewingEventId(media)
       return mutate(uid, key, async (tx, target, session) => {
         const profile = await tx.get(doc(db, 'users', uid))
         owner(uid, session)
@@ -91,7 +117,24 @@ export function createRatingService({ auth, db, doc, collection, onSnapshot, run
         )
 
         const savedMedia = await tx.get(savedMediaRef)
+
+        const viewingEventRef = doc(
+          db,
+          'users',
+          uid,
+          'viewingHistory',
+          viewingEventId,
+        )
+
+        const viewingEvent =
+          await tx.get(viewingEventRef)
+
         owner(uid, session)
+
+        const alreadyWatched = (
+          savedMedia.exists()
+          && savedMedia.data()?.watched === true
+        )
 
         if (existing.exists()) {
           const saved = normalizeRating(existing)
@@ -107,6 +150,19 @@ export function createRatingService({ auth, db, doc, collection, onSnapshot, run
           tx.set(target, {
             ...media,
             score,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          })
+        }
+
+        if (
+          !alreadyWatched
+          && !viewingEvent.exists()
+        ) {
+          tx.set(viewingEventRef, {
+            schemaVersion: 1,
+            ...viewing,
+            watchedDate,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           })

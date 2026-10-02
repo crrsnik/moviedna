@@ -6,6 +6,7 @@ import {
 
 import { useAuth } from '../../auth/hooks/useAuth.js'
 import { useMovieDna } from '../../dna/hooks/useMovieDna.js'
+import { useViewingHistory } from '../../viewingHistory/hooks/useViewingHistory.js'
 import { recommendationRevision } from './recommendationLifecycle.js'
 import { deriveRecommendationState } from './recommendationState.js'
 import { recommendationCache } from '../services/recommendationCache.js'
@@ -16,10 +17,24 @@ export function useRecommendations() {
   const dna = useMovieDna()
 
   const uid = user?.uid ?? null
-  const revision = recommendationRevision(
-    uid,
-    dna,
+  const history = useViewingHistory()
+
+  const historyReady = (
+    !uid
+    || (
+      !history.loading
+      && !history.error
+      && Array.isArray(history.data)
+    )
   )
+
+  const revision = historyReady
+    ? recommendationRevision(
+      uid,
+      dna,
+      history.data ?? [],
+    )
+    : null
 
   const [retryState, setRetryState] = useState({
     revision: null,
@@ -143,6 +158,22 @@ export function useRecommendations() {
   if (!uid) {
     effectiveSnapshot = {
       loading: false,
+      data: null,
+      error: null,
+      unavailable: false,
+    }
+  } else if (history.error) {
+    effectiveSnapshot = {
+      loading: false,
+      data: null,
+      error: {
+        code: 'viewing-history-unavailable',
+      },
+      unavailable: false,
+    }
+  } else if (history.loading) {
+    effectiveSnapshot = {
+      loading: true,
       data: null,
       error: null,
       unavailable: false,
