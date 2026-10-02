@@ -96,7 +96,7 @@ test('explicit public custom list preserves visibility', () => {
 })
 
 test('list input boundary lengths and empty description', () => assert.deepEqual(normalizeListInput({ name: 'x'.repeat(60), description: 'y'.repeat(300) }), { name: 'x'.repeat(60), description: 'y'.repeat(300), visibility: 'private' }))
-for (const [query, expected] of [['', 'view=favorites'], ['view=invalid', 'view=favorites'], ['view=list', 'view=favorites'], ['view=list&listId=bad', 'view=favorites'], [`view=list&listId=${A}&extra=ignored`, `view=list&listId=${A}`], ['view=watchlist&listId=bad', 'view=watchlist'], ['view=favorites', 'view=favorites']]) test(`canonical library URL ${query}`, () => assert.equal(librarySelectionParams(normalizeLibrarySelection(new URLSearchParams(query))).toString(), expected))
+for (const [query, expected] of [['', 'view=boards'], ['view=invalid', 'view=boards'], ['view=list', 'view=boards'], ['view=list&listId=bad', 'view=boards'], [`view=list&listId=${A}&extra=ignored`, `view=list&listId=${A}`], ['view=watchlist&listId=bad', 'view=watchlist'], ['view=favorites', 'view=favorites']]) test(`canonical library URL ${query}`, () => assert.equal(librarySelectionParams(normalizeLibrarySelection(new URLSearchParams(query))).toString(), expected))
 test('selected list IDs clone, zero and twenty allowed', () => { const ids = Array.from({ length: 20 }, (_, i) => String(i).padStart(20, '0')); assert.deepEqual(validateSelectedListIds(ids), ids); assert.notEqual(validateSelectedListIds(ids), ids); assert.deepEqual(validateSelectedListIds([]), []) })
 for (const [ids, code] of [[Array(21).fill(A), 'membership-limit'], [[A, A], 'invalid-list-id'], [[null], 'invalid-list-id'], [null, 'invalid-list-id']]) test(`invalid selection ${code} ${JSON.stringify(ids)}`, () => assert.throws(() => validateSelectedListIds(ids), { code }))
 test('normalization exact data, timestamps, no mutation', () => { const data = list({ name: ' Trim ' }); assert.equal(normalizeCustomList(snap(A, data)).name, 'Trim'); assert.equal(data.name, ' Trim '); assert.deepEqual(normalizeCustomList(snap(A, data)).createdAt, { seconds: 10, nanoseconds: 0 }) })
@@ -111,8 +111,8 @@ test('custom list subscription scoped, stale/pending/cache ignored and unsubscri
 test('custom list items array-contains query without orderBy', () => { const f = fixture(); const stop = f.service.subscribeToCustomListItems(f.uid, A, () => {}, assert.fail); assert.deepEqual(f.targets[0], { path: 'users/synthetic-owner/savedMedia', constraints: [{ field: 'listIds', op: 'array-contains', value: A }] }); stop() })
 test('subscription session change rejects old snapshots', () => { const f = fixture(), errors = []; f.service.subscribeToCustomLists(f.uid, assert.fail, error => errors.push(error.code)); f.auth.currentUser = { uid: 'other-owner' }; f.listeners[0].next({ docs: [] }); assert.deepEqual(errors, ['session']) })
 test('invalid subscription never reaches Firebase', () => { const f = fixture(), errors = []; f.service.subscribeToCustomListItems(f.uid, 'bad', assert.fail, e => errors.push(e.code)); assert.deepEqual(errors, ['invalid-list-id']); assert.equal(f.listeners.length, 0) })
-test('membership create list-only media snapshot exact payload', async () => { const f = fixture(); f.seedList(); await f.service.updateMediaListMemberships(f.uid, { ...media, overview: 'Do not save' }, [A]); const data = f.store.get(f.path('savedMedia', 'movie_42')); assert.equal(data.favorite, false); assert.equal(data.watchlist, false); assert.equal(data.watched, false); assert.deepEqual(data.listIds, [A]); assert.equal(Object.keys(data).length, 11); assert.equal(data.createdAt.seconds, 20) })
-test('membership update preserves flags/createdAt and uses one transaction', async () => { const f = fixture(); f.seedList(A); f.seedList(B); f.seedMedia(saved({ favorite: true, watchlist: true })); await f.service.updateMediaListMemberships(f.uid, media, [A, B]); const data = f.store.get(f.path('savedMedia', 'movie_42')); assert.equal(data.favorite && data.watchlist, true); assert.equal(data.createdAt.seconds, 10); assert.deepEqual(data.listIds, [A, B]); assert.equal(f.state.transactions, 1) })
+test('membership create list-only media snapshot exact payload', async () => { const f = fixture(); f.seedList(); await f.service.updateMediaListMemberships(f.uid, { ...media, overview: 'Do not save' }, [A]); const data = f.store.get(f.path('savedMedia', 'movie_42')); assert.equal(data.favorite, false); assert.equal(data.watchlist, false); assert.equal(data.watched, false); assert.deepEqual(data.listIds, [A]); assert.equal(data.listAddedAt[A].seconds, 20); assert.equal(data.listAddedAt[A].nanoseconds, 0); assert.equal(Object.keys(data).length, 12); assert.equal(data.createdAt.seconds, 20) })
+test('membership update preserves flags/createdAt and uses one transaction', async () => { const f = fixture(); f.seedList(A); f.seedList(B); f.seedMedia(saved({ favorite: true, watchlist: true })); await f.service.updateMediaListMemberships(f.uid, media, [A, B]); const data = f.store.get(f.path('savedMedia', 'movie_42')); assert.equal(data.favorite && data.watchlist, true); assert.equal(data.createdAt.seconds, 10); assert.deepEqual(data.listIds, [A, B]); assert.deepEqual(Object.keys(data.listAddedAt), [B]); assert.equal(data.listAddedAt[B].seconds, 20); assert.equal(data.listAddedAt[B].nanoseconds, 0); assert.equal(f.state.transactions, 1) })
 test('empty selection and no media is no-op', async () => { const f = fixture(); await f.service.updateMediaListMemberships(f.uid, media, []); assert.equal(f.writes.length, 0) })
 test('empty selection deletes last membership', async () => { const f = fixture(); f.seedMedia(); await f.service.updateMediaListMemberships(f.uid, media, []); assert.equal(f.store.size, 0) })
 test('missing list fails before any write', async () => { const f = fixture(); await rejects(f.service.updateMediaListMemberships(f.uid, media, [A]), 'list-not-found'); assert.equal(f.writes.length, 0) })
@@ -130,3 +130,105 @@ test('logout during list check aborts before write', async () => { const f = fix
 for (const code of ['permission-denied', 'unavailable', 'invalid-list-input', 'invalid-list-id', 'list-not-found', 'invalid-data', 'membership-limit', 'partial-cleanup', 'concurrent-deletion', 'unknown']) test(`safe custom list error ${code}`, () => { const error = toLibraryError({ code, message: 'RAW SECRET' }); assert.equal(error.code, code); assert.ok(!error.message.includes('RAW')) })
 test('form controller suppresses duplicate submit and stale success after unmount', async () => { const action = createLibraryAction(); let release, calls = 0, successes = 0; const operation = () => { calls++; return new Promise(resolve => { release = resolve }) }; const first = action.run(operation, () => {}, () => successes++); await action.run(operation, () => {}, () => successes++); assert.equal(calls, 1); action.dispose(); release(); await first; assert.equal(successes, 0) })
 test('form controller returns successful result only after confirmation', async () => { const action = createLibraryAction(); let value; await action.run(async () => A, () => {}, result => { value = result }); assert.equal(value, A) })
+
+test('legacy custom list defaults pinned false', () => {
+  const normalized = normalizeCustomList(
+    snap(A, list()),
+  )
+
+  assert.equal(normalized.pinned, false)
+})
+
+test('custom list preserves explicit pinned state', () => {
+  const normalized = normalizeCustomList(
+    snap(A, list({ pinned: true })),
+  )
+
+  assert.equal(normalized.pinned, true)
+})
+
+test('custom list rejects invalid pinned value', () => {
+  assert.throws(
+    () => normalizeCustomList(
+      snap(A, list({ pinned: 'yes' })),
+    ),
+    { code: 'invalid-list-data' },
+  )
+})
+
+test('pinning a custom list updates only pin metadata', async () => {
+  const f = fixture()
+
+  f.seedList(
+    A,
+    list({
+      visibility: 'public',
+    }),
+  )
+
+  await f.service.setCustomListPinned(
+    f.uid,
+    A,
+    true,
+  )
+
+  const value = f.store.get(
+    f.path('lists', A),
+  )
+
+  assert.equal(value.pinned, true)
+  assert.equal(value.name, 'Synthetic list')
+  assert.equal(value.visibility, 'public')
+  assert.equal(value.createdAt.seconds, 10)
+  assert.equal(value.updatedAt.seconds, 20)
+})
+
+test('unpinning a custom list persists false', async () => {
+  const f = fixture()
+
+  f.seedList(
+    A,
+    list({
+      pinned: true,
+    }),
+  )
+
+  await f.service.setCustomListPinned(
+    f.uid,
+    A,
+    false,
+  )
+
+  assert.equal(
+    f.store.get(
+      f.path('lists', A),
+    ).pinned,
+    false,
+  )
+})
+
+test('pinning validates list and boolean before Firestore', async () => {
+  const invalid = fixture()
+
+  await assert.rejects(
+    invalid.service.setCustomListPinned(
+      invalid.uid,
+      'bad',
+      true,
+    ),
+  )
+
+  await assert.rejects(
+    invalid.service.setCustomListPinned(
+      invalid.uid,
+      A,
+      'yes',
+    ),
+  )
+
+  assert.equal(
+    invalid.state.transactions
+      + invalid.state.queries,
+    0,
+  )
+})

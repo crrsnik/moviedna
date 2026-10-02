@@ -67,6 +67,7 @@ describe('public boards UI contract', () => {
     assert.deepEqual(
       Object.keys(item).sort(),
       [
+        'addedAt',
         'key',
         'mediaType',
         'posterPath',
@@ -165,9 +166,45 @@ describe('public boards UI contract', () => {
       /removeMediaFromCustomList/,
     )
 
-    assert.match(
+    assert.doesNotMatch(
       component,
       /savedMediaRoute/,
+    )
+
+    assert.match(
+      component,
+      /board\.items\[0\]/,
+    )
+
+    const page = await readFile(
+      new URL(
+        '../../src/pages/PublicBoardPage.jsx',
+        import.meta.url,
+      ),
+      'utf8',
+    )
+
+    assert.match(
+      page,
+      /savedMediaRoute/,
+    )
+
+    assert.doesNotMatch(
+      page,
+      /removeMediaFromCustomList/,
+    )
+
+    const router = await readFile(
+      new URL(
+        '../../src/app/router.jsx',
+        import.meta.url,
+      ),
+      'utf8',
+    )
+
+    assert.match(
+      router,
+      /users\/:username\/boards\/:boardId/,
     )
   })
 })

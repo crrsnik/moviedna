@@ -37,7 +37,16 @@ export function normalizeLibrarySelection(params) {
   if (view === 'list') {
     try { return { view, listId: validateListId(params.get('listId')) } } catch { /* Invalid URL falls back to Favorites. */ }
   }
-  return { view: ['watchlist', 'ratings'].includes(view) ? view : 'favorites' }
+  return {
+    view: [
+      'boards',
+      'favorites',
+      'watchlist',
+      'ratings',
+    ].includes(view)
+      ? view
+      : 'boards',
+  }
 }
 export function librarySelectionParams(selection) {
   return new URLSearchParams(normalizeLibrarySelection(new URLSearchParams(selection)))

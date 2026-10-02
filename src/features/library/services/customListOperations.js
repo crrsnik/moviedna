@@ -14,9 +14,67 @@ export function customListOperations({ db, doc, collection, query, where, limit,
     if (!match || getMediaKey(match[1], Number(match[2])) !== key) throw new LibraryError('invalid-media')
     return key
   }
-  function writeMembership(tx, target, saved, ids) {
-    if (!saved.favorite && !saved.watchlist && !saved.watched && !ids.length) tx.delete(target)
-    else tx.update(target, { watched: saved.watched, listIds: ids, updatedAt: serverTimestamp() })
+  function nextListAddedAt(
+    saved,
+    rawListAddedAt,
+    ids,
+    addedAt = null,
+  ) {
+    const current = (
+      rawListAddedAt
+      && typeof rawListAddedAt === 'object'
+      && !Array.isArray(rawListAddedAt)
+    )
+      ? rawListAddedAt
+      : {}
+
+    const next = {}
+
+    for (const id of ids) {
+      if (Object.hasOwn(current, id)) {
+        next[id] = current[id]
+        continue
+      }
+
+      // A legacy membership has no trustworthy historical
+      // timestamp. Keep it unknown instead of inventing one.
+      if (saved?.listIds.includes(id)) continue
+
+      if (addedAt) {
+        next[id] = addedAt
+      }
+    }
+
+    return next
+  }
+
+  function writeMembership(
+    tx,
+    target,
+    saved,
+    ids,
+    rawListAddedAt,
+  ) {
+    if (
+      !saved.favorite
+      && !saved.watchlist
+      && !saved.watched
+      && !ids.length
+    ) {
+      tx.delete(target)
+      return
+    }
+
+    tx.update(target, {
+      watched: saved.watched,
+      listIds: ids,
+      listAddedAt: nextListAddedAt(
+        saved,
+        rawListAddedAt,
+        ids,
+      ),
+      updatedAt: serverTimestamp(),
+    })
   }
   async function remove(uid, key, id, session) {
     const target = ref(uid, key)
@@ -27,7 +85,13 @@ export function customListOperations({ db, doc, collection, query, where, limit,
       if (!snapshot.exists()) return
       const saved = normalizeSavedMedia(snapshot)
       if (!saved.listIds.includes(id)) return
-      writeMembership(tx, target, saved, saved.listIds.filter(value => value !== id))
+      writeMembership(
+        tx,
+        target,
+        saved,
+        saved.listIds.filter(value => value !== id),
+        snapshot.data()?.listAddedAt,
+      )
     })
   }
   return {
@@ -63,6 +127,45 @@ export function customListOperations({ db, doc, collection, query, where, limit,
         })
       })
     },
+    setCustomListPinned(uid, id, pinned) {
+      try {
+        validateListId(id)
+
+        if (typeof pinned !== 'boolean') {
+          throw new LibraryError('invalid-list-input')
+        }
+      } catch (error) {
+        return Promise.reject(error)
+      }
+
+      return mutate(
+        uid,
+        `list:${id}`,
+        async session => {
+          const target = listRef(uid, id)
+
+          await runTransaction(db, async tx => {
+            requireOwner(uid, session)
+
+            const snapshot = await tx.get(target)
+
+            requireOwner(uid, session)
+
+            if (!snapshot.exists()) {
+              throw new LibraryError('list-not-found')
+            }
+
+            normalizeCustomList(snapshot)
+
+            tx.update(target, {
+              pinned,
+              updatedAt: serverTimestamp(),
+            })
+          })
+        },
+      )
+    },
+
     updateMediaListMemberships(uid, media, selectedListIds) {
       // Use the same media lock as Favorites/Watchlist.
       let snapshot, ids, key
@@ -83,10 +186,47 @@ export function customListOperations({ db, doc, collection, query, where, limit,
             normalizeCustomList(list)
           }
           if (!saved && !ids.length) return
+
+          const listAddedAt = nextListAddedAt(
+            saved,
+            existing.exists()
+              ? existing.data()?.listAddedAt
+              : null,
+            ids,
+            serverTimestamp(),
+          )
+
           if (saved) {
-            if (!saved.favorite && !saved.watchlist && !saved.watched && !ids.length) tx.delete(target)
-            else tx.update(target, { title: snapshot.title, posterPath: snapshot.posterPath, releaseYear: snapshot.releaseYear, watched: saved.watched, listIds: ids, updatedAt: serverTimestamp() })
-          } else tx.set(target, { ...snapshot, favorite: false, watchlist: false, watched: false, listIds: ids, createdAt: serverTimestamp(), updatedAt: serverTimestamp() })
+            if (
+              !saved.favorite
+              && !saved.watchlist
+              && !saved.watched
+              && !ids.length
+            ) {
+              tx.delete(target)
+            } else {
+              tx.update(target, {
+                title: snapshot.title,
+                posterPath: snapshot.posterPath,
+                releaseYear: snapshot.releaseYear,
+                watched: saved.watched,
+                listIds: ids,
+                listAddedAt,
+                updatedAt: serverTimestamp(),
+              })
+            }
+          } else {
+            tx.set(target, {
+              ...snapshot,
+              favorite: false,
+              watchlist: false,
+              watched: false,
+              listIds: ids,
+              listAddedAt,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            })
+          }
         })
       })
     },

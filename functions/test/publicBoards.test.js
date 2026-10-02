@@ -60,6 +60,7 @@ describe('public board projection', () => {
         {
           ...list(),
           secret: 'private',
+          pinned: true,
         },
       ),
       {
@@ -76,7 +77,12 @@ describe('public board projection', () => {
   it('exposes only safe media snapshot fields', () => {
     const result = buildPublicBoardItem(
       'movie_42',
-      media(),
+      media({
+        listAddedAt: {
+          [LIST_A]: timestamp(7),
+        },
+      }),
+      LIST_A,
     )
 
     assert.deepEqual(result, {
@@ -86,6 +92,7 @@ describe('public board projection', () => {
       title: 'Synthetic movie',
       posterPath: '/poster.jpg',
       releaseYear: 2020,
+      addedAt: timestamp(7),
     })
 
     for (const field of [
@@ -93,6 +100,7 @@ describe('public board projection', () => {
       'watchlist',
       'watched',
       'listIds',
+      'listAddedAt',
       'createdAt',
     ]) {
       assert.equal(field in result, false)
@@ -146,6 +154,7 @@ describe('public board projection', () => {
           title: 'Synthetic movie',
           posterPath: '/poster.jpg',
           releaseYear: 2020,
+          addedAt: null,
         },
       },
     ])

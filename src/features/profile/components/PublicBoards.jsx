@@ -1,74 +1,56 @@
 import { Link } from 'react-router-dom'
 
-import { useTranslation } from '../../localization/hooks/useTranslation.js'
-
 import DetailImage from '../../catalog/components/DetailImage.jsx'
 import { getTmdbPosterUrl } from '../../catalog/services/tmdbImages.js'
-import { savedMediaRoute } from '../../library/validation/libraryValidation.js'
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
 
-function BoardItems({ items }) {
+function BoardCount({ count }) {
   const { t } = useTranslation()
 
-  if (!items.length) {
+  return (
+    <span className="text-sm text-zinc-500">
+      {t(
+        count === 1
+          ? 'library.boards.oneTitle'
+          : 'library.boards.manyTitles',
+        { count },
+      )}
+    </span>
+  )
+}
+
+function BoardCover({ board }) {
+  const { t } = useTranslation()
+  const cover = board.items[0]
+
+  if (!cover) {
     return (
-      <p className="text-sm text-zinc-400">
+      <div className="flex aspect-2/3 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-center text-sm text-zinc-500">
         {t('library.boards.emptyBoard')}
-      </p>
+      </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-      {items.map(item => (
-        <article
-          key={item.key}
-          className="min-w-0"
-        >
-          <Link
-            to={savedMediaRoute(item)}
-            className="block space-y-2 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4"
-          >
-            <DetailImage
-              src={getTmdbPosterUrl(
-                item.posterPath,
-              )}
-              alt={t(
-                'catalog.media.posterAlt',
-                { title: item.title },
-              )}
-              placeholder={t(
-                'catalog.media.noPoster',
-              )}
-              className="aspect-2/3 rounded-lg"
-            />
-
-            <h4 className="break-words font-medium">
-              {item.title}
-            </h4>
-
-            <p className="text-sm text-zinc-400">
-              {[
-                item.mediaType === 'movie'
-                  ? t(
-                    'catalog.media.movie',
-                  )
-                  : t(
-                    'catalog.media.tv',
-                  ),
-                item.releaseYear,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </p>
-          </Link>
-        </article>
-      ))}
-    </div>
+    <DetailImage
+      src={getTmdbPosterUrl(
+        cover.posterPath,
+      )}
+      alt={t(
+        'catalog.media.posterAlt',
+        { title: cover.title },
+      )}
+      placeholder={t(
+        'catalog.media.noPoster',
+      )}
+      className="aspect-2/3 rounded-xl"
+    />
   )
 }
 
 export default function PublicBoards({
   state,
+  username,
 }) {
   const { t } = useTranslation()
 
@@ -128,45 +110,38 @@ export default function PublicBoards({
         </h2>
 
         <p className="text-sm text-zinc-400">
-          {t(
-            'library.boards.description',
-          )}
+          {t('library.boards.description')}
         </p>
       </div>
 
-      <div className="mt-6 space-y-8">
+      <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 lg:grid-cols-4">
         {state.boards.map(board => (
           <article
             key={board.id}
-            className="space-y-4"
+            className="min-w-0"
           >
-            <div>
-              <h3 className="break-words text-lg font-semibold">
-                {board.name}
-              </h3>
+            <Link
+              to={`/users/${encodeURIComponent(
+                username,
+              )}/boards/${board.id}`}
+              className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
+            >
+              <div className="overflow-hidden rounded-xl bg-zinc-950 transition-transform duration-200 group-hover:-translate-y-0.5">
+                <BoardCover board={board} />
+              </div>
 
-              {board.description && (
-                <p className="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-400">
-                  {board.description}
-                </p>
-              )}
+              <div className="mt-3 min-w-0">
+                <h3 className="truncate font-semibold">
+                  {board.name}
+                </h3>
 
-              <p className="mt-1 text-sm text-zinc-500">
-                {t(
-                  board.items.length === 1
-                    ? 'library.boards.oneTitle'
-                    : 'library.boards.manyTitles',
-                  {
-                    count:
-                      board.items.length,
-                  },
-                )}
-              </p>
-            </div>
-
-            <BoardItems
-              items={board.items}
-            />
+                <div className="mt-1">
+                  <BoardCount
+                    count={board.items.length}
+                  />
+                </div>
+              </div>
+            </Link>
           </article>
         ))}
       </div>

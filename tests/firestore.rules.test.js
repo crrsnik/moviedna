@@ -731,6 +731,190 @@ describe('Media library security rules', { concurrency: false }, () => {
 
 })
 
+
+describe(
+  'Custom list pinning security rules',
+  { concurrency: false },
+  () => {
+    before(async () => {
+      testEnv = await initializeTestEnvironment({
+        projectId,
+        firestore: {
+          host: '127.0.0.1',
+          port: 8080,
+          rules: await readFile(
+            new URL(
+              '../firestore.rules',
+              import.meta.url,
+            ),
+            'utf8',
+          ),
+        },
+      })
+    })
+
+    beforeEach(async () => {
+      await testEnv.clearFirestore()
+    })
+
+    after(async () => {
+      await testEnv?.cleanup()
+    })
+
+    it(
+      'allows legacy list then boolean pin and unpin',
+      async () => {
+        const db = userDb()
+        const target = doc(
+          db,
+          'users/alice/lists',
+          listId,
+        )
+
+        await assertSucceeds(
+          setDoc(
+            target,
+            libraryList(),
+          ),
+        )
+
+        const legacy = (
+          await assertSucceeds(
+            getDoc(target),
+          )
+        ).data()
+
+        assert.equal(
+          Object.hasOwn(legacy, 'pinned'),
+          false,
+        )
+
+        await assertSucceeds(
+          updateDoc(target, {
+            pinned: true,
+            updatedAt: serverTimestamp(),
+          }),
+        )
+
+        assert.equal(
+          (
+            await assertSucceeds(
+              getDoc(target),
+            )
+          ).data().pinned,
+          true,
+        )
+
+        await assertSucceeds(
+          updateDoc(target, {
+            pinned: false,
+            updatedAt: serverTimestamp(),
+          }),
+        )
+
+        assert.equal(
+          (
+            await assertSucceeds(
+              getDoc(target),
+            )
+          ).data().pinned,
+          false,
+        )
+      },
+    )
+
+    it(
+      'allows creating an explicitly pinned list',
+      async () => {
+        const target = doc(
+          userDb(),
+          'users/alice/lists',
+          'Z'.repeat(20),
+        )
+
+        await assertSucceeds(
+          setDoc(
+            target,
+            libraryList({
+              pinned: true,
+            }),
+          ),
+        )
+
+        assert.equal(
+          (
+            await assertSucceeds(
+              getDoc(target),
+            )
+          ).data().pinned,
+          true,
+        )
+      },
+    )
+
+    it(
+      'rejects non-boolean pinned values',
+      async () => {
+        const target = doc(
+          userDb(),
+          'users/alice/lists',
+          'Y'.repeat(20),
+        )
+
+        for (const pinned of [
+          'true',
+          1,
+          null,
+          [],
+          {},
+        ]) {
+          await assertFails(
+            setDoc(
+              target,
+              libraryList({
+                pinned,
+              }),
+            ),
+          )
+        }
+      },
+    )
+
+    it(
+      'does not let another user change pin state',
+      async () => {
+        const owner = doc(
+          userDb(),
+          'users/alice/lists',
+          listId,
+        )
+
+        await assertSucceeds(
+          setDoc(
+            owner,
+            libraryList({
+              pinned: false,
+            }),
+          ),
+        )
+
+        const outsider = doc(
+          userDb('bob'),
+          'users/alice/lists',
+          listId,
+        )
+
+        await assertFails(
+          updateDoc(outsider, {
+            pinned: true,
+            updatedAt: serverTimestamp(),
+          }),
+        )
+      },
+    )
+  },
+)
+
 // Stage 8.1: private ratings and public comments; fixtures are synthetic, demo-only.
 const ratingData = (patch = {}) => ({ tmdbId: 123, mediaType: 'movie', title: 'Synthetic title', posterPath: null, releaseYear: null, score: 7, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), ...patch })
 const commentData = (patch = {}) => ({ tmdbId: 123, mediaType: 'movie', authorUsername: 'alice_123', authorDisplayName: 'Alice', text: 'Synthetic comment', containsSpoiler: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), ...patch })

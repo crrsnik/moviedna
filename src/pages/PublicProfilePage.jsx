@@ -129,7 +129,11 @@ function Stat({ label, value }) {
   )
 }
 
-function PublicPreview({ state, boardsState }) {
+function PublicPreview({
+  state,
+  boardsState,
+  username,
+}) {
   const { t } = useTranslation()
 
   if (state.loading) {
@@ -201,7 +205,10 @@ function PublicPreview({ state, boardsState }) {
         </div>
       </section>
 
-      <PublicBoards state={boardsState} />
+      <PublicBoards
+        state={boardsState}
+        username={username}
+      />
     </>
   )
 }
@@ -348,6 +355,7 @@ export default function PublicProfilePage() {
         <PublicPreview
           state={previewState}
           boardsState={boardsState}
+          username={username}
         />
       )}
     </div>

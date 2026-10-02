@@ -91,7 +91,49 @@ export function buildPublicBoard(uid, listId, source) {
   }
 }
 
-export function buildPublicBoardItem(mediaKey, source) {
+function membershipAddedAt(source, listId) {
+  const metadata = source?.listAddedAt
+
+  if (metadata === undefined) return null
+
+  if (
+    !metadata
+    || typeof metadata !== 'object'
+    || Array.isArray(metadata)
+  ) {
+    throw new TypeError(
+      'Invalid public board membership metadata.',
+    )
+  }
+
+  if (!Object.hasOwn(metadata, listId)) {
+    return null
+  }
+
+  const value = metadata[listId]
+
+  if (
+    !value
+    || !Number.isInteger(value.seconds)
+    || value.seconds < -62135596800
+    || value.seconds > 253402300799
+    || !Number.isInteger(value.nanoseconds)
+    || value.nanoseconds < 0
+    || value.nanoseconds > 999999999
+  ) {
+    throw new TypeError(
+      'Invalid public board membership timestamp.',
+    )
+  }
+
+  return value
+}
+
+export function buildPublicBoardItem(
+  mediaKey,
+  source,
+  listId,
+) {
   const match = (
     typeof mediaKey === 'string'
     && MEDIA_KEY_PATTERN.exec(mediaKey)
@@ -99,6 +141,8 @@ export function buildPublicBoardItem(mediaKey, source) {
 
   if (
     !match
+    || typeof listId !== 'string'
+    || !LIST_ID_PATTERN.test(listId)
     || !source
     || typeof source !== 'object'
     || !Number.isSafeInteger(source.tmdbId)
@@ -135,6 +179,10 @@ export function buildPublicBoardItem(mediaKey, source) {
     title: source.title.trim(),
     posterPath: source.posterPath,
     releaseYear: source.releaseYear,
+    addedAt: membershipAddedAt(
+      source,
+      listId,
+    ),
   }
 }
 
@@ -161,7 +209,7 @@ export function createPublicBoardHandlers(store) {
       buildPublicBoard(uid, listId, current),
       items.map(item => ({
         mediaKey: item.id,
-        value: buildPublicBoardItem(item.id, item),
+        value: buildPublicBoardItem(item.id, item, listId),
       })),
     )
 
@@ -210,7 +258,7 @@ export function createPublicBoardHandlers(store) {
           uid,
           listId,
           mediaKey,
-          buildPublicBoardItem(mediaKey, current),
+          buildPublicBoardItem(mediaKey, current, listId),
         )
       } else {
         await store.deleteItem(

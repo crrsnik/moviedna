@@ -22,6 +22,7 @@ import OnboardingPage from '../pages/OnboardingPage.jsx'
 import PersonDetailPage from '../pages/PersonDetailPage.jsx'
 import ProfileOverviewPage from '../pages/ProfileOverviewPage.jsx'
 import PublicProfilePage from '../pages/PublicProfilePage.jsx'
+import PublicBoardPage from '../pages/PublicBoardPage.jsx'
 import ProfileSettingsPage from '../pages/ProfileSettingsPage.jsx'
 import AccountSettingsPage from '../pages/AccountSettingsPage.jsx'
 import RegisterPage from '../pages/RegisterPage.jsx'
@@ -62,6 +63,10 @@ const router = createBrowserRouter([
           },
           { path: 'friends', element: <FriendsPage /> },
           { path: 'users/:username', element: <PublicProfilePage /> },
+          {
+            path: 'users/:username/boards/:boardId',
+            element: <PublicBoardPage />,
+          },
           {
             element: <OnboardingRoute />,
             children: [

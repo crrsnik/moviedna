@@ -15,6 +15,7 @@ const REQUIRED_FIELDS = [
 const ALLOWED_FIELDS = [
   ...REQUIRED_FIELDS,
   'visibility',
+  'pinned',
 ]
 
 export function normalizeCustomList(snapshot) {
@@ -30,6 +31,10 @@ export function normalizeCustomList(snapshot) {
       || !keys.every(key => ALLOWED_FIELDS.includes(key))
       || data.name.length > 60
       || data.description.length > 300
+      || (
+        data.pinned !== undefined
+        && typeof data.pinned !== 'boolean'
+      )
     ) throw new Error()
 
     const normalized = normalizeListInput({
@@ -41,6 +46,7 @@ export function normalizeCustomList(snapshot) {
     return {
       id: validateListId(snapshot.id),
       ...normalized,
+      pinned: data.pinned ?? false,
       createdAt: normalizeLibraryTimestamp(data.createdAt),
       updatedAt: normalizeLibraryTimestamp(data.updatedAt),
     }
