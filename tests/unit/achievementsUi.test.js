@@ -73,11 +73,14 @@ describe('achievement catalog UI contract', () => {
   it('defines display metadata for every achievement', () => {
     for (const item of ACHIEVEMENT_CATALOG) {
       assert.equal(
-        typeof item.symbol,
+        typeof item.image,
         'string',
       )
 
-      assert.ok(item.symbol.length > 0)
+      assert.equal(
+        item.image,
+        `/achievements/${item.id}.svg`,
+      )
 
       assert.match(
         item.titleKey,
@@ -199,5 +202,22 @@ describe('achievement profile UI contract', () => {
     assert.ok(dna >= 0)
     assert.ok(achievements > dna)
     assert.ok(activity > achievements)
+  })
+})
+
+describe('achievement badge assets', () => {
+  it('provides an SVG asset for every catalog entry', async () => {
+    for (const item of ACHIEVEMENT_CATALOG) {
+      const asset = await readFile(
+        new URL(
+          `../../public${item.image}`,
+          import.meta.url,
+        ),
+        'utf8',
+      )
+
+      assert.match(asset, /<svg/)
+      assert.match(asset, /viewBox="0 0 256 256"/)
+    }
   })
 })

@@ -48,19 +48,18 @@ function Medal({
         onClick={() => onSelect(achievement)}
         className="group flex w-full flex-col items-center rounded-xl p-2 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"
       >
-        <span
+        <img
+          src={definition.image}
+          alt=""
           aria-hidden="true"
           className={[
-            'flex aspect-square w-full max-w-24 items-center justify-center rounded-full border-4 border-zinc-800 text-xl font-black shadow-lg transition sm:text-2xl',
-            definition.tone,
+            'aspect-square w-full max-w-24 transition duration-200 drop-shadow-lg',
             achievement.unlocked
               ? 'opacity-100'
-              : 'grayscale opacity-35',
+              : 'grayscale opacity-30',
             'group-hover:scale-105',
           ].join(' ')}
-        >
-          {definition.symbol}
-        </span>
+        />
 
         <span
           className={[

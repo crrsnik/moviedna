@@ -1,0 +1,48 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 256 256"
+>
+  
+        <path d="M76 38
+                 L180 38
+                 L232 128
+                 L180 218
+                 L76 218
+                 L24 128 Z"
+          fill="#18181b"
+          stroke="#ef4444"
+          stroke-width="7"
+          stroke-linejoin="round"/>
+        
+
+  <path
+    d="M52 57L204 199"
+    stroke="#ef4444"
+    stroke-width="3"
+    stroke-opacity=".12"
+  />
+
+  <path
+    d="M52 199L204 57"
+    stroke="#ef4444"
+    stroke-width="3"
+    stroke-opacity=".07"
+  />
+
+  
+        <polygon
+          points="128.0,77.0 139.2,103.6 167.9,106.0 146.1,124.9 152.7,153.0 128.0,138.0 103.3,153.0 109.9,124.9 88.1,106.0 116.8,103.6"
+          fill="#ef4444"/>
+        <circle cx="128" cy="119" r="55"
+          fill="none"
+          stroke="#f4f4f5"
+          stroke-opacity=".16"
+          stroke-width="3"/>
+        
+
+  <rect x="84.0" y="200" width="12" height="5" rx="2.5" fill="#ef4444"/>
+<rect x="103.0" y="200" width="12" height="5" rx="2.5" fill="#ef4444"/>
+<rect x="122.0" y="200" width="12" height="5" rx="2.5" fill="#ef4444"/>
+<rect x="141.0" y="200" width="12" height="5" rx="2.5" fill="#ef4444"/>
+<rect x="160.0" y="200" width="12" height="5" rx="2.5" fill="#ef4444"/>
+</svg>
