@@ -188,6 +188,26 @@ describe('MovieDNA dimensions, evidence and normalization', () => {
     assert.equal(two.dimensions.actors[0].evidenceCount, 2)
   })
 
+  it('keeps actor evidence weaker than director evidence', async () => {
+    const dna = await result([
+      item(46, { rating: 10 }),
+      item(47, { rating: 10 }),
+    ])
+
+    const directorWeight = dna.dimensions.directors.reduce(
+      (sum, entry) => sum + entry.absoluteEvidenceWeight,
+      0,
+    )
+
+    const actorWeight = dna.dimensions.actors.reduce(
+      (sum, entry) => sum + entry.absoluteEvidenceWeight,
+      0,
+    )
+
+    assert.equal(directorWeight, 2)
+    assert.equal(actorWeight, 1)
+  })
+
   it('uses at most three top-billed actors', async () => {
     const actors = Array.from({ length: 5 }, (_, index) => ({
       id: 500 + index,

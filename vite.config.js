@@ -1,10 +1,11 @@
-import { isAllowedMovieDetailRequest, isAllowedTvDetailRequest, isAllowedPersonDetailRequest } from './src/features/catalog/validation/detailRouteValidation.js'
+import { isAllowedMovieDetailRequest, isAllowedTvDetailRequest, isAllowedPersonDetailRequest, isAllowedMediaSummaryRequest } from './src/features/catalog/validation/detailRouteValidation.js'
 import { isAllowedBrowseRequest } from './src/features/catalog/validation/browseValidation.js'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 import { fileURLToPath } from 'node:url'
 import { isAllowedSearchRequest } from './src/features/catalog/validation/searchValidation.js'
+import { isTmdbLanguage } from './src/shared/config/tmdb.js'
 
 // https://vite.dev/config/
 export default defineConfig(({ command, mode, isPreview }) => {
@@ -45,8 +46,8 @@ export default defineConfig(({ command, mode, isPreview }) => {
           const allowedPath = /^\/api\/tmdb\/trending\/(movie|tv)\/day$/.test(url.pathname)
           const allowedQuery = [...url.searchParams].length === 1
             && url.searchParams.getAll('language').length === 1
-            && url.searchParams.get('language') === 'en-US'
-          if (req.method !== 'GET' || !((allowedPath && allowedQuery) || isAllowedSearchRequest(url) || isAllowedBrowseRequest(url) || isAllowedMovieDetailRequest(url) || isAllowedTvDetailRequest(url) || isAllowedPersonDetailRequest(url))) {
+            && isTmdbLanguage(url.searchParams.get('language'))
+          if (req.method !== 'GET' || !((allowedPath && allowedQuery) || isAllowedSearchRequest(url) || isAllowedBrowseRequest(url) || isAllowedMovieDetailRequest(url) || isAllowedTvDetailRequest(url) || isAllowedPersonDetailRequest(url) || isAllowedMediaSummaryRequest(url))) {
             res.writeHead(400, { 'Content-Type': 'application/json' })
             res.end(JSON.stringify({ error: 'Unsupported catalog request' }))
             return false

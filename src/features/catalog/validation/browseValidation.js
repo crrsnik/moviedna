@@ -1,3 +1,5 @@
+import { isTmdbLanguage } from '../../../shared/config/tmdb.js'
+
 import { normalizePage } from './searchValidation.js'
 
 export const BROWSE_VIEWS = {
@@ -43,7 +45,7 @@ export function isAllowedBrowseRequest(url) {
   let keys = ['language']
   if (!path.startsWith('/genre/')) keys.push('page')
   if (path.startsWith('/discover/')) keys.push('sort_by', 'include_adult', 'with_genres', path.endsWith('/movie') ? 'include_video' : 'include_null_first_air_dates')
-  if ([...p].length !== keys.length || !keys.every((key) => p.getAll(key).length === 1) || p.get('language') !== 'en-US') return false
+  if ([...p].length !== keys.length || !keys.every((key) => p.getAll(key).length === 1) || !isTmdbLanguage(p.get('language'))) return false
   if (keys.includes('page') && String(normalizePage(p.get('page'))) !== p.get('page')) return false
   return !path.startsWith('/discover/') || (p.get('sort_by') === 'popularity.desc' && p.get('include_adult') === 'false'
     && normalizeGenre(p.get('with_genres')) !== null && p.get(keys.at(-1)) === 'false')

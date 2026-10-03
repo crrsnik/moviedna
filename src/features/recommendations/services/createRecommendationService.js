@@ -31,9 +31,9 @@ export function createRecommendationService({
   }
 
   return Object.freeze({
-    async getRecommendations() {
+    async getRecommendations(language = 'en-US') {
       try {
-        const response = await callRecommendations()
+        const response = await callRecommendations(language)
 
         return normalizeRecommendationsResponse(
           response?.data,

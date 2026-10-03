@@ -46,6 +46,20 @@ export function createMediaLibraryService({ auth, db, doc, collection, query, wh
   function subscribeToSavedMedia({ uid, mediaType, tmdbId }, next, error) {
     return subscribe(uid, () => ref(uid, getMediaKey(mediaType, tmdbId)), snap => snap.exists() ? normalizeSavedMedia(snap) : null, next, error)
   }
+
+  function subscribeToWatchedMedia(uid, next, error) {
+    return subscribe(
+      uid,
+      () => query(
+        collection(db, 'users', uid, 'savedMedia'),
+        where('watched', '==', true),
+      ),
+      normalizeLibraryItems,
+      next,
+      error,
+    )
+  }
+
   function subscribeToLibrary({ uid, view }, next, error) {
     const field = normalizeLibraryView(view) === 'favorites' ? 'favorite' : 'watchlist'
     return subscribe(uid, () => query(collection(db, 'users', uid, 'savedMedia'), where(field, '==', true)), normalizeLibraryItems, next, error)
@@ -71,10 +85,12 @@ export function createMediaLibraryService({ auth, db, doc, collection, query, wh
         if (!saved && !value) return
         const favorite = field === 'favorite' ? value : saved?.favorite ?? false
         const watchlist = field === 'watchlist' ? value : saved?.watchlist ?? false
+        const watched = saved?.watched ?? false
         const listIds = saved?.listIds ?? []
-        if (!favorite && !watchlist && !listIds.length) tx.delete(target)
-        else if (saved) tx.update(target, { title: snapshot.title, posterPath: snapshot.posterPath, releaseYear: snapshot.releaseYear, [field]: value, updatedAt: serverTimestamp() })
-        else tx.set(target, { ...snapshot, favorite, watchlist, listIds, createdAt: serverTimestamp(), updatedAt: serverTimestamp() })
+
+        if (!favorite && !watchlist && !watched && !listIds.length) tx.delete(target)
+        else if (saved) tx.update(target, { title: snapshot.title, posterPath: snapshot.posterPath, releaseYear: snapshot.releaseYear, [field]: value, watched, updatedAt: serverTimestamp() })
+        else tx.set(target, { ...snapshot, favorite, watchlist, watched: false, listIds, createdAt: serverTimestamp(), updatedAt: serverTimestamp() })
       })
       // An already-dispatched commit cannot be cancelled; never apply it to a new session's UI.
       requireOwner(uid, session)
@@ -110,7 +126,11 @@ export function createMediaLibraryService({ auth, db, doc, collection, query, wh
     }
   }
   const custom = customListOperations({ db, doc, collection, query, where, limit, getDocsFromServer, runTransaction, serverTimestamp, requireOwner, subscribe, mutate, ref })
-  return { ...custom, subscribeToSavedMedia, subscribeToLibrary,
+  return {
+    ...custom,
+    subscribeToSavedMedia,
+    subscribeToWatchedMedia,
+    subscribeToLibrary,
     toggleFavorite: options => changeMembership({ ...options, field: 'favorite' }),
     toggleWatchlist: options => changeMembership({ ...options, field: 'watchlist' }),
     removeFromView: options => changeMembership({ ...options, field: normalizeLibraryView(options.view) === 'favorites' ? 'favorite' : 'watchlist', enabled: false }) }

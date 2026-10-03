@@ -1,33 +1,89 @@
 import { useEffect, useState } from 'react'
-import { getTrendingMovies, getTrendingTvShows } from '../services/catalogService.js'
-import { getTmdbErrorMessage, isTmdbAbort } from '../services/tmdbErrors.js'
 
-function useCatalogSection(load) {
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
+import { toTmdbLanguage } from '../../../shared/config/tmdb.js'
+import {
+  getTrendingMovies,
+  getTrendingTvShows,
+} from '../services/catalogService.js'
+import {
+  getTmdbErrorMessage,
+  isTmdbAbort,
+} from '../services/tmdbErrors.js'
+
+function useCatalogSection(load, language) {
   const [attempt, setAttempt] = useState(0)
-  const [state, setState] = useState({ data: [], isLoading: true, error: null })
+  const [state, setState] = useState(null)
+  const key = `${language}:${attempt}`
 
   useEffect(() => {
     const controller = new AbortController()
-    load({ signal: controller.signal }).then((data) => {
-      if (!controller.signal.aborted) setState({ data, isLoading: false, error: null })
+
+    load({
+      language,
+      signal: controller.signal,
+    }).then((data) => {
+      if (!controller.signal.aborted) {
+        setState({
+          key,
+          data,
+          isLoading: false,
+          error: null,
+        })
+      }
     }).catch((error) => {
-      if (!controller.signal.aborted && !isTmdbAbort(error)) {
-        setState({ data: [], isLoading: false, error: getTmdbErrorMessage(error) })
+      if (
+        !controller.signal.aborted
+        && !isTmdbAbort(error)
+      ) {
+        setState({
+          key,
+          data: [],
+          isLoading: false,
+          error: getTmdbErrorMessage(error),
+        })
       }
     })
+
     return () => controller.abort()
-  }, [load, attempt])
+  }, [load, language, key])
+
+  const visible = state?.key === key
+    ? state
+    : {
+        data: [],
+        isLoading: true,
+        error: null,
+      }
 
   function retry() {
-    setState({ data: [], isLoading: true, error: null })
-    setAttempt((current) => current + 1)
+    setAttempt(current => current + 1)
   }
-  return { ...state, retry }
+
+  return {
+    ...visible,
+    retry,
+  }
 }
 
 export function useTrendingCatalog() {
-  // Independent effects start together; retrying one section preserves the other.
-  const movies = useCatalogSection(getTrendingMovies)
-  const tvShows = useCatalogSection(getTrendingTvShows)
-  return { movies, tvShows }
+  const { locale } = useTranslation()
+  const language = toTmdbLanguage(locale)
+
+  // Independent effects start together; retrying one section
+  // preserves the other.
+  const movies = useCatalogSection(
+    getTrendingMovies,
+    language,
+  )
+
+  const tvShows = useCatalogSection(
+    getTrendingTvShows,
+    language,
+  )
+
+  return {
+    movies,
+    tvShows,
+  }
 }

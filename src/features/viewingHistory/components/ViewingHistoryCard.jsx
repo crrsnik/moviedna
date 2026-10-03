@@ -1,23 +1,33 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { getTmdbPosterUrl } from '../../catalog/services/tmdbImages.js'
-
+import {
+  getTmdbPosterUrl,
+} from '../../catalog/services/tmdbImages.js'
+import {
+  useTranslation,
+} from '../../localization/hooks/useTranslation.js'
+import {
+  viewingHistoryService,
+} from '../services/viewingHistoryService.js'
 import {
   localDateString,
   validateWatchedDate,
 } from '../validation/viewingHistoryValidation.js'
 
-import {
-  viewingHistoryService,
-} from '../services/viewingHistoryService.js'
-
-const button = 'rounded-lg border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4 disabled:cursor-wait disabled:opacity-50'
+const button = (
+  'rounded-lg border border-zinc-600 px-3 py-2 '
+  + 'text-sm hover:bg-zinc-800 focus-visible:outline-2 '
+  + 'focus-visible:outline-offset-4 disabled:cursor-wait '
+  + 'disabled:opacity-50'
+)
 
 export default function ViewingHistoryCard({
   uid,
   event,
 }) {
+  const { t } = useTranslation()
+
   const [watchedDate, setWatchedDate] = useState(
     event.watchedDate,
   )
@@ -25,20 +35,31 @@ export default function ViewingHistoryCard({
   const [pending, setPending] = useState(null)
   const [error, setError] = useState(null)
   const [message, setMessage] = useState(null)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  const [
+    confirmDelete,
+    setConfirmDelete,
+  ] = useState(false)
 
   useEffect(() => {
     setWatchedDate(event.watchedDate)
   }, [event.watchedDate])
 
-  const posterUrl = getTmdbPosterUrl(event.posterPath)
+  const posterUrl = getTmdbPosterUrl(
+    event.posterPath,
+  )
 
   const href = event.mediaType === 'movie'
     ? `/movies/${event.tmdbId}`
     : `/tv/${event.tmdbId}`
 
   async function saveDate() {
-    if (pending || watchedDate === event.watchedDate) return
+    if (
+      pending
+      || watchedDate === event.watchedDate
+    ) {
+      return
+    }
 
     try {
       validateWatchedDate(watchedDate)
@@ -47,18 +68,21 @@ export default function ViewingHistoryCard({
       setError(null)
       setMessage(null)
 
-      await viewingHistoryService.updateViewingDate(
-        uid,
-        event.eventId,
-        watchedDate,
-      )
+      await viewingHistoryService
+        .updateViewingDate(
+          uid,
+          event.eventId,
+          watchedDate,
+        )
 
-      setMessage('Viewing date updated.')
+      setMessage(
+        'viewingHistoryUi.dateUpdated',
+      )
     } catch (failure) {
       setError(
         failure?.code === 'invalid-date'
-          ? 'Choose a valid viewing date.'
-          : 'The viewing date could not be updated.',
+          ? 'viewingHistoryUi.invalidDate'
+          : 'viewingHistoryUi.dateUpdateError',
       )
     } finally {
       setPending(null)
@@ -73,12 +97,15 @@ export default function ViewingHistoryCard({
       setError(null)
       setMessage(null)
 
-      await viewingHistoryService.deleteViewing(
-        uid,
-        event.eventId,
-      )
+      await viewingHistoryService
+        .deleteViewing(
+          uid,
+          event.eventId,
+        )
     } catch {
-      setError('This viewing could not be deleted.')
+      setError(
+        'viewingHistoryUi.deleteError',
+      )
       setPending(null)
       setConfirmDelete(false)
     }
@@ -95,7 +122,10 @@ export default function ViewingHistoryCard({
             {posterUrl ? (
               <img
                 src={posterUrl}
-                alt={`${event.title} poster`}
+                alt={t(
+                  'viewingHistoryUi.posterAlt',
+                  { title: event.title },
+                )}
                 width="92"
                 height="138"
                 loading="lazy"
@@ -103,7 +133,9 @@ export default function ViewingHistoryCard({
               />
             ) : (
               <span className="px-2 text-center text-xs text-zinc-500">
-                No poster
+                {t(
+                  'viewingHistoryUi.noPoster',
+                )}
               </span>
             )}
           </div>
@@ -113,8 +145,13 @@ export default function ViewingHistoryCard({
           <div>
             <p className="text-xs uppercase tracking-wide text-zinc-500">
               {event.mediaType === 'movie'
-                ? 'Movie'
-                : 'TV show'}
+                ? t(
+                  'viewingHistoryUi.movie',
+                )
+                : t(
+                  'viewingHistoryUi.tvShow',
+                )}
+
               {event.releaseYear
                 ? ` · ${event.releaseYear}`
                 : ''}
@@ -140,7 +177,9 @@ export default function ViewingHistoryCard({
           <div className="flex flex-wrap items-end gap-2">
             <label className="space-y-1 text-sm">
               <span className="block text-zinc-500">
-                Watched on
+                {t(
+                  'viewingHistoryUi.watchedOn',
+                )}
               </span>
 
               <input
@@ -149,7 +188,9 @@ export default function ViewingHistoryCard({
                 max={localDateString()}
                 disabled={Boolean(pending)}
                 onChange={eventValue => {
-                  setWatchedDate(eventValue.target.value)
+                  setWatchedDate(
+                    eventValue.target.value,
+                  )
                   setMessage(null)
                   setError(null)
                 }}
@@ -162,13 +203,18 @@ export default function ViewingHistoryCard({
               className={button}
               disabled={
                 Boolean(pending)
-                || watchedDate === event.watchedDate
+                || watchedDate
+                  === event.watchedDate
               }
               onClick={saveDate}
             >
               {pending === 'date'
-                ? 'Saving…'
-                : 'Save date'}
+                ? t(
+                  'viewingHistoryUi.saving',
+                )
+                : t(
+                  'viewingHistoryUi.saveDate',
+                )}
             </button>
           </div>
 
@@ -182,12 +228,16 @@ export default function ViewingHistoryCard({
                 setMessage(null)
               }}
             >
-              Delete viewing
+              {t(
+                'viewingHistoryUi.deleteViewing',
+              )}
             </button>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-zinc-400">
-                Delete this viewing?
+                {t(
+                  'viewingHistoryUi.deleteQuestion',
+                )}
               </span>
 
               <button
@@ -197,17 +247,25 @@ export default function ViewingHistoryCard({
                 onClick={removeViewing}
               >
                 {pending === 'delete'
-                  ? 'Deleting…'
-                  : 'Delete'}
+                  ? t(
+                    'viewingHistoryUi.deleting',
+                  )
+                  : t(
+                    'viewingHistoryUi.delete',
+                  )}
               </button>
 
               <button
                 type="button"
                 className={button}
                 disabled={Boolean(pending)}
-                onClick={() => setConfirmDelete(false)}
+                onClick={() => (
+                  setConfirmDelete(false)
+                )}
               >
-                Cancel
+                {t(
+                  'viewingHistoryUi.cancel',
+                )}
               </button>
             </div>
           )}
@@ -218,13 +276,16 @@ export default function ViewingHistoryCard({
               aria-live="polite"
               className="text-sm text-zinc-400"
             >
-              {message}
+              {t(message)}
             </p>
           )}
 
           {error && (
-            <p role="alert" className="text-sm text-zinc-400">
-              {error}
+            <p
+              role="alert"
+              className="text-sm text-zinc-400"
+            >
+              {t(error)}
             </p>
           )}
         </div>

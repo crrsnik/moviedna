@@ -66,7 +66,7 @@ describe('Browse services with synthetic fetch responses', () => {
   it('sanitizes network error', async () => { fetchMock.mock.mockImplementation(async () => { throw Error('RAW_SECRET') }); await assert.rejects(browseMovies(), { code: 'network' }) })
   it('rejects invalid JSON', async () => { fetchMock.mock.mockImplementation(async () => new Response('invalid')); await assert.rejects(browseTvShows(), { code: 'invalid' }) })
   it('rejects malformed envelopes', async () => { payload = {}; await assert.rejects(browsePeople(), { code: 'invalid' }) })
-  it('rejects unsupported language before dispatch', async () => { await assert.rejects(browseMovies({ language: 'fr-FR' }), { code: 'request' }); assert.equal(fetchMock.mock.callCount(), 0) })
+  it('rejects unsupported language before dispatch', async () => { await assert.rejects(browseMovies({ language: 'de-DE' }), { code: 'request' }); assert.equal(fetchMock.mock.callCount(), 0) })
   it('aborts before fetch', async () => { const c = new AbortController(); c.abort(); await assert.rejects(browseMovies({ signal: c.signal }), { name: 'AbortError' }); assert.equal(fetchMock.mock.callCount(), 0) })
   it('discards a response cancelled during parsing', async () => {
     const c = new AbortController()

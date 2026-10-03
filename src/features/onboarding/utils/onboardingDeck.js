@@ -1,47 +1,138 @@
-import { getOnboardingCounts, isValidMovieId, MAX_RESPONSES, MIN_OPINIONS, MIN_RESPONSES } from '../validation/onboardingValidation.js'
+import {
+  getOnboardingCounts,
+  getOnboardingMediaKey,
+  MAX_RESPONSES,
+  MIN_OPINIONS,
+  MIN_RESPONSES,
+} from '../validation/onboardingValidation.js'
 
 export const SWIPE_THRESHOLD = 80
 
 export function prepareOnboardingDeck(movies, responses = []) {
-  const seen = new Set(responses.map((response) => response.tmdbId))
+  const seen = new Set(
+    responses
+      .map((response) => getOnboardingMediaKey(
+        response.mediaType,
+        response.tmdbId,
+      ))
+      .filter(Boolean),
+  )
+
   const deck = []
+
   for (const movie of Array.isArray(movies) ? movies : []) {
-    if (!movie || !isValidMovieId(movie.id) || movie.mediaType !== 'movie' || typeof movie.title !== 'string' || !movie.title.trim() || seen.has(movie.id)) continue
-    seen.add(movie.id)
+    const mediaKey = getOnboardingMediaKey(
+      movie?.mediaType,
+      movie?.id,
+    )
+
+    if (
+      !mediaKey
+      || typeof movie.title !== 'string'
+      || !movie.title.trim()
+      || seen.has(mediaKey)
+    ) {
+      continue
+    }
+
+    seen.add(mediaKey)
     deck.push(movie)
+
     if (deck.length === 20) break
   }
+
   return deck
 }
 
 export function getDeckState(deck, responses) {
-  const rated = new Set(responses.map((response) => response.tmdbId))
-  const remainingMovies = deck.filter((movie) => !rated.has(movie.id))
-  return { currentMovie: remainingMovies[0] ?? null, remainingMovies }
+  const rated = new Set(
+    responses
+      .map((response) => getOnboardingMediaKey(
+        response.mediaType,
+        response.tmdbId,
+      ))
+      .filter(Boolean),
+  )
+
+  const remainingMovies = deck.filter((movie) => (
+    !rated.has(
+      getOnboardingMediaKey(
+        movie.mediaType,
+        movie.id,
+      ),
+    )
+  ))
+
+  return {
+    currentMovie: remainingMovies[0] ?? null,
+    remainingMovies,
+  }
 }
 
 export function getOnboardingProgress(responses) {
   const counts = getOnboardingCounts(responses)
   const opinionatedCount = counts.likedCount + counts.dislikedCount
+
   return {
-    ...counts, opinionatedCount,
-    missingResponses: Math.max(0, MIN_RESPONSES - counts.responseCount),
-    missingOpinions: Math.max(0, MIN_OPINIONS - opinionatedCount),
-    canFinish: counts.responseCount >= MIN_RESPONSES && counts.responseCount <= MAX_RESPONSES && opinionatedCount >= MIN_OPINIONS,
+    ...counts,
+    opinionatedCount,
+    missingResponses: Math.max(
+      0,
+      MIN_RESPONSES - counts.responseCount,
+    ),
+    missingOpinions: Math.max(
+      0,
+      MIN_OPINIONS - opinionatedCount,
+    ),
+    canFinish:
+      counts.responseCount >= MIN_RESPONSES
+      && counts.responseCount <= MAX_RESPONSES
+      && opinionatedCount >= MIN_OPINIONS,
   }
 }
 
 export function canReachMinimum(progress, available) {
-  const capacity = Math.min(available, Math.max(0, MAX_RESPONSES - progress.responseCount))
-  return capacity >= Math.max(progress.missingResponses, progress.missingOpinions)
+  const capacity = Math.min(
+    available,
+    Math.max(
+      0,
+      MAX_RESPONSES - progress.responseCount,
+    ),
+  )
+
+  return capacity >= Math.max(
+    progress.missingResponses,
+    progress.missingOpinions,
+  )
 }
 
 export function getSwipeReaction(deltaX, deltaY = 0) {
-  if (!Number.isFinite(deltaX) || !Number.isFinite(deltaY) || Math.abs(deltaX) < SWIPE_THRESHOLD || Math.abs(deltaX) <= Math.abs(deltaY)) return null
+  if (
+    !Number.isFinite(deltaX)
+    || !Number.isFinite(deltaY)
+    || Math.abs(deltaX) < SWIPE_THRESHOLD
+    || Math.abs(deltaX) <= Math.abs(deltaY)
+  ) {
+    return null
+  }
+
   return deltaX > 0 ? 'like' : 'dislike'
 }
 
 export function getKeyboardReaction(event) {
-  if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return null
-  return ({ ArrowLeft: 'dislike', ArrowRight: 'like', ArrowDown: 'skip' })[event.key] ?? null
+  if (
+    event.repeat
+    || event.altKey
+    || event.ctrlKey
+    || event.metaKey
+    || event.shiftKey
+  ) {
+    return null
+  }
+
+  return ({
+    ArrowLeft: 'dislike',
+    ArrowRight: 'like',
+    ArrowDown: 'skip',
+  })[event.key] ?? null
 }

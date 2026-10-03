@@ -1,3 +1,5 @@
+import { isTmdbLanguage } from '../../../shared/config/tmdb.js'
+
 export const SEARCH_TYPES = ['all', 'movie', 'tv', 'person']
 export const MAX_SEARCH_PAGE = 500
 export function normalizeQuery(value) {
@@ -36,6 +38,6 @@ export function isAllowedSearchRequest(url) {
     && ['query', 'language', 'page', 'include_adult'].every((key) => params.getAll(key).length === 1)
     && !getQueryError(params.get('query'))
     && params.get('query') === normalizeQuery(params.get('query'))
-    && params.get('language') === 'en-US' && params.get('include_adult') === 'false'
+    && isTmdbLanguage(params.get('language')) && params.get('include_adult') === 'false'
     && String(normalizePage(params.get('page'))) === params.get('page')
 }

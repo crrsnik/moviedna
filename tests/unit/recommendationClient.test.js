@@ -36,7 +36,7 @@ function result(overrides = {}) {
 
 function response(overrides = {}) {
   return {
-    algorithmVersion: '1.0.0',
+    algorithmVersion: '1.2.0',
     genreIds: [18, 35],
     results: [result()],
     stats: {
@@ -53,7 +53,7 @@ describe('recommendation response normalization', () => {
     )
 
     assert.deepEqual(normalized, {
-      algorithmVersion: '1.0.0',
+      algorithmVersion: '1.2.0',
       genreIds: [18, 35],
       results: [{
         id: 550,
@@ -182,7 +182,7 @@ describe('recommendation callable service', () => {
     const value = await service.getRecommendations()
 
     assert.equal(value.results.length, 1)
-    assert.deepEqual(calls, [[]])
+    assert.deepEqual(calls, [['en-US']])
   })
 
   it('preserves safe Firebase callable codes without leaking raw messages', async () => {
@@ -231,7 +231,7 @@ describe('recommendation UI state', () => {
     assert.equal(
       deriveRecommendationState({
         data: {
-          algorithmVersion: '1.0.0',
+          algorithmVersion: '1.2.0',
           genreIds: [],
           results: [],
         },
@@ -242,7 +242,7 @@ describe('recommendation UI state', () => {
     assert.equal(
       deriveRecommendationState({
         data: {
-          algorithmVersion: '1.0.0',
+          algorithmVersion: '1.2.0',
           genreIds: [],
           results: [result()],
         },

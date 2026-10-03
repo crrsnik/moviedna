@@ -2,8 +2,10 @@ import { Link } from 'react-router-dom'
 import { isValidDetailId } from '../validation/detailRouteValidation.js'
 import { useState } from 'react'
 import { getTmdbPosterUrl } from '../services/tmdbImages.js'
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
 
 function MediaCard({ media, fluid = false, showType = false }) {
+  const { t } = useTranslation()
   const posterUrl = getTmdbPosterUrl(media.posterPath)
   const [failedUrl, setFailedUrl] = useState(null)
   const showPoster = posterUrl && failedUrl !== posterUrl
@@ -17,16 +19,20 @@ function MediaCard({ media, fluid = false, showType = false }) {
       <Content {...(linked ? { to: `/${media.mediaType === 'movie' ? 'movies' : 'tv'}/${media.id}` } : {})} className="block space-y-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100">
       <div className="flex aspect-2/3 items-center justify-center overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900">
         {showPoster ? (
-          <img src={posterUrl} alt={`${media.title} poster`} width="342" height="513" loading="lazy" onError={() => setFailedUrl(posterUrl)} className="h-full w-full object-cover" />
+          <img src={posterUrl} alt={t('catalog.media.posterAlt', { title: media.title })} width="342" height="513" loading="lazy" onError={() => setFailedUrl(posterUrl)} className="h-full w-full object-cover" />
         ) : (
-          <span className="px-4 text-center text-sm text-zinc-500">No poster available</span>
+          <span className="px-4 text-center text-sm text-zinc-500">{t('catalog.media.noPoster')}</span>
         )}
       </div>
-      {showType && <span className="text-xs text-zinc-400">{media.mediaType === 'movie' ? 'Movie' : 'TV'}</span>}
+      {showType && <span className="text-xs text-zinc-400">{media.mediaType === 'movie'
+        ? t('catalog.media.movie')
+        : t('catalog.media.tv')}</span>}
       <h3 className="line-clamp-2 break-words text-sm font-medium text-zinc-100">{media.title}</h3>
       <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-400">
         {year && <span>{year}</span>}
-        {showRating && <span aria-label={`TMDB rating ${media.voteAverage.toFixed(1)} out of 10`}>TMDB {media.voteAverage.toFixed(1)}/10</span>}
+        {showRating && <span aria-label={t('catalog.media.ratingAlt', {
+          rating: media.voteAverage.toFixed(1),
+        })}>TMDB {media.voteAverage.toFixed(1)}/10</span>}
       </p>
       </Content>
     </article>

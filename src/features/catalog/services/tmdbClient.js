@@ -1,16 +1,47 @@
 import { isMovieDetailPath, isTvDetailPath, isPersonDetailPath, PERSON_DETAIL_APPEND, MOVIE_DETAIL_APPEND, TV_DETAIL_APPEND } from '../validation/detailRouteValidation.js'
 import { isBrowsePath, isAllowedBrowseRequest } from '../validation/browseValidation.js'
-import { TMDB_BASE_PATH, TMDB_DEFAULT_LANGUAGE } from '../../../shared/config/tmdb.js'
+import {
+  TMDB_BASE_PATH,
+  TMDB_DEFAULT_LANGUAGE,
+  isTmdbLanguage,
+} from '../../../shared/config/tmdb.js'
 import { isTmdbAbort, TmdbError } from './tmdbErrors.js'
 import { tmdbTransport } from './tmdbTransport.js'
 
 const searchEndpoints = new Set(['/search/multi', '/search/movie', '/search/tv', '/search/person'])
 const endpoints = new Set(['/trending/movie/day', '/trending/tv/day'])
 
-export async function getTmdb(path, { language = TMDB_DEFAULT_LANGUAGE, signal, search, browse, details = false, transport = tmdbTransport } = {}) {
-  if ((!endpoints.has(path) && !searchEndpoints.has(path) && !(details && (isMovieDetailPath(path) || isTvDetailPath(path) || isPersonDetailPath(path))) && !isBrowsePath(path)) || language !== TMDB_DEFAULT_LANGUAGE) {
+export async function getTmdb(path, {
+  language = TMDB_DEFAULT_LANGUAGE,
+  signal,
+  search,
+  browse,
+  details = false,
+  summary = false,
+  transport = tmdbTransport,
+} = {}) {
+  const detailPath = isMovieDetailPath(path)
+    || isTvDetailPath(path)
+    || isPersonDetailPath(path)
+
+  const mediaSummaryPath = isMovieDetailPath(path)
+    || isTvDetailPath(path)
+
+  if (
+    (details && summary)
+    || (summary && !mediaSummaryPath)
+    || (
+      !endpoints.has(path)
+      && !searchEndpoints.has(path)
+      && !(details && detailPath)
+      && !(summary && mediaSummaryPath)
+      && !isBrowsePath(path)
+    )
+    || !isTmdbLanguage(language)
+  ) {
     throw new TmdbError('request')
   }
+
   const query = new URLSearchParams({ language })
   if (searchEndpoints.has(path)) {
     if (!search || typeof search.query !== 'string' || search.query.length < 2 || search.query.length > 100
@@ -24,7 +55,7 @@ export async function getTmdb(path, { language = TMDB_DEFAULT_LANGUAGE, signal, 
     if (!isAllowedBrowseRequest(new URL(`${TMDB_BASE_PATH}${path}?${query}`, 'http://localhost'))) throw new TmdbError('request')
   }
   if (details) {
-    if ((!isMovieDetailPath(path) && !isTvDetailPath(path) && !isPersonDetailPath(path)) || language !== 'en-US') throw new TmdbError('request')
+    if ((!isMovieDetailPath(path) && !isTvDetailPath(path) && !isPersonDetailPath(path)) || !isTmdbLanguage(language)) throw new TmdbError('request')
     query.set('append_to_response', isPersonDetailPath(path) ? PERSON_DETAIL_APPEND : isTvDetailPath(path) ? TV_DETAIL_APPEND : MOVIE_DETAIL_APPEND)
   }
   try {

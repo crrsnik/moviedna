@@ -1,3 +1,5 @@
+import { isTmdbLanguage } from '../../../shared/config/tmdb.js'
+
 export const MOVIE_DETAIL_APPEND = 'credits,videos,release_dates,recommendations'
 export function isValidDetailId(value) {
   const text = typeof value === 'number' ? String(value) : value
@@ -13,18 +15,32 @@ export function isAllowedMovieDetailRequest(url) {
   const path = url.pathname.replace(/^\/api\/tmdb/, '')
   const p = url.searchParams
   return url.pathname.startsWith('/api/tmdb/') && isMovieDetailPath(path)
-    && [...p].length === 2 && p.getAll('language').length === 1 && p.get('language') === 'en-US'
+    && [...p].length === 2 && p.getAll('language').length === 1 && isTmdbLanguage(p.get('language'))
     && p.getAll('append_to_response').length === 1 && p.get('append_to_response') === MOVIE_DETAIL_APPEND
 }
 
 export function isTvDetailPath(path) {
   return typeof path === 'string' && /^\/tv\/[1-9]\d*$/.test(path) && isValidSeriesId(path.slice(4))
 }
+export function isAllowedMediaSummaryRequest(url) {
+  const path = url.pathname.replace(/^\/api\/tmdb/, '')
+  const params = url.searchParams
+
+  return url.pathname.startsWith('/api/tmdb/')
+    && (
+      isMovieDetailPath(path)
+      || isTvDetailPath(path)
+    )
+    && [...params].length === 1
+    && params.getAll('language').length === 1
+    && isTmdbLanguage(params.get('language'))
+}
+
 export function isAllowedTvDetailRequest(url) {
   const path = url.pathname.replace(/^\/api\/tmdb/, '')
   const p = url.searchParams
   return url.pathname.startsWith('/api/tmdb/') && isTvDetailPath(path)
-    && [...p].length === 2 && p.getAll('language').length === 1 && p.get('language') === 'en-US'
+    && [...p].length === 2 && p.getAll('language').length === 1 && isTmdbLanguage(p.get('language'))
     && p.getAll('append_to_response').length === 1 && p.get('append_to_response') === TV_DETAIL_APPEND
 }
 
@@ -36,7 +52,7 @@ export function isPersonDetailPath(path) {
 export function isAllowedPersonDetailRequest(url) {
   const p = url.searchParams
   return url.pathname.startsWith('/api/tmdb/') && isPersonDetailPath(url.pathname.slice(9))
-    && [...p].length === 2 && p.getAll('language').length === 1 && p.get('language') === 'en-US'
+    && [...p].length === 2 && p.getAll('language').length === 1 && isTmdbLanguage(p.get('language'))
     && p.getAll('append_to_response').length === 1 && p.get('append_to_response') === PERSON_DETAIL_APPEND
 }
 export function getMediaDetailPath(media) {

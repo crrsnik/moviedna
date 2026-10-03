@@ -282,6 +282,85 @@ describe('Onboarding security rules', { concurrency: false }, () => {
         assert.ok(saved.createdAt.isEqual(saved.updatedAt))
       })
     }
+    it('allows canonical movie and TV response identities', async () => {
+      const db = userDb()
+
+      await assertSucceeds(
+        setDoc(
+          responseRef(db, 'alice', 'movie_123'),
+          responseData(),
+        ),
+      )
+
+      await assertSucceeds(
+        setDoc(
+          responseRef(db, 'alice', 'tv_124'),
+          responseData({
+            tmdbId: 124,
+            mediaType: 'tv',
+          }),
+        ),
+      )
+
+      const movieResponse = await assertSucceeds(
+        getDoc(
+          responseRef(
+            db,
+            'alice',
+            'movie_123',
+          ),
+        ),
+      )
+
+      const tvResponse = await assertSucceeds(
+        getDoc(
+          responseRef(
+            db,
+            'alice',
+            'tv_124',
+          ),
+        ),
+      )
+
+      assert.equal(
+        movieResponse.data().mediaType,
+        'movie',
+      )
+      assert.equal(
+        tvResponse.data().mediaType,
+        'tv',
+      )
+    })
+
+    it('denies mismatched canonical response identities', async () => {
+      const db = userDb()
+
+      await assertFails(
+        setDoc(
+          responseRef(db, 'alice', 'tv_123'),
+          responseData(),
+        ),
+      )
+
+      await assertFails(
+        setDoc(
+          responseRef(db, 'alice', 'movie_123'),
+          responseData({
+            mediaType: 'tv',
+          }),
+        ),
+      )
+
+      await assertFails(
+        setDoc(
+          responseRef(db, 'alice', 'tv_124'),
+          responseData({
+            mediaType: 'tv',
+          }),
+        ),
+      )
+    })
+
     it('allows owner list and reading after completion', async () => {
       const db = userDb()
       await setDoc(responseRef(db), responseData())
@@ -650,6 +729,38 @@ describe('Media library security rules', { concurrency: false }, () => {
   for (const [key, patch] of [['movie_1', { tmdbId: 1 }], ['tv_1396', { tmdbId: 1396, mediaType: 'tv' }], ['movie_999999999999', { tmdbId: 999999999999 }]]) it(`savedMedia: valid ${key}`, async () => {
     await assertSucceeds(setDoc(doc(userDb(), 'users/alice/savedMedia', key), savedMedia(patch)))
   })
+
+  it('savedMedia: accepts legacy document without watched', async () => {
+    const target = doc(userDb(), 'users/alice/savedMedia/movie_123')
+    await assertSucceeds(setDoc(target, savedMedia()))
+  })
+
+  it('savedMedia: accepts watched-only document', async () => {
+    const target = doc(userDb(), 'users/alice/savedMedia/movie_123')
+    await assertSucceeds(setDoc(target, savedMedia({
+      favorite: false,
+      watchlist: false,
+      watched: true,
+      listIds: [],
+    })))
+  })
+
+  for (const watched of [null, 0, 1, 'true', [], {}]) {
+    it(`savedMedia: rejects invalid watched ${JSON.stringify(watched)}`, async () => {
+      const target = doc(userDb(), 'users/alice/savedMedia/movie_123')
+      await assertFails(setDoc(target, savedMedia({ watched })))
+    })
+  }
+
+  it('savedMedia: rejects empty memberships with watched false', async () => {
+    const target = doc(userDb(), 'users/alice/savedMedia/movie_123')
+    await assertFails(setDoc(target, savedMedia({
+      favorite: false,
+      watchlist: false,
+      watched: false,
+      listIds: [],
+    })))
+  })
   for (const key of ['movie_0', 'movie_0123', 'movie_1000000000000', 'person_123', 'Movie_123', 'movie_-1', 'movie_1.5', 'movie_1e3', 'movie_123 ', 'movie_１２３', 'tv_123', 'movie_124']) it(`savedMedia: invalid/mismatched key ${key}`, async () => {
     await assertFails(setDoc(doc(userDb(), 'users/alice/savedMedia', key), savedMedia()))
   })
@@ -698,6 +809,190 @@ describe('Media library security rules', { concurrency: false }, () => {
   })
 
 })
+
+
+describe(
+  'Custom list pinning security rules',
+  { concurrency: false },
+  () => {
+    before(async () => {
+      testEnv = await initializeTestEnvironment({
+        projectId,
+        firestore: {
+          host: '127.0.0.1',
+          port: 8080,
+          rules: await readFile(
+            new URL(
+              '../firestore.rules',
+              import.meta.url,
+            ),
+            'utf8',
+          ),
+        },
+      })
+    })
+
+    beforeEach(async () => {
+      await testEnv.clearFirestore()
+    })
+
+    after(async () => {
+      await testEnv?.cleanup()
+    })
+
+    it(
+      'allows legacy list then boolean pin and unpin',
+      async () => {
+        const db = userDb()
+        const target = doc(
+          db,
+          'users/alice/lists',
+          listId,
+        )
+
+        await assertSucceeds(
+          setDoc(
+            target,
+            libraryList(),
+          ),
+        )
+
+        const legacy = (
+          await assertSucceeds(
+            getDoc(target),
+          )
+        ).data()
+
+        assert.equal(
+          Object.hasOwn(legacy, 'pinned'),
+          false,
+        )
+
+        await assertSucceeds(
+          updateDoc(target, {
+            pinned: true,
+            updatedAt: serverTimestamp(),
+          }),
+        )
+
+        assert.equal(
+          (
+            await assertSucceeds(
+              getDoc(target),
+            )
+          ).data().pinned,
+          true,
+        )
+
+        await assertSucceeds(
+          updateDoc(target, {
+            pinned: false,
+            updatedAt: serverTimestamp(),
+          }),
+        )
+
+        assert.equal(
+          (
+            await assertSucceeds(
+              getDoc(target),
+            )
+          ).data().pinned,
+          false,
+        )
+      },
+    )
+
+    it(
+      'allows creating an explicitly pinned list',
+      async () => {
+        const target = doc(
+          userDb(),
+          'users/alice/lists',
+          'Z'.repeat(20),
+        )
+
+        await assertSucceeds(
+          setDoc(
+            target,
+            libraryList({
+              pinned: true,
+            }),
+          ),
+        )
+
+        assert.equal(
+          (
+            await assertSucceeds(
+              getDoc(target),
+            )
+          ).data().pinned,
+          true,
+        )
+      },
+    )
+
+    it(
+      'rejects non-boolean pinned values',
+      async () => {
+        const target = doc(
+          userDb(),
+          'users/alice/lists',
+          'Y'.repeat(20),
+        )
+
+        for (const pinned of [
+          'true',
+          1,
+          null,
+          [],
+          {},
+        ]) {
+          await assertFails(
+            setDoc(
+              target,
+              libraryList({
+                pinned,
+              }),
+            ),
+          )
+        }
+      },
+    )
+
+    it(
+      'does not let another user change pin state',
+      async () => {
+        const owner = doc(
+          userDb(),
+          'users/alice/lists',
+          listId,
+        )
+
+        await assertSucceeds(
+          setDoc(
+            owner,
+            libraryList({
+              pinned: false,
+            }),
+          ),
+        )
+
+        const outsider = doc(
+          userDb('bob'),
+          'users/alice/lists',
+          listId,
+        )
+
+        await assertFails(
+          updateDoc(outsider, {
+            pinned: true,
+            updatedAt: serverTimestamp(),
+          }),
+        )
+      },
+    )
+  },
+)
 
 // Stage 8.1: private ratings and public comments; fixtures are synthetic, demo-only.
 const ratingData = (patch = {}) => ({ tmdbId: 123, mediaType: 'movie', title: 'Synthetic title', posterPath: null, releaseYear: null, score: 7, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), ...patch })
@@ -765,20 +1060,70 @@ describe('Ratings and comments security model', { concurrency: false }, () => {
         const target = ref(userDb()); await setDoc(target, make())
         await assertFails(updateDoc(target, kind === 'rating' ? { score: 9 } : { text: 'Edited' }))
       })
-      for (const state of ['missing', 'incomplete']) it(`rejects create with ${state} profile`, async () => {
-        await testEnv.withSecurityRulesDisabled(async c => {
-          if (state === 'missing') await deleteDoc(doc(c.firestore(), 'users/alice'))
-          else await updateDoc(doc(c.firestore(), 'users/alice'), { onboardingCompleted: false })
-        })
-        await assertFails(setDoc(ref(userDb()), make()))
+      it('rejects create with missing profile', async () => {
+        await testEnv.withSecurityRulesDisabled(
+          c => deleteDoc(
+            doc(c.firestore(), 'users/alice'),
+          ),
+        )
+
+        await assertFails(
+          setDoc(
+            ref(userDb()),
+            make(),
+          ),
+        )
       })
-      it('does not accept profile completion in the same batch', async () => {
-        await seedCompletedProfile({ onboardingCompleted: false })
-        const db = userDb(), batch = writeBatch(db)
-        batch.set(summaryRef(db), summaryData()); batch.update(doc(db, 'users/alice'), completionPatch())
-        batch.set(ref(db), make())
-        await assertFails(batch.commit())
-        assert.equal((await getDoc(doc(db, 'users/alice'))).data().onboardingCompleted, false)
+
+      it('allows create with incomplete onboarding', async () => {
+        await testEnv.withSecurityRulesDisabled(
+          c => updateDoc(
+            doc(c.firestore(), 'users/alice'),
+            { onboardingCompleted: false },
+          ),
+        )
+
+        await assertSucceeds(
+          setDoc(
+            ref(userDb()),
+            make(),
+          ),
+        )
+      })
+
+      it('allows profile completion in the same batch', async () => {
+        await seedCompletedProfile({
+          onboardingCompleted: false,
+        })
+
+        const db = userDb()
+        const batch = writeBatch(db)
+
+        batch.set(
+          summaryRef(db),
+          summaryData(),
+        )
+
+        batch.update(
+          doc(db, 'users/alice'),
+          completionPatch(),
+        )
+
+        batch.set(
+          ref(db),
+          make(),
+        )
+
+        await assertSucceeds(batch.commit())
+
+        assert.equal(
+          (
+            await getDoc(
+              doc(db, 'users/alice'),
+            )
+          ).data().onboardingCompleted,
+          true,
+        )
       })
       for (const identity of ['guest', 'bob']) for (const operation of ['create', 'update', 'delete']) {
         it(`rejects ${identity} ${operation} for author path`, async () => {
@@ -826,11 +1171,67 @@ describe('Ratings and comments security model', { concurrency: false }, () => {
       await setDoc(ratingRef(userDb()), ratingData())
       await assertFails(getDocs(query(collectionGroup(userDb(), 'ratings'), limit(20))))
     })
-    for (const state of ['missing', 'incomplete']) it(`denies rating update with ${state} profile but permits owner get/delete`, async () => {
-      const db = userDb(), target = ratingRef(db); await setDoc(target, ratingData())
-      await testEnv.withSecurityRulesDisabled(c => state === 'missing' ? deleteDoc(doc(c.firestore(), 'users/alice')) : updateDoc(doc(c.firestore(), 'users/alice'), { onboardingCompleted: false }))
-      await assertFails(updateDoc(target, { score: 8, updatedAt: serverTimestamp() }))
-      await assertSucceeds(getDoc(target)); await assertSucceeds(deleteDoc(target))
+    it('denies rating update with missing profile but permits owner get/delete', async () => {
+      const db = userDb()
+      const target = ratingRef(db)
+
+      await setDoc(
+        target,
+        ratingData(),
+      )
+
+      await testEnv.withSecurityRulesDisabled(
+        c => deleteDoc(
+          doc(c.firestore(), 'users/alice'),
+        ),
+      )
+
+      await assertFails(
+        updateDoc(
+          target,
+          {
+            score: 8,
+            updatedAt: serverTimestamp(),
+          },
+        ),
+      )
+
+      await assertSucceeds(getDoc(target))
+      await assertSucceeds(deleteDoc(target))
+    })
+
+    it('allows rating update with incomplete onboarding', async () => {
+      const db = userDb()
+      const target = ratingRef(db)
+
+      await setDoc(
+        target,
+        ratingData(),
+      )
+
+      await testEnv.withSecurityRulesDisabled(
+        c => updateDoc(
+          doc(c.firestore(), 'users/alice'),
+          { onboardingCompleted: false },
+        ),
+      )
+
+      await assertSucceeds(
+        updateDoc(
+          target,
+          {
+            score: 8,
+            updatedAt: serverTimestamp(),
+          },
+        ),
+      )
+
+      assert.equal(
+        (
+          await getDoc(target)
+        ).data().score,
+        8,
+      )
     })
     const invalidRating = [
       ...[0, 11, -1, 1.5, '5', null, true].map(score => ({ score })),
@@ -1266,11 +1667,11 @@ describe(
       )
     })
 
-    it('requires a completed profile for creation', async () => {
+    it('allows creation with incomplete onboarding', async () => {
       await testEnv.clearFirestore()
       await seedPair()
 
-      await assertFails(
+      await assertSucceeds(
         setDoc(
           viewingRef(userDb()),
           viewingData(),
@@ -2699,4 +3100,223 @@ describe('Stage 12 private profile friend access', { concurrency: false }, () =>
       getDoc(previewRef),
     )
   })
+
+  describe('Public board security rules', { concurrency: false }, () => {
+    const listId = 'A'.repeat(20)
+
+    before(async () => {
+      testEnv = await initializeTestEnvironment({
+        projectId,
+        firestore: {
+          host: '127.0.0.1',
+          port: 8080,
+          rules: await readFile(
+            new URL('../firestore.rules', import.meta.url),
+            'utf8',
+          ),
+        },
+      })
+    })
+
+    beforeEach(async () => {
+      await testEnv.clearFirestore()
+    })
+
+    after(async () => {
+      await testEnv?.cleanup()
+    })
+
+    async function seedPublicBoard({
+      visibility = 'public',
+    } = {}) {
+      await testEnv.withSecurityRulesDisabled(
+        async (context) => {
+          const db = context.firestore()
+
+          const profileData = profile(
+            'alice_123',
+            {
+              profileVisibility: visibility,
+            },
+          )
+
+          await createPair(db, {
+            profileData,
+            publicProfileData: publicProfile(
+              'alice',
+              profileData,
+            ),
+          })
+
+          await setDoc(
+            doc(
+              db,
+              'publicBoards',
+              'alice',
+              'boards',
+              listId,
+            ),
+            {
+              schemaVersion: 1,
+              ownerId: 'alice',
+              listId,
+              name: 'Public board',
+              description: '',
+              createdAt: Timestamp.fromMillis(1),
+              updatedAt: Timestamp.fromMillis(2),
+            },
+          )
+
+          await setDoc(
+            doc(
+              db,
+              'publicBoards',
+              'alice',
+              'boards',
+              listId,
+              'items',
+              'movie_42',
+            ),
+            {
+              schemaVersion: 1,
+              tmdbId: 42,
+              mediaType: 'movie',
+              title: 'Synthetic movie',
+              posterPath: null,
+              releaseYear: 2020,
+              updatedAt: Timestamp.fromMillis(2),
+            },
+          )
+        },
+      )
+    }
+
+    it('allows authenticated reads for a public profile', async () => {
+      await seedPublicBoard()
+
+      const db = userDb('bob')
+
+      await assertSucceeds(
+        getDocs(
+          collection(
+            db,
+            'publicBoards',
+            'alice',
+            'boards',
+          ),
+        ),
+      )
+
+      await assertSucceeds(
+        getDoc(
+          doc(
+            db,
+            'publicBoards',
+            'alice',
+            'boards',
+            listId,
+          ),
+        ),
+      )
+
+      await assertSucceeds(
+        getDocs(
+          collection(
+            db,
+            'publicBoards',
+            'alice',
+            'boards',
+            listId,
+            'items',
+          ),
+        ),
+      )
+    })
+
+    it('denies reads when the profile is private', async () => {
+      await seedPublicBoard({
+        visibility: 'private',
+      })
+
+      const db = userDb('bob')
+
+      await assertFails(
+        getDocs(
+          collection(
+            db,
+            'publicBoards',
+            'alice',
+            'boards',
+          ),
+        ),
+      )
+
+      await assertFails(
+        getDoc(
+          doc(
+            db,
+            'publicBoards',
+            'alice',
+            'boards',
+            listId,
+          ),
+        ),
+      )
+    })
+
+    it('denies unauthenticated public board reads', async () => {
+      await seedPublicBoard()
+
+      await assertFails(
+        getDocs(
+          collection(
+            testEnv
+              .unauthenticatedContext()
+              .firestore(),
+            'publicBoards',
+            'alice',
+            'boards',
+          ),
+        ),
+      )
+    })
+
+    it('denies all client writes to public boards', async () => {
+      await seedPublicBoard()
+
+      await assertFails(
+        setDoc(
+          doc(
+            userDb(),
+            'publicBoards',
+            'alice',
+            'boards',
+            listId,
+          ),
+          {
+            schemaVersion: 1,
+          },
+        ),
+      )
+
+      await assertFails(
+        setDoc(
+          doc(
+            userDb(),
+            'publicBoards',
+            'alice',
+            'boards',
+            listId,
+            'items',
+            'movie_99',
+          ),
+          {
+            schemaVersion: 1,
+          },
+        ),
+      )
+    })
+  })
+
+
 })

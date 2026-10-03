@@ -36,7 +36,7 @@ describe('recommendation production contract', () => {
 
     assert.match(
       service,
-      /callRecommendations:\s*\(\)\s*=>\s*callable\s*\(\s*\)/,
+      /callRecommendations:\s*\(language\)\s*=>\s*callable\s*\(\s*\{\s*language\s*\}\s*\)/,
     )
 
     assert.doesNotMatch(

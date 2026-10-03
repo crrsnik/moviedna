@@ -2,9 +2,10 @@ import { getTmdb } from './tmdbClient.js'
 import { normalizeTvShowDetails } from './normalizeTvShowDetails.js'
 import { isValidSeriesId } from '../validation/detailRouteValidation.js'
 import { TmdbError } from './tmdbErrors.js'
-export async function getTvShowDetails({ seriesId, signal } = {}) {
+import { TMDB_DEFAULT_LANGUAGE } from '../../../shared/config/tmdb.js'
+export async function getTvShowDetails({ seriesId, language = TMDB_DEFAULT_LANGUAGE, signal } = {}) {
   if (!isValidSeriesId(seriesId)) throw new TmdbError('missing')
-  const raw = await getTmdb(`/tv/${seriesId}`, { signal, details: true })
+  const raw = await getTmdb(`/tv/${seriesId}`, { language, signal, details: true })
   const series = normalizeTvShowDetails(raw)
   if (series.id !== Number(seriesId)) throw new TmdbError('invalid')
   return series

@@ -1,4 +1,22 @@
+import { useCallback } from 'react'
+
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
+import { toTmdbLanguage } from '../../../shared/config/tmdb.js'
 import { useDetailRequest } from './useDetailRequest.js'
 import { getTvShowDetails } from '../services/tvShowDetailsService.js'
-const load = (seriesId, signal) => getTvShowDetails({ seriesId, signal })
-export function useTvShowDetails(seriesId) { return useDetailRequest(seriesId, load) }
+
+export function useTvShowDetails(seriesId) {
+  const { locale } = useTranslation()
+  const language = toTmdbLanguage(locale)
+
+  const load = useCallback(
+    (id, signal) => getTvShowDetails({
+      seriesId: id,
+      language,
+      signal,
+    }),
+    [language],
+  )
+
+  return useDetailRequest(seriesId, load)
+}

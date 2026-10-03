@@ -1,15 +1,22 @@
 import ProfileSettingsForm from '../features/profile/components/ProfileSettingsForm.jsx'
+import { useTranslation } from '../features/localization/hooks/useTranslation.js'
 
 function ProfileSettingsPage() {
+  const { t } = useTranslation()
+
   return (
     <section className="mx-auto w-full max-w-3xl space-y-6">
       <header>
         <h2 className="text-3xl font-semibold tracking-tight">
-          Profile settings
+          {t(
+            'profile.settingsPage.title',
+          )}
         </h2>
 
         <p className="mt-2 text-zinc-400">
-          Manage your MovieDNA identity, avatar, and profile privacy.
+          {t(
+            'profile.settingsPage.description',
+          )}
         </p>
       </header>
 

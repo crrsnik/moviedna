@@ -1,16 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../auth/hooks/useAuth.js'
 import { useUserProfile } from '../../profile/hooks/useUserProfile.js'
-import { getTrendingMovies } from '../../catalog/services/catalogService.js'
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
+import { toTmdbLanguage } from '../../../shared/config/tmdb.js'
 import { getTmdbErrorMessage, TmdbError } from '../../catalog/services/tmdbErrors.js'
 import { loadOnboardingResponses, saveOnboardingResponse, completeOnboarding } from '../services/onboardingService.js'
 import { getOnboardingErrorMessage } from '../services/onboardingErrors.js'
+import { loadCuratedOnboardingCatalog } from '../services/onboardingCuratedCatalog.js'
 import { canReachMinimum, getDeckState, getOnboardingProgress, prepareOnboardingDeck } from '../utils/onboardingDeck.js'
-import { MAX_RESPONSES } from '../validation/onboardingValidation.js'
+import { getOnboardingMediaKey, MAX_RESPONSES } from '../validation/onboardingValidation.js'
 
 export function useOnboarding() {
   const { user } = useAuth()
   const { hasCompletedOnboarding } = useUserProfile()
+  const { locale } = useTranslation()
+  const tmdbLanguage = toTmdbLanguage(locale)
   const uid = user?.uid
   const sessionRef = useRef(null)
   const [attempt, setAttempt] = useState(0)
@@ -18,24 +22,91 @@ export function useOnboarding() {
 
   useEffect(() => {
     const controller = new AbortController()
-    const session = { active: true, busy: false, savedIds: new Set() }
+    const session = {
+      active: true,
+      busy: false,
+      savedIds: new Set(),
+    }
+
     sessionRef.current = session
+
     if (uid && !hasCompletedOnboarding) {
-      Promise.all([getTrendingMovies({ signal: controller.signal }), loadOnboardingResponses({ uid })]).then(([movies, responses]) => {
+      setState((current) => ({
+        ...current,
+        isLoading: true,
+        loadError: null,
+        actionError: null,
+      }))
+
+      void (async () => {
+        const responses = await loadOnboardingResponses({
+          uid,
+        })
+
+        const movies = await loadCuratedOnboardingCatalog({
+          responses,
+          language: tmdbLanguage,
+          signal: controller.signal,
+        })
+
         if (!session.active) return
-        const deck = prepareOnboardingDeck(movies, responses)
-        const progress = getOnboardingProgress(responses)
-        session.savedIds = new Set(responses.map((response) => response.tmdbId))
-        setState({ deck, responses, isLoading: false, isSaving: false, isCompleting: false,
-          loadError: canReachMinimum(progress, deck.length) ? null : 'There are not enough new movies to reach your goals right now. Please retry later.', actionError: null })
-      }).catch((error) => {
+
+        const deck = prepareOnboardingDeck(
+          movies,
+          responses,
+        )
+        const progress = getOnboardingProgress(
+          responses,
+        )
+
+        session.savedIds = new Set(
+          responses
+            .map((response) => getOnboardingMediaKey(
+              response.mediaType,
+              response.tmdbId,
+            ))
+            .filter(Boolean),
+        )
+
+        setState({
+          deck,
+          responses,
+          isLoading: false,
+          isSaving: false,
+          isCompleting: false,
+          loadError: canReachMinimum(
+            progress,
+            deck.length,
+          )
+            ? null
+            : 'There are not enough new titles to reach your goals right now. Please retry later.',
+          actionError: null,
+        })
+      })().catch((error) => {
         if (!session.active) return
+
         controller.abort()
-        setState((current) => ({ ...current, isLoading: false, loadError: error instanceof TmdbError ? getTmdbErrorMessage(error) : getOnboardingErrorMessage(error) }))
+
+        setState((current) => ({
+          ...current,
+          isLoading: false,
+          loadError: error instanceof TmdbError
+            ? getTmdbErrorMessage(error)
+            : getOnboardingErrorMessage(error),
+        }))
       })
     }
-    return () => { session.active = false; controller.abort() }
-  }, [uid, hasCompletedOnboarding, attempt])
+
+    return () => {
+      session.active = false
+      controller.abort()
+    }
+  }, [
+    uid,
+    hasCompletedOnboarding,
+    attempt,
+    tmdbLanguage,
+  ])
 
   const progress = getOnboardingProgress(state.responses)
   const { currentMovie, remainingMovies } = getDeckState(state.deck, state.responses)
@@ -49,15 +120,32 @@ export function useOnboarding() {
 
   async function reactToMovie(reaction) {
     const session = sessionRef.current
+    const currentMediaKey = getOnboardingMediaKey(
+      currentMovie?.mediaType,
+      currentMovie?.id,
+    )
+
     if (!session?.active || session.busy || state.isLoading || state.loadError || hasCompletedOnboarding
-      || !currentMovie || session.savedIds.has(currentMovie.id) || progress.responseCount >= MAX_RESPONSES) return
+      || !currentMovie || !currentMediaKey || session.savedIds.has(currentMediaKey)
+      || progress.responseCount >= MAX_RESPONSES) return
     session.busy = true
     setState((current) => ({ ...current, isSaving: true, actionError: null }))
     try {
       const response = await saveOnboardingResponse({ uid, movie: currentMovie, reaction })
       if (!session.active) return
-      session.savedIds.add(currentMovie.id)
-      setState((current) => ({ ...current, responses: [...current.responses.filter((item) => item.tmdbId !== response.tmdbId), response] }))
+      session.savedIds.add(currentMediaKey)
+      setState((current) => ({
+        ...current,
+        responses: [
+          ...current.responses.filter((item) => (
+            getOnboardingMediaKey(
+              item.mediaType,
+              item.tmdbId,
+            ) !== currentMediaKey
+          )),
+          response,
+        ],
+      }))
     } catch (error) {
       if (session.active) setState((current) => ({ ...current, actionError: getOnboardingErrorMessage(error) }))
     } finally {

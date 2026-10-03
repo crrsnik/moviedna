@@ -7,6 +7,51 @@ import {
   RecommendationError,
 } from './core/recommendationErrors.js'
 
+const RECOMMENDATION_LANGUAGES = new Set([
+  'en-US',
+  'fr-FR',
+  'ru-RU',
+])
+
+function recommendationLanguage(data) {
+  if (
+    data === undefined
+    || data === null
+  ) {
+    return 'en-US'
+  }
+
+  if (
+    typeof data !== 'object'
+    || Array.isArray(data)
+  ) {
+    throw new HttpsError(
+      'invalid-argument',
+      'Invalid recommendation language.',
+    )
+  }
+
+  const keys = Object.keys(data)
+
+  // Keep the previous empty callable payload backwards-compatible.
+  if (!keys.length) return 'en-US'
+
+  if (
+    keys.length !== 1
+    || keys[0] !== 'language'
+    || !RECOMMENDATION_LANGUAGES.has(
+      data.language,
+    )
+  ) {
+    throw new HttpsError(
+      'invalid-argument',
+      'Invalid recommendation language.',
+    )
+  }
+
+  return data.language
+}
+
 function safeCallableError(error) {
   if (error instanceof HttpsError) return error
 
@@ -73,6 +118,10 @@ export function createRecommendationHandler({
       )
     }
 
+    const language = recommendationLanguage(
+      request.data,
+    )
+
     try {
       const context = await loadContext(
         request.auth.uid,
@@ -90,7 +139,11 @@ export function createRecommendationHandler({
       return await pipeline.run({
         dna: context.dna,
         rated: context.rated,
+        watched: Array.isArray(context.watched)
+          ? context.watched
+          : [],
         hidden: [],
+        language,
       })
     } catch (error) {
       throw safeCallableError(error)

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '../../auth/hooks/useAuth.js'
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
 import {
   PROFILE_AVATARS,
 } from '../constants/profileSettings.js'
@@ -17,6 +18,7 @@ function valuesFromProfile(profile) {
 }
 
 function ProfileSettingsForm() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const {
     profile,
@@ -42,13 +44,13 @@ function ProfileSettingsForm() {
   ])
 
   if (isProfileLoading) {
-    return <p role="status" className="text-zinc-400">Loading profile settings…</p>
+    return <p role="status" className="text-zinc-400">{t('profile.settings.loading')}</p>
   }
 
   if (profileError || !profile) {
     return (
       <p role="alert" className="text-red-300">
-        We couldn't load your profile settings.
+        {t('profile.settings.loadError')}
       </p>
     )
   }
@@ -97,7 +99,7 @@ function ProfileSettingsForm() {
     const trimmedDisplayName = values.displayName.trim()
 
     if (!trimmedDisplayName || trimmedDisplayName.length > 50) {
-      setDisplayNameError('Display name must contain 1–50 characters.')
+      setDisplayNameError('profile.settings.displayNameError')
       return
     }
 
@@ -119,7 +121,7 @@ function ProfileSettingsForm() {
         displayName: trimmedDisplayName,
       }))
 
-      setSuccessMessage('Profile settings saved.')
+      setSuccessMessage('profile.settings.saved')
     } catch (error) {
       setServerError(getProfileSettingsErrorMessage(error))
     } finally {
@@ -136,13 +138,13 @@ function ProfileSettingsForm() {
       noValidate
     >
       <fieldset disabled={isSaving} className="space-y-8 disabled:opacity-70">
-        <legend className="sr-only">Profile settings</legend>
+        <legend className="sr-only">{t('profile.settings.legend')}</legend>
 
         <section className="space-y-3">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-100">Profile identity</h2>
+            <h2 className="text-lg font-semibold text-zinc-100">{t('profile.settings.identityTitle')}</h2>
             <p className="mt-1 text-sm text-zinc-400">
-              Choose how your name appears across MovieDNA.
+              {t('profile.settings.identityDescription')}
             </p>
           </div>
 
@@ -150,9 +152,7 @@ function ProfileSettingsForm() {
             <label
               htmlFor="profile-username"
               className="block text-sm font-medium text-zinc-200"
-            >
-              Username
-            </label>
+            >{t('profile.settings.username')}</label>
 
             <input
               id="profile-username"
@@ -163,7 +163,7 @@ function ProfileSettingsForm() {
             />
 
             <p className="text-sm text-zinc-500">
-              Usernames cannot be changed yet.
+              {t('profile.settings.usernameHelp')}
             </p>
           </div>
 
@@ -171,9 +171,7 @@ function ProfileSettingsForm() {
             <label
               htmlFor="profile-display-name"
               className="block text-sm font-medium text-zinc-200"
-            >
-              Display name
-            </label>
+            >{t('profile.settings.displayName')}</label>
 
             <input
               id="profile-display-name"
@@ -195,7 +193,7 @@ function ProfileSettingsForm() {
                 role="alert"
                 className="text-sm text-red-300"
               >
-                {displayNameError}
+                {t(displayNameError)}
               </p>
             )}
           </div>
@@ -203,16 +201,16 @@ function ProfileSettingsForm() {
 
         <section className="space-y-4">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-100">Avatar</h2>
+            <h2 className="text-lg font-semibold text-zinc-100">{t('profile.settings.avatarTitle')}</h2>
             <p className="mt-1 text-sm text-zinc-400">
-              Pick a built-in MovieDNA avatar.
+              {t('profile.settings.avatarDescription')}
             </p>
           </div>
 
           <div
             className="grid grid-cols-4 gap-3 sm:grid-cols-8"
             role="radiogroup"
-            aria-label="Profile avatar"
+            aria-label={t('profile.settings.avatarGroup')}
           >
             {PROFILE_AVATARS.map((avatar) => {
               const selected = values.avatarId === avatar.id
@@ -245,7 +243,7 @@ function ProfileSettingsForm() {
                   </span>
 
                   <span className="mt-1 block truncate text-xs text-zinc-300">
-                    {avatar.label}
+                    {t(`profile.avatars.${avatar.id}`)}
                   </span>
                 </label>
               )
@@ -255,9 +253,9 @@ function ProfileSettingsForm() {
 
         <section className="space-y-4">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-100">Profile privacy</h2>
+            <h2 className="text-lg font-semibold text-zinc-100">{t('profile.settings.privacyTitle')}</h2>
             <p className="mt-1 text-sm text-zinc-400">
-              Control whether other people can view your public MovieDNA profile.
+              {t('profile.settings.privacyDescription')}
             </p>
           </div>
 
@@ -279,9 +277,9 @@ function ProfileSettingsForm() {
                 className="sr-only"
               />
 
-              <span className="block font-medium text-zinc-100">Public</span>
+              <span className="block font-medium text-zinc-100">{t('profile.settings.public')}</span>
               <span className="mt-1 block text-sm text-zinc-400">
-                Other people can open your public profile.
+                {t('profile.settings.publicDescription')}
               </span>
             </label>
 
@@ -302,9 +300,9 @@ function ProfileSettingsForm() {
                 className="sr-only"
               />
 
-              <span className="block font-medium text-zinc-100">Private</span>
+              <span className="block font-medium text-zinc-100">{t('profile.settings.private')}</span>
               <span className="mt-1 block text-sm text-zinc-400">
-                Your public profile is hidden from other people.
+                {t('profile.settings.privateDescription')}
               </span>
             </label>
           </div>
@@ -313,13 +311,13 @@ function ProfileSettingsForm() {
 
       {serverError && (
         <p role="alert" className="text-sm text-red-300">
-          {serverError}
+          {t('profile.settings.saveError')}
         </p>
       )}
 
       {successMessage && (
         <p role="status" className="text-sm text-zinc-300">
-          {successMessage}
+          {t(successMessage)}
         </p>
       )}
 
@@ -329,7 +327,7 @@ function ProfileSettingsForm() {
           disabled={isSaving || !isDirty}
           className="rounded-md bg-zinc-100 px-5 py-3 font-semibold text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isSaving ? 'Saving…' : 'Save changes'}
+          {isSaving ? t('profile.settings.saving') : t('profile.settings.saveChanges')}
         </button>
       </div>
     </form>

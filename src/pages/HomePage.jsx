@@ -4,20 +4,22 @@ import MediaRow from '../features/catalog/components/MediaRow.jsx'
 import CatalogSectionState from '../features/catalog/components/CatalogSectionState.jsx'
 import RecommendationSection from '../features/recommendations/components/RecommendationSection.jsx'
 import { useAuth } from '../features/auth/hooks/useAuth.js'
+import { useTranslation } from '../features/localization/hooks/useTranslation.js'
 
 function HomePage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const { movies, tvShows } = useTrendingCatalog()
 
   const sections = [
     {
       id: 'trending-movies',
-      title: 'Trending movies today',
+      title: t('catalog.home.trendingMovies'),
       state: movies,
     },
     {
       id: 'trending-tv',
-      title: 'Trending TV shows today',
+      title: t('catalog.home.trendingTv'),
       state: tvShows,
     },
   ]
@@ -36,7 +38,7 @@ function HomePage() {
         </h1>
 
         <p className="text-lg text-zinc-400">
-          Discover your movie identity
+          {t('catalog.home.tagline')}
         </p>
 
         <SearchForm />

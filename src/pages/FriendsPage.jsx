@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom'
 
+import { useTranslation } from '../features/localization/hooks/useTranslation.js'
+import UserSearchPanel from '../features/profile/components/UserSearchPanel.jsx'
+
 import { useSocialGraph } from '../features/friends/hooks/useSocialGraph.js'
 import {
   PROFILE_AVATARS,
@@ -31,6 +34,8 @@ function SocialUserCard({
   onCancel,
   onRemove,
 }) {
+  const { t } = useTranslation()
+
   const { profile } = entry
 
   const avatar = PROFILE_AVATARS.find(
@@ -41,7 +46,14 @@ function SocialUserCard({
     <article className="flex flex-col gap-4 rounded-xl border border-zinc-800 bg-zinc-950 p-4 sm:flex-row sm:items-center">
       <div
         role="img"
-        aria-label={`${avatar.label} avatar`}
+        aria-label={t(
+          'profile.avatar',
+          {
+            label: t(
+              `profile.avatars.${avatar.id}`,
+            ),
+          },
+        )}
         className="flex size-16 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-3xl"
       >
         {avatar.symbol}
@@ -68,18 +80,14 @@ function SocialUserCard({
               disabled={busy}
               onClick={() => onAccept(profile.userId)}
               className={PRIMARY_BUTTON}
-            >
-              Accept
-            </button>
+            >{t('social.friends.accept')}</button>
 
             <button
               type="button"
               disabled={busy}
               onClick={() => onDecline(profile.userId)}
               className={SECONDARY_BUTTON}
-            >
-              Decline
-            </button>
+            >{t('social.friends.decline')}</button>
           </>
         )}
 
@@ -89,9 +97,7 @@ function SocialUserCard({
             disabled={busy}
             onClick={() => onCancel(profile.userId)}
             className={SECONDARY_BUTTON}
-          >
-            Cancel request
-          </button>
+          >{t('social.friends.cancelRequest')}</button>
         )}
 
         {kind === 'friend' && (
@@ -100,9 +106,7 @@ function SocialUserCard({
             disabled={busy}
             onClick={() => onRemove(profile.userId)}
             className={SECONDARY_BUTTON}
-          >
-            Remove friend
-          </button>
+          >{t('social.friends.removeFriend')}</button>
         )}
       </div>
     </article>
@@ -155,6 +159,8 @@ function SocialSection({
 }
 
 export default function FriendsPage() {
+  const { t } = useTranslation()
+
   const {
     loading,
     graph,
@@ -171,7 +177,7 @@ export default function FriendsPage() {
     return (
       <div className="w-full self-start">
         <p role="status" className="text-zinc-400">
-          Loading friends…
+          {t('social.friends.loading')}
         </p>
       </div>
     )
@@ -181,11 +187,11 @@ export default function FriendsPage() {
     return (
       <section className="w-full self-start rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
         <h1 className="text-2xl font-semibold">
-          Friends unavailable
+          {t('social.friends.unavailableTitle')}
         </h1>
 
         <p role="alert" className="mt-2 text-zinc-400">
-          We couldn't load your social graph right now.
+          {t('social.friends.unavailableDescription')}
         </p>
       </section>
     )
@@ -201,38 +207,46 @@ export default function FriendsPage() {
           id="friends-title"
           className="text-3xl font-semibold tracking-tight"
         >
-          Friends
+          {t('social.friends.title')}
         </h1>
 
         <p className="max-w-2xl text-sm text-zinc-400">
-          Manage your MovieDNA friends and friend requests.
+          {t('social.friends.description')}
         </p>
       </div>
+
+      <UserSearchPanel />
 
       {actionError && (
         <p
           role="alert"
           className="rounded-xl border border-red-900/60 bg-red-950/30 p-4 text-sm text-red-300"
         >
-          The friendship action could not be completed.
+          {t('social.friends.actionError')}
         </p>
       )}
 
       <SocialSection
-        title={`Friends (${graph.friends.length})`}
-        description="People you've connected with on MovieDNA."
+        title={t(
+          'social.friends.friendsTitle',
+          { count: graph.friends.length },
+        )}
+        description={t('social.friends.friendsDescription')}
         entries={graph.friends}
-        emptyMessage="You haven't added any friends yet."
+        emptyMessage={t('social.friends.friendsEmpty')}
         kind="friend"
         busyUserId={busyUserId}
         onRemove={removeFriend}
       />
 
       <SocialSection
-        title={`Incoming requests (${graph.incoming.length})`}
-        description="People who want to add you as a friend."
+        title={t(
+          'social.friends.incomingTitle',
+          { count: graph.incoming.length },
+        )}
+        description={t('social.friends.incomingDescription')}
         entries={graph.incoming}
-        emptyMessage="No incoming friend requests."
+        emptyMessage={t('social.friends.incomingEmpty')}
         kind="incoming"
         busyUserId={busyUserId}
         onAccept={acceptRequest}
@@ -240,10 +254,13 @@ export default function FriendsPage() {
       />
 
       <SocialSection
-        title={`Sent requests (${graph.outgoing.length})`}
-        description="Friend requests waiting for a response."
+        title={t(
+          'social.friends.outgoingTitle',
+          { count: graph.outgoing.length },
+        )}
+        description={t('social.friends.outgoingDescription')}
         entries={graph.outgoing}
-        emptyMessage="No pending sent requests."
+        emptyMessage={t('social.friends.outgoingEmpty')}
         kind="outgoing"
         busyUserId={busyUserId}
         onCancel={cancelRequest}

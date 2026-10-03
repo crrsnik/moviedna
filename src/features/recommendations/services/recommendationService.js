@@ -8,5 +8,5 @@ const callable = httpsCallable(
 )
 
 export const recommendationService = createRecommendationService({
-  callRecommendations: () => callable(),
+  callRecommendations: (language) => callable({ language }),
 })

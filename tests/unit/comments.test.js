@@ -42,7 +42,20 @@ for (const patch of [{extra:1},{text:''},{text:'x'.repeat(2001)},{authorUsername
 for (const field of Object.keys(raw())) test(`missing comment field ${field}`, () => {const data=raw();delete data[field];assert.throws(()=>normalizeComment(snap(data),media))})
 test('identity mismatch refused',()=>assert.throws(()=>normalizeComment(snap(raw({tmdbId:456})),media),{code:'identity-mismatch'}))
 test('list filters malformed, sorts timestamp nanoseconds, bounds 20',()=>{const docs=[snap(raw({updatedAt:time(10,1)}),'older'),snap(raw({updatedAt:time(10,2)}),'newer'),snap(raw({text:''}))];assert.deepEqual(normalizeComments({docs},media).map(x=>x.id),['newer','older']);assert.equal(normalizeComments({docs:Array.from({length:25},(_,i)=>snap(raw(),`synthetic-${i}`))},media).length,20)})
-for (const patch of [{id:'other-fictional-owner'},{username:'bad name'},{displayName:''},{onboardingCompleted:false},{onboardingCompleted:'true'},{createdAt:null},{photoURL:3},{bio:3}]) test(`invalid profile ${Object.keys(patch)}`,()=>assert.throws(()=>validateCommentProfile(uid,{...profile(),...patch}),{code:'profile'}))
+for (const patch of [{id:'other-fictional-owner'},{username:'bad name'},{displayName:''},{onboardingCompleted:'true'},{createdAt:null},{photoURL:3},{bio:3}]) test(`invalid profile ${Object.keys(patch)}`,()=>assert.throws(()=>validateCommentProfile(uid,{...profile(),...patch}),{code:'profile'}))
+
+test('incomplete onboarding is a valid comment profile', () => {
+  assert.deepEqual(
+    validateCommentProfile(uid, {
+      ...profile(),
+      onboardingCompleted: false,
+    }),
+    {
+      authorUsername: 'fictional_viewer',
+      authorDisplayName: 'Fictional Viewer',
+    },
+  )
+})
 test('public query bounded and ordered, with no Auth user',()=>{const f=fixture();f.auth.currentUser=null;const stop=f.service.subscribeToMediaComments(media,{next(){},error:assert.fail});assert.deepEqual(f.calls,[{path:'mediaComments/movie_123/comments',constraints:[{orderBy:['updatedAt','desc']},{limit:20}]}]);stop();assert.equal(f.listeners[0].stopped,true)})
 for(const guest of [null,undefined,'', 'other-fictional-owner']) test(`own subscription denies ${guest}`,()=>{const f=fixture();if(guest===null)f.auth.currentUser=null;let error;f.service.subscribeToOwnComment(guest,media,{next:assert.fail,error:e=>error=e});assert.equal(error.code,'unauthenticated');assert.equal(f.calls.length,0)})
 test('own exact doc, missing result, unsubscribe ignores stale success/error',()=>{const f=fixture(), seen=[], errors=[];const stop=f.service.subscribeToOwnComment(uid,media,{next:x=>seen.push(x),error:x=>errors.push(x)});assert.equal(f.calls[0],path);f.listeners[0].next(snap(undefined));assert.deepEqual(seen,[null]);stop();f.listeners[0].next(snap(raw()));f.listeners[0].error({code:'unavailable'});assert.equal(seen.length,1);assert.equal(errors.length,0)})
@@ -51,7 +64,43 @@ test('corrupt direct read error; public skips document',()=>{const f=fixture();l
 for(const type of ['movie','tv'])test(`transaction creates ${type} exact schema/timestamps`,async()=>{const f=fixture();await f.service.saveComment(uid,profile(),{...media,mediaType:type},{...input,text:'  hello\nworld  '});const [op,target,data]=f.writes[0];assert.equal(op,'set');assert.equal(target,`mediaComments/${type}_123/comments/${uid}`);assert.deepEqual(Object.keys(data).sort(),Object.keys(raw()).sort());assert.equal(data.text,'hello\nworld');assert.equal(data.createdAt.toMillis(),30000);assert.equal(data.updatedAt.toMillis(),30000);assert.deepEqual(f.calls.slice(0,1),['users/'+uid])})
 test('edit only text/spoiler/updatedAt preserving old author snapshot',async()=>{const f=fixture();const old=raw({authorDisplayName:'Earlier Name',authorUsername:'earlier_name'});f.store.set(path,old);await f.service.saveComment(uid,profile(),media,{text:'Updated',containsSpoiler:true});assert.deepEqual(Object.keys(f.writes[0][2]).sort(),['containsSpoiler','text','updatedAt']);assert.equal(f.store.get(path).createdAt,old.createdAt);assert.equal(f.store.get(path).authorDisplayName,'Earlier Name')})
 test('delete idempotent and never touches ratings or library',async()=>{const f=fixture();f.store.set(path,raw());f.store.set('users/'+uid+'/ratings/movie_123',{score:5});const before=new Map(f.store);await f.service.deleteComment(uid,media);await f.service.deleteComment(uid,media);assert.equal(f.writes.length,1);assert.equal(f.writes[0][0],'delete');before.delete(path);assert.deepEqual(f.store,before);assert.ok(f.calls.every(p=>!p.includes('savedMedia')&&!p.includes('/ratings/')))})
-for(const operation of ['save','delete'])test(`${operation} denies incomplete current profile`,async()=>{const f=fixture();f.store.set('users/'+uid,{...profile(),onboardingCompleted:false});await assert.rejects(operation==='save'?f.service.saveComment(uid,profile(),media,input):f.service.deleteComment(uid,media),{code:'profile'});assert.equal(f.writes.length,0)})
+test('save allows incomplete current profile', async () => {
+  const f = fixture()
+  const incompleteProfile = {
+    ...profile(),
+    onboardingCompleted: false,
+  }
+
+  f.store.set('users/' + uid, incompleteProfile)
+
+  await f.service.saveComment(
+    uid,
+    incompleteProfile,
+    media,
+    input,
+  )
+
+  assert.equal(f.writes.length, 1)
+})
+
+test('delete allows incomplete current profile', async () => {
+  const f = fixture()
+
+  f.store.set(
+    'users/' + uid,
+    {
+      ...profile(),
+      onboardingCompleted: false,
+    },
+  )
+
+  f.store.set(path, raw())
+
+  await f.service.deleteComment(uid, media)
+
+  assert.equal(f.writes.length, 1)
+  assert.equal(f.store.has(path), false)
+})
 test('profile mismatch rejected before Firestore',async()=>{const f=fixture();await assert.rejects(f.service.saveComment(uid,{...profile(),id:'other'},media,input),{code:'profile'});assert.equal(f.calls.length,0)})
 test('stale supplied author snapshot rejected',async()=>{const f=fixture();await assert.rejects(f.service.saveComment(uid,{...profile(),displayName:'Wrong name'},media,input),{code:'profile'});assert.equal(f.writes.length,0)})
 test('invalid input and media before Firestore',async()=>{const f=fixture();await assert.rejects(f.service.saveComment(uid,profile(),media,{...input,text:''}));await assert.rejects(f.service.saveComment(uid,profile(),{mediaType:'person',tmdbId:1},input));assert.equal(f.calls.length,0)})

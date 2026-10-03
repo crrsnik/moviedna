@@ -4,16 +4,19 @@ import { useAuth } from '../hooks/useAuth.js'
 import { registerUser } from '../services/registrationService.js'
 import { getRegistrationErrorMessage } from '../services/registrationErrors.js'
 import { normalizeUsername, validateRegistration } from '../validation/registrationValidation.js'
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
+import { translateAuthMessage } from '../../localization/core/authUiMessages.js'
 
 const fields = [
-  { name: 'username', label: 'Username', type: 'text', autoComplete: 'username', maxLength: 20 },
-  { name: 'displayName', label: 'Display name', type: 'text', autoComplete: 'name', maxLength: 50 },
-  { name: 'email', label: 'Email', type: 'email', autoComplete: 'email', maxLength: 254 },
-  { name: 'password', label: 'Password', type: 'password', autoComplete: 'new-password', maxLength: 128 },
-  { name: 'confirmPassword', label: 'Confirm password', type: 'password', autoComplete: 'new-password', maxLength: 128 },
+  { name: 'username', labelKey: 'auth.fields.username', type: 'text', autoComplete: 'username', maxLength: 20 },
+  { name: 'displayName', labelKey: 'auth.fields.displayName', type: 'text', autoComplete: 'name', maxLength: 50 },
+  { name: 'email', labelKey: 'auth.fields.email', type: 'email', autoComplete: 'email', maxLength: 254 },
+  { name: 'password', labelKey: 'auth.fields.password', type: 'password', autoComplete: 'new-password', maxLength: 128 },
+  { name: 'confirmPassword', labelKey: 'auth.fields.confirmPassword', type: 'password', autoComplete: 'new-password', maxLength: 128 },
 ]
 
 function RegisterForm() {
+  const { t } = useTranslation()
   const [values, setValues] = useState({ username: '', displayName: '', email: '', password: '', confirmPassword: '' })
   const [errors, setErrors] = useState({})
   const [serverError, setServerError] = useState(null)
@@ -29,7 +32,11 @@ function RegisterForm() {
     return () => {
       mounted.current = false
       // Do not release a still-running operation if the user navigates away.
-      setRegistrationStatus((status) => status === 'rollback-failed' ? 'idle' : status)
+      setRegistrationStatus((status) => (
+        status === 'rollback-failed'
+          ? 'idle'
+          : status
+      ))
     }
   }, [setRegistrationStatus])
 
@@ -68,21 +75,24 @@ function RegisterForm() {
     } finally {
       pending.current = false
     }
-    // Navigation is outside the registration error handler: the account is complete.
-    if (mounted.current) navigate('/onboarding', { replace: true })
-    setRegistrationStatus('idle')
+    // Keep a distinct success state until OnboardingPage has actually mounted.
+    // GuestOnlyRoute can therefore never race this first-run navigation to "/".
+    if (mounted.current) {
+      setRegistrationStatus('succeeded')
+      navigate('/onboarding', { replace: true })
+    }
   }
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} noValidate aria-busy={isSubmitting} className="space-y-5">
       <fieldset disabled={isSubmitting} className="space-y-5 disabled:opacity-70">
-        <legend className="sr-only">Registration details</legend>
-        {fields.map(({ name, label, ...inputProps }) => {
+        <legend className="sr-only">{t('auth.register.legend')}</legend>
+        {fields.map(({ name, labelKey, ...inputProps }) => {
           const id = `register-${name}`
           const description = [name === 'username' && 'username-hint', errors[name] && `${id}-error`].filter(Boolean).join(' ')
           return (
             <div key={name} className="space-y-2">
-              <label htmlFor={id} className="block text-sm font-medium text-zinc-200">{label}</label>
+              <label htmlFor={id} className="block text-sm font-medium text-zinc-200">{t(labelKey)}</label>
               <input
                 {...inputProps}
                 id={id}
@@ -95,19 +105,19 @@ function RegisterForm() {
                 aria-describedby={description || undefined}
                 className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 aria-invalid:border-red-400"
               />
-              {name === 'username' && <p id="username-hint" className="text-sm text-zinc-400">3–20 lowercase letters, numbers, or underscores.</p>}
-              {errors[name] && <p id={`${id}-error`} className="text-sm text-red-300">{errors[name]}</p>}
+              {name === 'username' && <p id="username-hint" className="text-sm text-zinc-400">{t('auth.register.usernameHint')}</p>}
+              {errors[name] && <p id={`${id}-error`} className="text-sm text-red-300">{translateAuthMessage(t, errors[name])}</p>}
             </div>
           )
         })}
       </fieldset>
-      {serverError && <p role="alert" className="text-sm text-red-300">{serverError}</p>}
+      {serverError && <p role="alert" className="text-sm text-red-300">{translateAuthMessage(t, serverError)}</p>}
       <button type="submit" disabled={isSubmitting} className="w-full rounded-md bg-zinc-100 px-4 py-3 font-semibold text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100 disabled:cursor-wait disabled:opacity-60">
-        {isSubmitting ? 'Creating account…' : 'Create account'}
+        {isSubmitting ? t('auth.register.submitting') : t('auth.register.submit')}
       </button>
       <p className="text-center text-sm text-zinc-400">
-        Already have an account?{' '}
-        <Link to="/login" className="rounded text-zinc-100 underline underline-offset-4 hover:text-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100">Log in</Link>
+        {t('auth.register.alreadyHaveAccount')}{' '}
+        <Link to="/login" className="rounded text-zinc-100 underline underline-offset-4 hover:text-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100">{t('auth.register.login')}</Link>
       </p>
     </form>
   )

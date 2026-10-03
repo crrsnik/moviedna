@@ -87,24 +87,110 @@ describe('local safety and accessible UI contract', () => {
     assert.equal(LOCAL_FIREBASE_CONFIG.projectId, 'demo-moviedna'); assert.deepEqual(LOCAL_EMULATORS, { auth: 'http://127.0.0.1:9099', firestoreHost: '127.0.0.1', firestorePort: 8080, functionsHost: '127.0.0.1', functionsPort: 5001 })
     assert.equal(isLocalFirebaseMode({ VITE_MOVIEDNA_LOCAL: 'true' }), true); assert.equal(isLocalFirebaseMode({ MODE: 'production' }), false)
   })
-  it('renders all dimensions and text compatibility with accessible status/progress contracts', async () => {
+  it('renders curated human-readable DNA dimensions with accessible expandable sections', async () => {
     const page = await readFile(new URL('../../src/pages/DnaPage.jsx', import.meta.url), 'utf8')
     const dimension = await readFile(new URL('../../src/features/dna/components/DnaDimensionSection.jsx', import.meta.url), 'utf8')
     const state = await readFile(new URL('../../src/features/dna/components/DnaStatePanel.jsx', import.meta.url), 'utf8')
-    for (const name of MOVIEDNA_DIMENSIONS) assert.match(page, new RegExp(`['"]${name}['"]`))
-    for (const label of ['Strong match', 'Positive match', 'Neutral or mixed', 'Lower compatibility']) assert.match(dimension, new RegExp(label))
-    assert.match(dimension, /<progress/); assert.match(state, /aria-live=/); assert.match(page, /<h1/)
-  })
-  it('keeps the compact mobile header accessible without a visible account email row', async () => {
-    const header = await readFile(new URL('../../src/shared/components/layout/Header.jsx', import.meta.url), 'utf8')
-    for (const [path, label] of [['/movies', 'Movies'], ['/tv', 'TV Shows'], ['/actors', 'Actors'], ['/profile', 'Profile']]) {
-      assert.match(header, new RegExp(`to=["']${path}["'][^>]*>${label}<`))
+
+    const visibleDimensions = [
+      'genres',
+      'mediaTypes',
+      'decades',
+      'countries',
+      'directors',
+      'actors',
+    ]
+
+    for (const name of visibleDimensions) {
+      assert.match(page, new RegExp(`['"]${name}['"]`))
     }
-    assert.match(header, /sr-only md:not-sr-only/)
-    assert.match(header, /user\.email \|\| user\.displayName/)
-    assert.match(header, /Log out/)
-    assert.match(header, /grid-cols-\[auto_1fr\]/)
+
+    for (const name of MOVIEDNA_DIMENSIONS.filter(name => !visibleDimensions.includes(name))) {
+      assert.doesNotMatch(page, new RegExp(`['"]${name}['"]`))
+    }
+
+    for (const label of [
+      'dnaUi.compatibility.strong',
+      'dnaUi.compatibility.positive',
+      'dnaUi.compatibility.neutral',
+      'dnaUi.compatibility.lower',
+    ]) {
+      assert.match(dimension, new RegExp(label))
+    }
+
+    assert.match(dimension, /sortDnaEntriesForDisplay/)
+    assert.match(dimension, /orderedEntries\.slice\([\s\S]*0,[\s\S]*DEFAULT_VISIBLE,[\s\S]*\)/)
+    assert.match(dimension, /dnaUi\.showAll/)
+    assert.match(dimension, /dnaUi\.showLess/)
+    assert.match(dimension, /aria-expanded=/)
+    assert.match(dimension, /<progress/)
+    assert.doesNotMatch(dimension, /Evidence from/)
+    assert.doesNotMatch(dimension, /confidence/)
+    assert.doesNotMatch(page, /DnaOverview/)
+    assert.match(state, /aria-live=/)
+    assert.match(page, /<h1/)
   })
+  it('keeps compact catalog navigation with an accessible profile menu', async () => {
+    const header = await readFile(
+      new URL(
+        '../../src/shared/components/layout/Header.jsx',
+        import.meta.url,
+      ),
+      'utf8',
+    )
+
+    for (const path of [
+      '/movies',
+      '/tv',
+      '/actors',
+      '/profile',
+      '/friends',
+      '/profile/account',
+    ]) {
+      assert.match(
+        header,
+        new RegExp(`to=["']${path}["']`),
+      )
+    }
+
+    for (const key of [
+      'nav.movies',
+      'nav.tvShows',
+      'nav.actors',
+      'nav.profile',
+      'nav.friends',
+      'profile.accountSettings',
+      'nav.logout',
+    ]) {
+      assert.ok(
+        header.includes(`t('${key}')`),
+        `Expected Header to use ${key}`,
+      )
+    }
+
+    assert.match(header, /aria-haspopup="menu"/)
+    assert.match(
+      header,
+      /aria-expanded=\{menuOpen\}/,
+    )
+    assert.match(header, /role="menu"/)
+
+    assert.doesNotMatch(
+      header,
+      /user\.email/,
+    )
+
+    assert.doesNotMatch(
+      header,
+      /to="\/users\/search"/,
+    )
+
+    assert.match(
+      header,
+      /grid-cols-\[auto_1fr\]/,
+    )
+  })
+
   it('keeps seed fail-closed and free of TMDB network code', async () => {
     const seed = await readFile(new URL('../../scripts/seedDnaLocal.js', import.meta.url), 'utf8')
     assert.match(seed, /Refusing to seed/); assert.doesNotMatch(seed, /api\.themoviedb\.org|TMDB_READ_ACCESS_TOKEN/)

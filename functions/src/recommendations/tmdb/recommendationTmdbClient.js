@@ -45,6 +45,20 @@ function retryDelay(response, attempt) {
     : 100 * (2 ** attempt)
 }
 
+const ALLOWED_LANGUAGES = new Set([
+  'en-US',
+  'fr-FR',
+  'ru-RU',
+])
+
+function validateLanguage(language) {
+  if (!ALLOWED_LANGUAGES.has(language)) {
+    throw new MovieDnaServerError(
+      SERVER_ERROR_CODES.INVALID_SOURCE,
+    )
+  }
+}
+
 function sourceEnvelope(mediaType, source, results) {
   return Object.freeze({
     mediaType,
@@ -174,13 +188,17 @@ export function createRecommendationTmdbClient({
     )
   }
 
-  async function getTrending(mediaType) {
+  async function getTrending(
+    mediaType,
+    language = 'en-US',
+  ) {
     validateMediaType(mediaType)
+    validateLanguage(language)
 
     const results = await request(
       `trending/${mediaType}/day`,
       {
-        language: 'en-US',
+        language,
       },
     )
 
@@ -191,14 +209,20 @@ export function createRecommendationTmdbClient({
     )
   }
 
-  async function getPopular(mediaType, page = 1) {
+  async function getPopular(
+    mediaType,
+    page = 1,
+    language = 'en-US',
+  ) {
     validateMediaType(mediaType)
     validatePage(page)
+    validateLanguage(language)
+    validateLanguage(language)
 
     const results = await request(
       `${mediaType}/popular`,
       {
-        language: 'en-US',
+        language,
         page,
       },
     )
@@ -210,14 +234,19 @@ export function createRecommendationTmdbClient({
     )
   }
 
-  async function getTopRated(mediaType, page = 1) {
+  async function getTopRated(
+    mediaType,
+    page = 1,
+    language = 'en-US',
+  ) {
     validateMediaType(mediaType)
     validatePage(page)
+    validateLanguage(language)
 
     const results = await request(
       `${mediaType}/top_rated`,
       {
-        language: 'en-US',
+        language,
         page,
       },
     )
@@ -233,6 +262,7 @@ export function createRecommendationTmdbClient({
     mediaType,
     genreId,
     page = 1,
+    language = 'en-US',
   ) {
     validateMediaType(mediaType)
     validatePage(page)
@@ -244,7 +274,7 @@ export function createRecommendationTmdbClient({
     }
 
     const params = {
-      language: 'en-US',
+      language,
       page,
       sort_by: 'popularity.desc',
       include_adult: 'false',

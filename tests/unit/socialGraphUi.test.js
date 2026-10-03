@@ -37,12 +37,19 @@ describe('social graph UI contract', () => {
       header.includes('to="/friends"'),
     )
 
-    assert.ok(
-      header.includes('Friends'),
+    assert.match(
+      header,
+      /t\('nav\.friends'\)/,
     )
 
-    assert.ok(
-      header.includes('to="/friends"'),
+    assert.match(
+      header,
+      /isAuthenticated \? \(/,
+    )
+
+    assert.match(
+      header,
+      /role="menu"/,
     )
   })
 
@@ -56,13 +63,13 @@ describe('social graph UI contract', () => {
     )
 
     for (const expectedText of [
-      'Friends (',
-      'Incoming requests (',
-      'Sent requests (',
-      'Accept',
-      'Decline',
-      'Cancel request',
-      'Remove friend',
+      'social.friends.friendsTitle',
+      'social.friends.incomingTitle',
+      'social.friends.outgoingTitle',
+      'social.friends.accept',
+      'social.friends.decline',
+      'social.friends.cancelRequest',
+      'social.friends.removeFriend',
     ]) {
       assert.ok(
         page.includes(expectedText),

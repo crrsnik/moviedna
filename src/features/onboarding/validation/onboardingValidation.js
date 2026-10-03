@@ -4,6 +4,7 @@ export const MIN_RESPONSES = 10
 export const MAX_RESPONSES = 30
 export const MIN_OPINIONS = 5
 export const REACTIONS = ['like', 'dislike', 'skip']
+export const ONBOARDING_MEDIA_TYPES = ['movie', 'tv']
 
 export function validateUid(uid) {
   if (typeof uid !== 'string' || !uid.trim() || uid !== uid.trim() || uid.includes('/') || ['.', '..'].includes(uid)) {
@@ -16,13 +17,21 @@ export function isValidMovieId(id) {
   return Number.isSafeInteger(id) && id > 0 && /^[1-9][0-9]{0,11}$/.test(String(id))
 }
 
+export function getOnboardingMediaKey(mediaType, tmdbId) {
+  if (!ONBOARDING_MEDIA_TYPES.includes(mediaType) || !isValidMovieId(tmdbId)) {
+    return null
+  }
+
+  return `${mediaType}_${tmdbId}`
+}
+
 export function normalizeResponse({ tmdbId, mediaType, reaction, genreIds } = {}) {
-  if (!isValidMovieId(tmdbId) || mediaType !== 'movie' || !REACTIONS.includes(reaction)
+  if (!getOnboardingMediaKey(mediaType, tmdbId) || !REACTIONS.includes(reaction)
     || !Array.isArray(genreIds) || genreIds.length > 10
     || !genreIds.every((id) => Number.isSafeInteger(id) && id > 0)) {
     throw new OnboardingError('invalid-input')
   }
-  return { tmdbId, mediaType: 'movie', reaction, genreIds: [...new Set(genreIds)] }
+  return { tmdbId, mediaType, reaction, genreIds: [...new Set(genreIds)] }
 }
 
 export function getOnboardingCounts(responses) {
@@ -32,8 +41,12 @@ export function getOnboardingCounts(responses) {
   for (const response of responses) {
     if (!response) throw new OnboardingError('invalid-data')
     const normalized = normalizeResponse(response)
-    if (seen.has(normalized.tmdbId)) throw new OnboardingError('invalid-data')
-    seen.add(normalized.tmdbId)
+    const mediaKey = getOnboardingMediaKey(
+      normalized.mediaType,
+      normalized.tmdbId,
+    )
+    if (seen.has(mediaKey)) throw new OnboardingError('invalid-data')
+    seen.add(mediaKey)
     if (normalized.reaction === 'like') counts.likedCount++
     else if (normalized.reaction === 'dislike') counts.dislikedCount++
     else counts.skippedCount++

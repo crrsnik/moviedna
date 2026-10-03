@@ -1,13 +1,32 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import {
+  Navigate,
+  Outlet,
+} from 'react-router-dom'
+
 import { useAuth } from '../hooks/useAuth.js'
 
 function GuestOnlyRoute() {
-  const { isAuthenticated, registrationStatus } = useAuth()
-  // Auth signs in before the profile transaction completes. Keep its form mounted,
-  // including a rollback failure message if the new session could not be cleared.
-  if (isAuthenticated && registrationStatus === 'idle') {
+  const {
+    isAuthenticated,
+    registrationStatus,
+  } = useAuth()
+
+  // Keep the registration form mounted while account creation is pending.
+  // Once registration succeeds, onboarding owns the first authenticated route.
+  if (
+    isAuthenticated
+    && registrationStatus === 'succeeded'
+  ) {
     return <Navigate to="/onboarding" replace />
   }
+
+  if (
+    isAuthenticated
+    && registrationStatus === 'idle'
+  ) {
+    return <Navigate to="/" replace />
+  }
+
   return <Outlet />
 }
 

@@ -1,53 +1,85 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 
+import { useAuth } from '../features/auth/hooks/useAuth.js'
 import { useMovieDna } from '../features/dna/hooks/useMovieDna.js'
+import { selectDnaPreviewTraits } from '../features/dna/utils/selectDnaPreviewTraits.js'
+import { useTranslation } from '../features/localization/hooks/useTranslation.js'
+import PublicBoards from '../features/profile/components/PublicBoards.jsx'
+import { usePublicBoards } from '../features/profile/hooks/usePublicBoards.js'
 import { calculateViewingStats } from '../features/statistics/core/calculateViewingStats.js'
 import { useViewingHistory } from '../features/viewingHistory/hooks/useViewingHistory.js'
 import { localDateString } from '../features/viewingHistory/validation/viewingHistoryValidation.js'
 
+const CATEGORY_KEYS = Object.freeze({
+  genres:
+    'profile.overviewPage.categories.genres',
+  mediaTypes:
+    'profile.overviewPage.categories.mediaTypes',
+  decades:
+    'profile.overviewPage.categories.decades',
+  countries:
+    'profile.overviewPage.categories.countries',
+  directors:
+    'profile.overviewPage.categories.directors',
+  actors:
+    'profile.overviewPage.categories.actors',
+})
+
 function DnaPreview({ state }) {
+  const { t } = useTranslation()
+
   if (!state.current) {
     return (
       <p className="text-sm text-zinc-400">
         {state.kind === 'failed'
-          ? 'Your MovieDNA preview could not be loaded.'
-          : 'Your MovieDNA is still being prepared.'}
+          ? t(
+            'profile.overviewPage.dnaFailed',
+          )
+          : t(
+            'profile.overviewPage.dnaPreparing',
+          )}
       </p>
     )
   }
 
-  const genres = [...(state.current.dimensions?.genres ?? [])]
-    .filter(entry => (
-      entry
-      && typeof entry.label === 'string'
-      && typeof entry.score === 'number'
-      && entry.score > 0
-    ))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 4)
+  const traits = selectDnaPreviewTraits(
+    state.current.dimensions,
+  )
 
-  if (!genres.length) {
+  if (!traits.length) {
     return (
       <p className="text-sm text-zinc-400">
-        Not enough genre evidence yet.
+        {t(
+          'profile.overviewPage.dnaEmpty',
+        )}
       </p>
     )
   }
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {genres.map((entry) => {
-        const percent = Math.round(entry.score * 100)
+      {traits.map(trait => {
+        const percent = Math.round(
+          trait.score * 100,
+        )
 
         return (
           <article
-            key={entry.key}
+            key={`${trait.dimension}:${trait.key}`}
             className="rounded-xl border border-zinc-800 bg-zinc-950 p-4"
           >
-            <div className="flex items-baseline justify-between gap-3">
+            <p className="text-xs font-medium text-zinc-500">
+              {t(
+                CATEGORY_KEYS[
+                  trait.dimension
+                ],
+              )}
+            </p>
+
+            <div className="mt-1 flex items-baseline justify-between gap-3">
               <h3 className="font-semibold">
-                {entry.label}
+                {trait.label}
               </h3>
 
               <span className="text-sm font-medium text-zinc-300">
@@ -56,16 +88,16 @@ function DnaPreview({ state }) {
             </div>
 
             <progress
-              aria-label={`${entry.label} MovieDNA compatibility`}
+              aria-label={t(
+                'profile.overviewPage.dnaCompatibility',
+                {
+                  label: trait.label,
+                },
+              )}
               value={percent}
               max="100"
               className="mt-3 h-2 w-full accent-violet-400"
             />
-
-            <p className="mt-2 text-xs text-zinc-500">
-              Evidence from {entry.evidenceCount}{' '}
-              {entry.evidenceCount === 1 ? 'title' : 'titles'}
-            </p>
           </article>
         )
       })}
@@ -79,6 +111,7 @@ function Stat({ label, value }) {
       <p className="text-sm text-zinc-400">
         {label}
       </p>
+
       <p className="mt-1 text-2xl font-semibold">
         {value}
       </p>
@@ -87,13 +120,18 @@ function Stat({ label, value }) {
 }
 
 export default function ProfileOverviewPage() {
+  const { t } = useTranslation()
+  const { user } = useAuth()
   const dnaState = useMovieDna()
   const history = useViewingHistory()
+  const publicBoards = usePublicBoards(user.uid)
   const today = localDateString()
 
   const stats = useMemo(
     () => calculateViewingStats(
-      Array.isArray(history.data) ? history.data : [],
+      Array.isArray(history.data)
+        ? history.data
+        : [],
       today,
     ),
     [history.data, today],
@@ -105,11 +143,15 @@ export default function ProfileOverviewPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold">
-              Your MovieDNA
+              {t(
+                'profile.overviewPage.dnaTitle',
+              )}
             </h2>
 
             <p className="mt-1 text-sm text-zinc-400">
-              A preview of your strongest positive genre signals.
+              {t(
+                'profile.overviewPage.dnaDescription',
+              )}
             </p>
           </div>
 
@@ -117,7 +159,9 @@ export default function ProfileOverviewPage() {
             to="/profile/dna"
             className="rounded-md text-sm font-medium text-zinc-200 underline underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            View full DNA
+            {t(
+              'profile.overviewPage.viewDna',
+            )}
           </Link>
         </div>
 
@@ -130,11 +174,15 @@ export default function ProfileOverviewPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold">
-              Your activity
+              {t(
+                'profile.overviewPage.activityTitle',
+              )}
             </h2>
 
             <p className="mt-1 text-sm text-zinc-400">
-              A quick look at your viewing history.
+              {t(
+                'profile.overviewPage.activityDescription',
+              )}
             </p>
           </div>
 
@@ -142,77 +190,73 @@ export default function ProfileOverviewPage() {
             to="/profile/stats"
             className="rounded-md text-sm font-medium text-zinc-200 underline underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            View statistics
+            {t(
+              'profile.overviewPage.viewStatistics',
+            )}
           </Link>
         </div>
 
         {history.loading ? (
-          <p role="status" className="mt-5 text-sm text-zinc-400">
-            Loading viewing activity…
+          <p
+            role="status"
+            className="mt-5 text-sm text-zinc-400"
+          >
+            {t(
+              'profile.overviewPage.activityLoading',
+            )}
           </p>
         ) : history.error ? (
-          <p role="alert" className="mt-5 text-sm text-zinc-400">
-            Viewing activity could not be loaded.
+          <p
+            role="alert"
+            className="mt-5 text-sm text-zinc-400"
+          >
+            {t(
+              'profile.overviewPage.activityError',
+            )}
           </p>
         ) : (
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Stat
-              label="All time"
+              label={t(
+                'profile.overviewPage.allTime',
+              )}
               value={stats.totalViewings}
             />
+
             <Stat
-              label="This month"
+              label={t(
+                'profile.overviewPage.thisMonth',
+              )}
               value={stats.thisMonth}
             />
+
             <Stat
-              label="Movies"
-              value={stats.mediaTypes.movieCount}
+              label={t(
+                'profile.overviewPage.movies',
+              )}
+              value={
+                stats.mediaTypes.movieCount
+              }
             />
+
             <Stat
-              label="TV shows"
-              value={stats.mediaTypes.tvCount}
+              label={t(
+                'profile.overviewPage.tvShows',
+              )}
+              value={
+                stats.mediaTypes.tvCount
+              }
             />
           </div>
         )}
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <Link
-          to="/profile/library"
-          className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 hover:border-zinc-600 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4"
-        >
-          <h2 className="text-lg font-semibold">
-            Library
-          </h2>
-          <p className="mt-2 text-sm text-zinc-400">
-            Favorites, watchlist, ratings, and custom lists.
-          </p>
-        </Link>
-
-        <Link
-          to="/profile/history"
-          className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 hover:border-zinc-600 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4"
-        >
-          <h2 className="text-lg font-semibold">
-            History
-          </h2>
-          <p className="mt-2 text-sm text-zinc-400">
-            Browse the movies and TV shows you've watched.
-          </p>
-        </Link>
-
-        <Link
-          to="/profile/settings"
-          className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 hover:border-zinc-600 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4"
-        >
-          <h2 className="text-lg font-semibold">
-            Profile settings
-          </h2>
-          <p className="mt-2 text-sm text-zinc-400">
-            Change your name, avatar, and privacy.
-          </p>
-        </Link>
-      </section>
+      <PublicBoards
+        state={publicBoards}
+        boardHref={board => (
+          `/profile/library?view=list&listId=${board.id}`
+        )}
+      />
     </div>
   )
 }

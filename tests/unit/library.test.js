@@ -7,7 +7,7 @@ import { createMediaLibraryService } from '../../src/features/library/services/c
 import { createLibraryAction } from '../../src/features/library/services/libraryAction.js'
 import { toLibraryError } from '../../src/features/library/services/libraryErrors.js'
 const media = { tmdbId: 123, mediaType: 'movie', title: 'Synthetic film', posterPath: '/poster.jpg', releaseYear: 2020 }
-const data = patch => ({ ...media, favorite: true, watchlist: false, listIds: [], createdAt: new Timestamp(1, 0), updatedAt: new Timestamp(2, 0), ...patch })
+const data = patch => ({ ...media, favorite: true, watchlist: false, watched: false, listIds: [], createdAt: new Timestamp(1, 0), updatedAt: new Timestamp(2, 0), ...patch })
 const snap = (value, id = 'movie_123', metadata = {}) => ({ id, data: () => value, exists: () => value !== null, metadata })
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r }); return { promise, resolve } }
 function harness(saved = null) {
@@ -39,8 +39,9 @@ describe('Library validation and saved model', () => {
   for (const view of [null,undefined,'','bad','favorites','watchlist']) it(`view ${view}`,()=>assert.equal(libraryViewParams(view).toString(),`view=${view==='watchlist'?'watchlist':'favorites'}`))
   it('canonical routes',()=>{assert.equal(savedMediaRoute(media),'/movies/123');assert.equal(savedMediaRoute({...media,mediaType:'tv'}),'/tv/123');assert.equal(normalizeLibraryView('WATCHLIST'),'favorites')})
   it('normalizes timestamps without losing nanos',()=>assert.deepEqual(normalizeSavedMedia(snap(data())).updatedAt,{seconds:2,nanoseconds:0}))
-  for (const patch of [{tmdbId:124},{mediaType:'tv'},{title:' '},{title:'a'.repeat(201)},{posterPath:'bad'},{releaseYear:'2020'},{favorite:1},{watchlist:null},{listIds:null},{listIds:[1]},{listIds:['bad']},{listIds:['a'.repeat(20),'a'.repeat(20)]},{listIds:Array.from({length:21},(_,i)=>String(i).padStart(20,'a'))},{favorite:false},{createdAt:null},{updatedAt:{seconds:1,nanoseconds:0}},{extra:true}]) it(`rejects corrupt ${JSON.stringify(patch)}`,()=>assert.throws(()=>normalizeSavedMedia(snap(data(patch))),{code:'invalid-data'}))
-  for(const field of Object.keys(data()))it(`rejects missing ${field}`,()=>{const d=data();delete d[field];assert.throws(()=>normalizeSavedMedia(snap(d)),{code:'invalid-data'})})
+  for (const patch of [{tmdbId:124},{mediaType:'tv'},{title:' '},{title:'a'.repeat(201)},{posterPath:'bad'},{releaseYear:'2020'},{favorite:1},{watchlist:null},{watched:null},{watched:1},{listIds:null},{listIds:[1]},{listIds:['bad']},{listIds:['a'.repeat(20),'a'.repeat(20)]},{listIds:Array.from({length:21},(_,i)=>String(i).padStart(20,'a'))},{favorite:false},{createdAt:null},{updatedAt:{seconds:1,nanoseconds:0}},{extra:true}]) it(`rejects corrupt ${JSON.stringify(patch)}`,()=>assert.throws(()=>normalizeSavedMedia(snap(data(patch))),{code:'invalid-data'}))
+  for(const field of Object.keys(data()).filter(field => field !== 'watched'))it(`rejects missing ${field}`,()=>{const d=data();delete d[field];assert.throws(()=>normalizeSavedMedia(snap(d)),{code:'invalid-data'})})
+  it('accepts legacy savedMedia without watched as false',()=>{const d=data();delete d.watched;assert.equal(normalizeSavedMedia(snap(d)).watched,false)})
   it('filters corruption and sorts by updated/created/title/key',()=>{
     const docs=[snap(data({title:'B'})),snap(data({title:'A',tmdbId:124}),'movie_124'),snap(data({tmdbId:125,updatedAt:new Timestamp(2,1)}),'movie_125'),snap(data({tmdbId:126,createdAt:new Timestamp(1,1)}),'movie_126'),snap(data({title:''}))]
     assert.deepEqual(normalizeLibraryItems({docs}).map(x=>x.tmdbId),[125,126,124,123])
@@ -49,13 +50,14 @@ describe('Library validation and saved model', () => {
 describe('Library transactions through injected boundary',()=>{
   for(const [method,field] of [['toggleFavorite','favorite'],['toggleWatchlist','watchlist']])it(`creates ${field}`,async()=>{
     const h=harness();await h.service[method]({uid:'synthetic-owner',media})
-    assert.deepEqual(h.writes,[['set','users/synthetic-owner/savedMedia/movie_123',{...media,favorite:field==='favorite',watchlist:field==='watchlist',listIds:[],createdAt:'synthetic-server-time',updatedAt:'synthetic-server-time'}]])
+    assert.deepEqual(h.writes,[['set','users/synthetic-owner/savedMedia/movie_123',{...media,favorite:field==='favorite',watchlist:field==='watchlist',watched:false,listIds:[],createdAt:'synthetic-server-time',updatedAt:'synthetic-server-time'}]])
   })
   it('preserves other flag/listIds/createdAt on update',async()=>{
     const h=harness(data({watchlist:true,listIds:['a'.repeat(20)]}));await h.service.toggleFavorite({uid:'synthetic-owner',media})
-    assert.deepEqual(h.writes[0],['update','users/synthetic-owner/savedMedia/movie_123',{title:media.title,posterPath:media.posterPath,releaseYear:2020,favorite:false,updatedAt:'synthetic-server-time'}])
+    assert.deepEqual(h.writes[0],['update','users/synthetic-owner/savedMedia/movie_123',{title:media.title,posterPath:media.posterPath,releaseYear:2020,favorite:false,watched:false,updatedAt:'synthetic-server-time'}])
   })
   it('last membership deletes document',async()=>{const h=harness(data());await h.service.toggleFavorite({uid:'synthetic-owner',media});assert.equal(h.writes[0][0],'delete')})
+  it('watched media survives removal of its last library membership',async()=>{const h=harness(data({watched:true}));await h.service.toggleFavorite({uid:'synthetic-owner',media});assert.equal(h.writes[0][0],'update');assert.equal(h.writes[0][2].favorite,false);assert.equal(h.writes[0][2].watched,true)})
   it('list membership prevents deletion',async()=>{const h=harness(data({listIds:['a'.repeat(20)]}));await h.service.toggleFavorite({uid:'synthetic-owner',media});assert.equal(h.writes[0][0],'update')})
   it('remove is explicit false, never re-adds missing document',async()=>{const h=harness();await h.service.removeFromView({uid:'synthetic-owner',media,view:'favorites'});assert.deepEqual(h.writes,[])})
   it('removing watchlist preserves favorite',async()=>{const h=harness(data({watchlist:true}));await h.service.removeFromView({uid:'synthetic-owner',media,view:'watchlist'});assert.equal(h.writes[0][2].watchlist,false);assert.equal(Object.hasOwn(h.writes[0][2],'favorite'),false)})

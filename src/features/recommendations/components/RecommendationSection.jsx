@@ -1,11 +1,13 @@
 import RecommendationCard from './RecommendationCard.jsx'
 import { useRecommendations } from '../hooks/useRecommendations.js'
+import { useTranslation } from '../../localization/hooks/useTranslation.js'
 
 export const RECOMMENDATION_DISPLAY_LIMIT = 20
 
 function RecommendationState({
   kind,
   retry,
+  t,
 }) {
   if (kind === 'loading') {
     return (
@@ -14,7 +16,7 @@ function RecommendationState({
         aria-live="polite"
         className="animate-pulse rounded-lg border border-zinc-800 bg-zinc-900 p-8 text-sm text-zinc-400 motion-reduce:animate-none"
       >
-        Building recommendations from your MovieDNA…
+        {t('catalog.recommendations.loading')}
       </p>
     )
   }
@@ -22,7 +24,7 @@ function RecommendationState({
   if (kind === 'unavailable') {
     return (
       <p className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 text-sm text-zinc-400">
-        Your MovieDNA does not have enough information for personalized recommendations yet.
+        {t('catalog.recommendations.unavailable')}
       </p>
     )
   }
@@ -34,7 +36,7 @@ function RecommendationState({
           role="alert"
           className="text-sm text-zinc-300"
         >
-          Recommendations are unavailable right now.
+          {t('catalog.recommendations.error')}
         </p>
 
         <button
@@ -42,7 +44,7 @@ function RecommendationState({
           onClick={retry}
           className="rounded-md bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
         >
-          Retry
+          {t('common.retry')}
         </button>
       </div>
     )
@@ -51,7 +53,7 @@ function RecommendationState({
   if (kind === 'empty') {
     return (
       <p className="text-sm text-zinc-400">
-        No new recommendations are available right now.
+        {t('catalog.recommendations.empty')}
       </p>
     )
   }
@@ -60,6 +62,7 @@ function RecommendationState({
 }
 
 function RecommendationSection() {
+  const { t } = useTranslation()
   const state = useRecommendations()
   const titleId = 'recommended-for-you'
 
@@ -73,11 +76,11 @@ function RecommendationSection() {
           id={titleId}
           className="text-xl font-semibold tracking-tight sm:text-2xl"
         >
-          Recommended for you
+          {t('catalog.recommendations.title')}
         </h2>
 
         <p className="text-sm text-zinc-400">
-          Ranked from your MovieDNA preferences.
+          {t('catalog.recommendations.subtitle')}
         </p>
       </div>
 
@@ -110,6 +113,7 @@ function RecommendationSection() {
         <RecommendationState
           kind={state.kind}
           retry={state.retry}
+          t={t}
         />
       )}
     </section>

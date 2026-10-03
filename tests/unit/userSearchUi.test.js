@@ -2,45 +2,87 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { describe, it } from 'node:test'
 
-const routerPath = new URL(
-  '../../src/app/router.jsx',
-  import.meta.url,
-)
-
-const headerPath = new URL(
-  '../../src/shared/components/layout/Header.jsx',
-  import.meta.url,
-)
-
 describe('user search routing', () => {
-  it('keeps user search inside the authenticated route tree', async () => {
-    const source = await readFile(routerPath, 'utf8')
+  it('keeps public profile routes protected and redirects legacy search into Friends', async () => {
+    const router = await readFile(
+      new URL(
+        '../../src/app/router.jsx',
+        import.meta.url,
+      ),
+      'utf8',
+    )
 
-    const protectedIndex = source.indexOf(
+    const protectedIndex = router.indexOf(
       'element: <ProtectedRoute />',
     )
 
-    const searchIndex = source.indexOf(
+    const searchIndex = router.indexOf(
       "path: 'users/search'",
     )
 
-    const publicProfileIndex = source.indexOf(
+    const publicProfileIndex = router.indexOf(
       "path: 'users/:username'",
     )
 
     assert.ok(protectedIndex >= 0)
     assert.ok(searchIndex > protectedIndex)
     assert.ok(publicProfileIndex > protectedIndex)
-    assert.ok(searchIndex < publicProfileIndex)
+
+    assert.match(
+      router,
+      /path:\s*['"]users\/search['"][\s\S]*?<Navigate to="\/friends" replace/,
+    )
   })
 
-  it('shows the Users navigation entry only to authenticated users', async () => {
-    const source = await readFile(headerPath, 'utf8')
+  it('keeps user discovery inside Friends instead of global navigation', async () => {
+    const [header, friends, panel] =
+      await Promise.all([
+        readFile(
+          new URL(
+            '../../src/shared/components/layout/Header.jsx',
+            import.meta.url,
+          ),
+          'utf8',
+        ),
+        readFile(
+          new URL(
+            '../../src/pages/FriendsPage.jsx',
+            import.meta.url,
+          ),
+          'utf8',
+        ),
+        readFile(
+          new URL(
+            '../../src/features/profile/components/UserSearchPanel.jsx',
+            import.meta.url,
+          ),
+          'utf8',
+        ),
+      ])
 
-    assert.ok(
-      source.includes(
-        '{isAuthenticated && <NavLink className={navigationLinkClasses} to="/users/search">Users</NavLink>}',
-      ),
+    assert.doesNotMatch(
+      header,
+      /to="\/users\/search"/,
+    )
+
+    assert.doesNotMatch(
+      header,
+      /t\('nav\.users'\)/,
+    )
+
+    assert.match(
+      friends,
+      /<UserSearchPanel \/>/,
+    )
+
+    assert.match(
+      panel,
+      /<UserSearchForm/,
+    )
+
+    assert.match(
+      panel,
+      /<UserSearchResult/,
     )
   })
 })

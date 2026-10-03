@@ -4,10 +4,26 @@ export function validateListId(id) {
   return id
 }
 export function normalizeListInput(input) {
-  if (!input || typeof input.name !== 'string' || typeof input.description !== 'string') throw new LibraryError('invalid-list-input')
-  const name = input.name.trim(), description = input.description.trim()
-  if (!name || name.length > 60 || description.length > 300) throw new LibraryError('invalid-list-input')
-  return { name, description }
+  if (
+    !input
+    || typeof input.name !== 'string'
+    || typeof input.description !== 'string'
+  ) throw new LibraryError('invalid-list-input')
+
+  const name = input.name.trim()
+  const description = input.description.trim()
+  const visibility = input.visibility === undefined
+    ? 'private'
+    : input.visibility
+
+  if (
+    !name
+    || name.length > 60
+    || description.length > 300
+    || !['private', 'public'].includes(visibility)
+  ) throw new LibraryError('invalid-list-input')
+
+  return { name, description, visibility }
 }
 export function validateSelectedListIds(ids) {
   if (!Array.isArray(ids)) throw new LibraryError('invalid-list-id')
@@ -21,7 +37,16 @@ export function normalizeLibrarySelection(params) {
   if (view === 'list') {
     try { return { view, listId: validateListId(params.get('listId')) } } catch { /* Invalid URL falls back to Favorites. */ }
   }
-  return { view: ['watchlist', 'ratings'].includes(view) ? view : 'favorites' }
+  return {
+    view: [
+      'boards',
+      'favorites',
+      'watchlist',
+      'ratings',
+    ].includes(view)
+      ? view
+      : 'boards',
+  }
 }
 export function librarySelectionParams(selection) {
   return new URLSearchParams(normalizeLibrarySelection(new URLSearchParams(selection)))

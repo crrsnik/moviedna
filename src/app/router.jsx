@@ -21,14 +21,16 @@ import NotFoundPage from '../pages/NotFoundPage.jsx'
 import OnboardingPage from '../pages/OnboardingPage.jsx'
 import PersonDetailPage from '../pages/PersonDetailPage.jsx'
 import ProfileOverviewPage from '../pages/ProfileOverviewPage.jsx'
+import ProfileRatingsPage from '../pages/ProfileRatingsPage.jsx'
 import PublicProfilePage from '../pages/PublicProfilePage.jsx'
+import PublicBoardPage from '../pages/PublicBoardPage.jsx'
 import ProfileSettingsPage from '../pages/ProfileSettingsPage.jsx'
+import AccountSettingsPage from '../pages/AccountSettingsPage.jsx'
 import RegisterPage from '../pages/RegisterPage.jsx'
 import SearchPage from '../pages/SearchPage.jsx'
 import StatisticsPage from '../pages/StatisticsPage.jsx'
 import TvShowDetailPage from '../pages/TvShowDetailPage.jsx'
 import TvShowsPage from '../pages/TvShowsPage.jsx'
-import UserSearchPage from '../pages/UserSearchPage.jsx'
 
 const router = createBrowserRouter([
   {
@@ -56,9 +58,16 @@ const router = createBrowserRouter([
       {
         element: <ProtectedRoute />,
         children: [
-          { path: 'users/search', element: <UserSearchPage /> },
+          {
+            path: 'users/search',
+            element: <Navigate to="/friends" replace />,
+          },
           { path: 'friends', element: <FriendsPage /> },
           { path: 'users/:username', element: <PublicProfilePage /> },
+          {
+            path: 'users/:username/boards/:boardId',
+            element: <PublicBoardPage />,
+          },
           {
             element: <OnboardingRoute />,
             children: [
@@ -77,8 +86,10 @@ const router = createBrowserRouter([
                   { path: 'library', element: <LibraryPage /> },
                   { path: 'dna', element: <DnaPage /> },
                   { path: 'history', element: <HistoryPage /> },
+                  { path: 'ratings', element: <ProfileRatingsPage /> },
                   { path: 'stats', element: <StatisticsPage /> },
                   { path: 'settings', element: <ProfileSettingsPage /> },
+                  { path: 'account', element: <AccountSettingsPage /> },
                 ],
               },
 

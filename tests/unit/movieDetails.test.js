@@ -14,7 +14,7 @@ describe('Detail route and proxy validation', () => {
   const allowed = (url) => isAllowedMovieDetailRequest(new URL(url, 'http://localhost'))
   it('allows only the exact appended request', () => assert.ok(allowed(`/api/tmdb/movie/1?language=en-US&append_to_response=${MOVIE_DETAIL_APPEND}`)))
   for (const path of ['/movie/01', '/movie/abc', '/tv/1', '/movie/1/credits']) it(`blocks path ${path}`, () => assert.equal(allowed(`/api/tmdb${path}?language=en-US&append_to_response=${MOVIE_DETAIL_APPEND}`), false))
-  for (const query of ['language=en-US', 'language=fr-FR&append_to_response='+MOVIE_DETAIL_APPEND, 'language=en-US&append_to_response=account_states', 'language=en-US&append_to_response='+MOVIE_DETAIL_APPEND+'&api_key=synthetic', 'language=en-US&language=en-US&append_to_response='+MOVIE_DETAIL_APPEND]) it(`blocks invalid query ${query}`, () => assert.equal(allowed('/api/tmdb/movie/1?'+query), false))
+  for (const query of ['language=en-US', 'language=de-DE&append_to_response='+MOVIE_DETAIL_APPEND, 'language=en-US&append_to_response=account_states', 'language=en-US&append_to_response='+MOVIE_DETAIL_APPEND+'&api_key=synthetic', 'language=en-US&language=en-US&append_to_response='+MOVIE_DETAIL_APPEND]) it(`blocks invalid query ${query}`, () => assert.equal(allowed('/api/tmdb/movie/1?'+query), false))
 })
 describe('Pure movie detail normalization', () => {
   it('normalizes core fields and excludes unknown data without mutation', () => {

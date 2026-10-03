@@ -49,10 +49,52 @@ export function createFirestoreAdapter(db, { now = () => Date.now() } = {}) {
   async function loadRecommendationContext(uid) {
     const reference = user(uid)
 
-    const [dna, ratings] = await Promise.all([
+    const [
+      dna,
+      ratings,
+      watchedSavedMedia,
+      viewingHistory,
+      onboardingResponses,
+    ] = await Promise.all([
       reference.collection('movieDna').doc('current').get(),
       reference.collection('ratings').get(),
+      reference.collection('savedMedia').where('watched', '==', true).get(),
+      reference.collection('viewingHistory').get(),
+      reference.collection('onboardingResponses').get(),
     ])
+
+    const watchedByKey = new Map()
+
+    const addWatched = item => {
+      if (
+        !item
+        || !['movie', 'tv'].includes(item.mediaType)
+        || !Number.isSafeInteger(item.tmdbId)
+        || item.tmdbId <= 0
+      ) return
+
+      watchedByKey.set(
+        `${item.mediaType}_${item.tmdbId}`,
+        {
+          tmdbId: item.tmdbId,
+          mediaType: item.mediaType,
+        },
+      )
+    }
+
+    for (const item of documents(watchedSavedMedia)) {
+      addWatched(item)
+    }
+
+    for (const item of documents(viewingHistory)) {
+      addWatched(item)
+    }
+
+    for (const item of documents(onboardingResponses)) {
+      if (item.reaction === 'like' || item.reaction === 'dislike') {
+        addWatched(item)
+      }
+    }
 
     return {
       dna: dna.exists ? dna.data() : null,
@@ -60,6 +102,9 @@ export function createFirestoreAdapter(db, { now = () => Date.now() } = {}) {
         tmdbId: rating.tmdbId,
         mediaType: rating.mediaType,
       })),
+      watched: [...watchedByKey.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([, value]) => value),
     }
   }
 

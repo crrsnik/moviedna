@@ -66,7 +66,36 @@ test('update keeps createdAt/identity and refreshes score/snapshot', async () =>
 })
 test('transaction rejects corrupt identity', async () => { const f = fixture(); f.seed(rating({ mediaType: 'tv' })); await reject(f.service.saveRating(f.uid, media, 4), 'identity-mismatch'); assert.equal(f.calls.writes.length, 0) })
 test('transaction rejects corrupted score', async () => { const f = fixture(); f.seed(rating({ score: '8' })); await reject(f.service.saveRating(f.uid, media, 4), 'corrupted-rating'); assert.equal(f.calls.writes.length, 0) })
-for (const state of ['missing', false, 'true']) test(`save requires completed profile ${state}`, async () => { const f = fixture(); if (state === 'missing') f.store.delete(`users/${f.uid}`); else f.store.set(`users/${f.uid}`, { onboardingCompleted: state }); await reject(f.service.saveRating(f.uid, media, 8), 'incomplete-profile'); assert.equal(f.calls.writes.length, 0) })
+for (const state of ['missing', 'true']) test(`save requires valid profile ${state}`, async () => { const f = fixture(); if (state === 'missing') f.store.delete(`users/${f.uid}`); else f.store.set(`users/${f.uid}`, { onboardingCompleted: state }); await reject(f.service.saveRating(f.uid, media, 8), 'incomplete-profile'); assert.equal(f.calls.writes.length, 0) })
+
+test('save allows profile with incomplete onboarding', async () => {
+  const f = fixture()
+
+  f.store.set(
+    `users/${f.uid}`,
+    { onboardingCompleted: false },
+  )
+
+  await f.service.saveRating(
+    f.uid,
+    media,
+    8,
+  )
+
+  assert.equal(
+    f.store.get(
+      `users/${f.uid}/ratings/movie_42`,
+    ).score,
+    8,
+  )
+
+  assert.equal(
+    f.store.get(
+      `users/${f.uid}/savedMedia/movie_42`,
+    ).watched,
+    true,
+  )
+})
 test('delete confirmation, missing delete idempotent, savedMedia untouched', async () => { const f = fixture(); f.seed(); const preserved = Object.freeze({ favorite: true, watchlist: true, listIds: ['synthetic-list'] }); f.store.set(`users/${f.uid}/savedMedia/movie_42`, preserved); await f.service.deleteRating(f.uid, 'movie_42'); await f.service.deleteRating(f.uid, 'movie_42'); assert.equal(f.calls.writes.length, 1); assert.equal(f.store.get(`users/${f.uid}/savedMedia/movie_42`), preserved); assert.ok(f.calls.paths.every(path => !path.includes('savedMedia'))) })
 for (const operation of [f => f.service.saveRating(f.uid, media, 0), f => f.service.saveRating(f.uid, { ...media, mediaType: 'person' }, 5), f => f.service.deleteRating(f.uid, 'movie_01')]) test(`invalid before Firestore ${operation}`, async () => { const f = fixture(); await assert.rejects(operation(f)); assert.equal(f.calls.paths.length, 0); assert.equal(f.calls.transactions, 0) })
 for (const uid of [null, '', 'other-user', 'user/path']) for (const method of ['save', 'delete']) test(`${method} rejects non-owner ${String(uid)}`, async () => { const f = fixture(); await reject(method === 'save' ? f.service.saveRating(uid, media, 6) : f.service.deleteRating(uid, 'movie_42'), 'unauthenticated'); assert.equal(f.calls.paths.length, 0) })
@@ -92,4 +121,4 @@ test('UI action controller blocks double-submit and stale success', async () => 
 for (const [raw, expected] of [['firestore/permission-denied','permission-denied'],['unavailable','unavailable'],['deadline-exceeded','network'],['auth/network-request-failed','network'],['cancelled','aborted'],['unexpected-secret','unknown']]) test(`safe mapping ${raw}`, () => { const e = toRatingError({ code: raw, message: 'PRIVATE' }); assert.equal(e.code, expected); assert.ok(!e.message.includes('PRIVATE')); assert.notEqual(e.message, raw) })
 for (const code of ['incomplete-profile','invalid-score','invalid-media','corrupted-rating','identity-mismatch','session','pending']) test(`safe domain error ${code}`, () => { const error = new RatingError(code); assert.equal(toRatingError(error), error); assert.ok(error.message.length > 10) })
 for (const type of ['movie','tv']) test(`rating route ${type}`, () => assert.equal(savedMediaRoute({ ...media, mediaType: type }), `/${type === 'movie' ? 'movies' : 'tv'}/42`))
-test('ratings library URL canonical; other views preserved', () => { for (const view of ['ratings','favorites','watchlist']) assert.equal(librarySelectionParams(normalizeLibrarySelection(new URLSearchParams({ view, extra: 'ignored' }))).toString(), `view=${view}`); const params = new URLSearchParams({ view: 'list', listId: 'A'.repeat(20) }); assert.equal(librarySelectionParams(normalizeLibrarySelection(params)).toString(), params.toString()) })
+test('ratings library URL canonical; other views preserved', () => { for (const view of ['ratings','favorites','watchlist','boards']) assert.equal(librarySelectionParams(normalizeLibrarySelection(new URLSearchParams({ view, extra: 'ignored' }))).toString(), `view=${view}`); const params = new URLSearchParams({ view: 'list', listId: 'A'.repeat(20) }); assert.equal(librarySelectionParams(normalizeLibrarySelection(params)).toString(), params.toString()) })

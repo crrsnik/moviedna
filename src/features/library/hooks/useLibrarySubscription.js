@@ -11,6 +11,7 @@ export function useLibrarySubscription({ uid, mediaType, tmdbId, view, kind, lis
     const error = failure => { if (active) setState({ key, data: null, loading: false, error: failure.message }) }
     const stop = kind === 'lists' ? mediaLibraryService.subscribeToCustomLists(uid, next, error)
       : kind === 'items' ? mediaLibraryService.subscribeToCustomListItems(uid, listId, next, error)
+      : kind === 'watched' ? mediaLibraryService.subscribeToWatchedMedia(uid, next, error)
       : view === undefined
       ? mediaLibraryService.subscribeToSavedMedia({ uid, mediaType, tmdbId }, next, error)
       : mediaLibraryService.subscribeToLibrary({ uid, view }, next, error)

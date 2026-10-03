@@ -38,9 +38,40 @@ describe('Local TMDB proxy configuration with a synthetic token', () => {
     listener({ setHeader(k, v) { headers[k] = v }, removeHeader(k) { delete headers[k] } })
     assert.deepEqual(headers, { Authorization: 'Bearer synthetic-test-token', Accept: 'application/json' })
   })
-  it('allows only expected GET requests and language', () => {
+  it('allows expected localized Trending GET requests', () => {
     for (const type of ['movie', 'tv']) {
-      assert.equal(dev().bypass({ method: 'GET', url: `/api/tmdb/trending/${type}/day?language=en-US` }, {}), undefined)
+      for (const language of ['en-US', 'fr-FR', 'ru-RU']) {
+        assert.equal(
+          dev().bypass(
+            {
+              method: 'GET',
+              url: `/api/tmdb/trending/${type}/day?language=${language}`,
+            },
+            {},
+          ),
+          undefined,
+        )
+      }
+    }
+  })
+
+
+  it('allows lightweight localized movie and TV summaries', () => {
+    for (const url of [
+      '/api/tmdb/movie/1?language=en-US',
+      '/api/tmdb/movie/1?language=fr-FR',
+      '/api/tmdb/tv/1?language=ru-RU',
+    ]) {
+      assert.equal(
+        dev().bypass(
+          {
+            method: 'GET',
+            url,
+          },
+          {},
+        ),
+        undefined,
+      )
     }
   })
   for (const request of [
@@ -48,7 +79,7 @@ describe('Local TMDB proxy configuration with a synthetic token', () => {
     { method: 'GET', url: '/api/tmdb/account' },
     { method: 'GET', url: '/api/tmdb/trending/movie/day?target=https://example.invalid' },
     { method: 'GET', url: '/api/tmdb/trending/movie/day?api_key=synthetic' },
-    { method: 'GET', url: '/api/tmdb/trending/movie/day?language=fr-FR' },
+    { method: 'GET', url: '/api/tmdb/trending/movie/day?language=de-DE' },
   ]) {
     it(`blocks ${request.method} ${request.url}`, () => {
       let status, body

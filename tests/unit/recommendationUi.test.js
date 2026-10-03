@@ -39,7 +39,7 @@ describe('recommendation UI contract', () => {
 
     assert.match(card, /MediaCard/)
     assert.match(card, /recommendation\.score/)
-    assert.match(card, /% match/)
+    assert.match(card, /recommendationCard\.match/)
     assert.match(card, /aria-label=/)
     assert.match(card, /recommendation\.reasons/)
   })
@@ -68,7 +68,7 @@ describe('recommendation UI contract', () => {
 
     assert.match(section, /aria-live=/)
     assert.match(section, /role="alert"/)
-    assert.match(section, /Retry/)
+    assert.match(section, /t\('common\.retry'\)/)
     assert.match(section, /useRecommendations/)
   })
 
