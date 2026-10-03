@@ -38,6 +38,9 @@ function createStoreFixture(writes) {
       }
     },
 
+    async loadAchievements() {
+      return null
+    },
     async loadViewingHistory() {
       return [
         {

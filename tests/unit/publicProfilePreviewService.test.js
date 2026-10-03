@@ -135,6 +135,11 @@ describe('public profile preview service', { concurrency: false }, () => {
         tvCount: 1,
       },
 
+      achievements: {
+        completedCount: 0,
+        totalCount: 0,
+        achievements: [],
+      },
       updatedAt: '2026-10-01T10:00:00.000Z',
     })
 

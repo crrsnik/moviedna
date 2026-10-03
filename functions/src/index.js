@@ -289,6 +289,17 @@ export const onMovieDnaCurrentWritten = onDocumentWritten({
   },
 ))
 
+export const onAchievementCurrentWritten = onDocumentWritten({
+  ...profilePreviewTriggerOptions,
+  document: 'users/{uid}/achievements/current',
+}, event => runForActiveUser(
+  event,
+  () => (
+    createPublicProfilePreviewRuntimeHandlers()
+      .achievementsWrite(event)
+  ),
+))
+
 export const onViewingHistoryWritten = onDocumentWritten({
   ...profilePreviewTriggerOptions,
   document: 'users/{uid}/viewingHistory/{eventId}',

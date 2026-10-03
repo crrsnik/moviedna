@@ -369,6 +369,155 @@ export const en = {
     deleteError: 'The account could not be deleted. Please try again.',
   },
 
+  achievementsUi: {
+    title: 'Achievements',
+    description: 'Your collection of awards for activity across MovieDNA.',
+    publicDescription: 'This MovieDNA member’s achievement collection.',
+    loading: 'Loading achievements…',
+    error: 'Achievements could not be loaded.',
+    preparing: 'Your achievements are still being prepared.',
+    summary: '{completed} of {total}',
+    unlocked: 'Unlocked',
+    locked: 'Locked',
+    progress: 'Progress',
+    progressLabel: 'Achievement progress: {title}',
+    obtained: 'Unlocked: {date}',
+    close: 'Close',
+    showLess: 'Show less',
+    showAll: 'Show all ({count})',
+    openAchievement: 'Open achievement: {title}',
+    items: {
+      onboarding_complete: {
+        title: 'First Step',
+        description: 'Complete the MovieDNA onboarding.',
+      },
+      dna_ready: {
+        title: 'DNA Ready',
+        description: 'Build your first MovieDNA profile.',
+      },
+      rating_1: {
+        title: 'First Verdict',
+        description: 'Rate your first title.',
+      },
+      rating_10: {
+        title: 'Film Critic',
+        description: 'Rate 10 movies or TV shows.',
+      },
+      rating_25: {
+        title: 'Observer',
+        description: 'Rate 25 movies or TV shows.',
+      },
+      rating_50: {
+        title: 'Seasoned Critic',
+        description: 'Rate 50 movies or TV shows.',
+      },
+      rating_100: {
+        title: 'One Hundred Ratings',
+        description: 'Rate 100 movies or TV shows.',
+      },
+      watched_1: {
+        title: 'First Watch',
+        description: 'Mark your first title as watched.',
+      },
+      watched_10: {
+        title: 'Movie Marathon',
+        description: 'Watch 10 different titles.',
+      },
+      watched_25: {
+        title: 'On a Roll',
+        description: 'Watch 25 different titles.',
+      },
+      watched_50: {
+        title: 'Fifty Stories',
+        description: 'Watch 50 different titles.',
+      },
+      watched_100: {
+        title: 'One Hundred Screens',
+        description: 'Watch 100 different titles.',
+      },
+      movies_10: {
+        title: 'Movie Buff',
+        description: 'Watch 10 movies.',
+      },
+      movies_50: {
+        title: 'Big Screen',
+        description: 'Watch 50 movies.',
+      },
+      tv_10: {
+        title: 'Series Starter',
+        description: 'Watch 10 TV shows.',
+      },
+      tv_50: {
+        title: 'Series Devotee',
+        description: 'Watch 50 TV shows.',
+      },
+      favorite_1: {
+        title: 'Straight to the Heart',
+        description: 'Add your first title to favorites.',
+      },
+      favorite_10: {
+        title: 'Personal Collection',
+        description: 'Add 10 titles to favorites.',
+      },
+      favorite_25: {
+        title: 'Golden Shelf',
+        description: 'Add 25 titles to favorites.',
+      },
+      genres_5: {
+        title: 'Curious Viewer',
+        description: 'Watch titles from five different genres.',
+      },
+      genres_10: {
+        title: 'Genre Explorer',
+        description: 'Watch titles from ten different genres.',
+      },
+      decades_3: {
+        title: 'Time Traveller',
+        description: 'Watch titles from three different decades.',
+      },
+      decades_5: {
+        title: 'Across the Eras',
+        description: 'Watch titles from five different decades.',
+      },
+      countries_3: {
+        title: 'Around the World',
+        description: 'Watch titles from three different countries.',
+      },
+      countries_5: {
+        title: 'World Cinema',
+        description: 'Watch titles from five different countries.',
+      },
+      horror_10: {
+        title: 'Not Afraid of the Dark',
+        description: 'Watch 10 horror titles.',
+      },
+      comedy_10: {
+        title: 'Laugh Track',
+        description: 'Watch 10 comedies.',
+      },
+      scifi_10: {
+        title: 'Beyond Earth',
+        description: 'Watch 10 science-fiction titles.',
+      },
+      romance_10: {
+        title: 'Romantic',
+        description: 'Watch 10 romance titles.',
+      },
+      friend_1: {
+        title: 'First Friend',
+        description: 'Make your first friend on MovieDNA.',
+      },
+      friends_5: {
+        title: 'The Crew',
+        description: 'Connect with five friends on MovieDNA.',
+      },
+      friends_10: {
+        title: 'Movie Club',
+        description: 'Connect with ten friends on MovieDNA.',
+      },
+    },
+  },
+
   dnaUi: {
     title: 'My DNA',
     description: 'The strongest patterns in your movie and TV preferences.',

@@ -1,6 +1,7 @@
 import { Navigate, useParams } from 'react-router-dom'
 
 import { useAuth } from '../features/auth/hooks/useAuth.js'
+import AchievementsSection from '../features/achievements/components/AchievementsSection.jsx'
 import { useTranslation } from '../features/localization/hooks/useTranslation.js'
 import FriendshipControls from '../features/friends/components/FriendshipControls.jsx'
 import { useFriendship } from '../features/friends/hooks/useFriendship.js'
@@ -160,7 +161,11 @@ function PublicPreview({
     )
   }
 
-  const { dna, statistics } = state.preview
+  const {
+    dna,
+    statistics,
+    achievements,
+  } = state.preview
 
   return (
     <>
@@ -177,6 +182,15 @@ function PublicPreview({
           <GenrePreview genres={dna.genres} />
         </div>
       </section>
+
+      <AchievementsSection
+        publicView
+        state={{
+          loading: false,
+          error: null,
+          data: achievements,
+        }}
+      />
 
       <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
         <div className="space-y-1">
