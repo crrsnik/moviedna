@@ -10,13 +10,24 @@ describe('Onboarding validation', () => {
   for (const reaction of ['like', 'dislike', 'skip']) {
     it(`accepts ${reaction}`, () => assert.equal(normalizeResponse(input({ reaction })).reaction, reaction))
   }
+
+  it('accepts movie and TV onboarding media', () => {
+    assert.equal(
+      normalizeResponse(input({ mediaType: 'movie' })).mediaType,
+      'movie',
+    )
+    assert.equal(
+      normalizeResponse(input({ mediaType: 'tv' })).mediaType,
+      'tv',
+    )
+  })
   for (const tmdbId of [0, -1, 1.5, '123', null, NaN, Number.MAX_SAFE_INTEGER + 1, 1000000000000]) {
     it(`rejects invalid movie ID ${String(tmdbId)}`, () => assert.throws(() => normalizeResponse(input({ tmdbId })), { code: 'invalid-input' }))
   }
   for (const tmdbId of [1, 999999999999]) {
     it(`accepts ID boundary ${tmdbId}`, () => assert.equal(normalizeResponse(input({ tmdbId })).tmdbId, tmdbId))
   }
-  for (const overrides of [{ reaction: 'love' }, { reaction: null }, { mediaType: 'tv' }, { genreIds: null }, { genreIds: '18' }, { genreIds: [1.5] }, { genreIds: [0] }, { genreIds: [-1] }, { genreIds: ['18'] }, { genreIds: [Number.MAX_SAFE_INTEGER + 1] }, { genreIds: Array(11).fill(1) }]) {
+  for (const overrides of [{ reaction: 'love' }, { reaction: null }, { mediaType: 'person' }, { genreIds: null }, { genreIds: '18' }, { genreIds: [1.5] }, { genreIds: [0] }, { genreIds: [-1] }, { genreIds: ['18'] }, { genreIds: [Number.MAX_SAFE_INTEGER + 1] }, { genreIds: Array(11).fill(1) }]) {
     it(`rejects malformed input ${JSON.stringify(overrides)}`, () => assert.throws(() => normalizeResponse(input(overrides)), { code: 'invalid-input' }))
   }
   it('normalizes duplicates without mutating input or carrying TMDB metadata', () => {
@@ -33,6 +44,28 @@ describe('Onboarding validation', () => {
   }
   it('accepts a single UID segment unchanged', () => assert.equal(validateUid('demo-user'), 'demo-user'))
   it('calculates counts from reactions', () => assert.deepEqual(getOnboardingCounts(responses(10, 5)), { responseCount: 10, likedCount: 3, dislikedCount: 2, skippedCount: 5 }))
+
+  it('treats the same TMDB id in movie and TV as different media', () => {
+    assert.deepEqual(
+      getOnboardingCounts([
+        input({
+          tmdbId: 123,
+          mediaType: 'movie',
+        }),
+        input({
+          tmdbId: 123,
+          mediaType: 'tv',
+          reaction: 'dislike',
+        }),
+      ]),
+      {
+        responseCount: 2,
+        likedCount: 1,
+        dislikedCount: 1,
+        skippedCount: 0,
+      },
+    )
+  })
   for (const n of [0, 9, 31]) {
     it(`rejects completion with ${n} responses`, () => assert.throws(() => validateCompletionCounts(getOnboardingCounts(responses(n))), { code: 'insufficient-responses' }))
   }

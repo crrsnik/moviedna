@@ -85,6 +85,88 @@ describe('source collection and merge', () => {
     })
   })
 
+  it('accepts canonical movie and TV onboarding identities', () => {
+    const items = collectDnaSources(sourceSnapshot({
+      onboardingResponses: [
+        {
+          id: 'movie_6',
+          tmdbId: 6,
+          mediaType: 'movie',
+          reaction: 'like',
+        },
+        {
+          id: 'tv_6',
+          tmdbId: 6,
+          mediaType: 'tv',
+          reaction: 'dislike',
+        },
+      ],
+    }))
+
+    assert.deepEqual(
+      items.map((item) => ({
+        mediaKey: item.mediaKey,
+        tmdbId: item.tmdbId,
+        mediaType: item.mediaType,
+        onboardingReaction: item.onboardingReaction,
+      })),
+      [
+        {
+          mediaKey: 'movie_6',
+          tmdbId: 6,
+          mediaType: 'movie',
+          onboardingReaction: 'like',
+        },
+        {
+          mediaKey: 'tv_6',
+          tmdbId: 6,
+          mediaType: 'tv',
+          onboardingReaction: 'dislike',
+        },
+      ],
+    )
+  })
+
+  it('rejects duplicate legacy and canonical onboarding identities', () => {
+    assert.throws(
+      () => collectDnaSources(sourceSnapshot({
+        onboardingResponses: [
+          {
+            id: '7',
+            tmdbId: 7,
+            mediaType: 'movie',
+            reaction: 'like',
+          },
+          {
+            id: 'movie_7',
+            tmdbId: 7,
+            mediaType: 'movie',
+            reaction: 'dislike',
+          },
+        ],
+      })),
+      (error) => (
+        error.code === SERVER_ERROR_CODES.INVALID_SOURCE
+      ),
+    )
+  })
+
+  it('rejects canonical onboarding identity mismatches', () => {
+    assert.throws(
+      () => collectDnaSources(sourceSnapshot({
+        onboardingResponses: [{
+          id: 'tv_8',
+          tmdbId: 8,
+          mediaType: 'movie',
+          reaction: 'like',
+        }],
+      })),
+      (error) => (
+        error.code === SERVER_ERROR_CODES.INVALID_SOURCE
+      ),
+    )
+  })
+
   it('keeps skip plus Favorite so core can apply Favorite fallback', () => {
     const [item] = collectDnaSources(sourceSnapshot({
       onboardingResponses: [{ id: '2', tmdbId: 2, mediaType: 'movie', reaction: 'skip' }],

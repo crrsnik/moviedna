@@ -24,6 +24,47 @@ describe('TMDB client with mocked fetch', () => {
     await getTmdb('/trending/tv/day')
     assert.equal(fetchMock.mock.calls[0].arguments[0], '/api/tmdb/trending/tv/day?language=en-US')
   })
+
+
+  it('supports lightweight localized movie and TV summaries', async () => {
+    await getTmdb('/movie/1', {
+      language: 'fr-FR',
+      summary: true,
+    })
+
+    await getTmdb('/tv/2', {
+      language: 'ru-RU',
+      summary: true,
+    })
+
+    assert.equal(
+      fetchMock.mock.calls[0].arguments[0],
+      '/api/tmdb/movie/1?language=fr-FR',
+    )
+
+    assert.equal(
+      fetchMock.mock.calls[1].arguments[0],
+      '/api/tmdb/tv/2?language=ru-RU',
+    )
+  })
+
+  it('keeps summary mode limited to movie and TV', async () => {
+    await assert.rejects(
+      getTmdb('/person/1', {
+        summary: true,
+      }),
+      { code: 'request' },
+    )
+
+    await assert.rejects(
+      getTmdb('/trending/movie/day', {
+        summary: true,
+      }),
+      { code: 'request' },
+    )
+
+    assert.equal(fetchMock.mock.callCount(), 0)
+  })
   for (const [status, code] of [[400, 'request'], [401, 'access'], [403, 'access'], [404, 'missing'], [429, 'limit'], [500, 'server'], [503, 'server'], [418, 'unknown']]) {
     it(`maps HTTP ${status} without exposing upstream body or status text`, async () => {
       fetchMock.mock.mockImplementation(async () => new Response('RAW_UPSTREAM_MESSAGE', { status, statusText: 'RAW_STATUS' }))

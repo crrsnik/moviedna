@@ -4,14 +4,28 @@ import { MovieDnaServerError, SERVER_ERROR_CODES } from '../errors.js'
 const MEDIA_KEY_PATTERN = /^(movie|tv)_([1-9][0-9]{0,11})$/
 
 function identity(document, fallbackMediaType) {
-  const mediaType = document.mediaType ?? fallbackMediaType
+  const providedMediaKey = document.mediaKey
+  const providedMatch = typeof providedMediaKey === 'string'
+    ? providedMediaKey.match(MEDIA_KEY_PATTERN)
+    : null
+
+  const mediaType = document.mediaType
+    ?? fallbackMediaType
+    ?? providedMatch?.[1]
+
   const tmdbId = document.tmdbId
-  const mediaKey = document.mediaKey ?? `${mediaType}_${tmdbId}`
-  const match = typeof mediaKey === 'string' && mediaKey.match(MEDIA_KEY_PATTERN)
+    ?? (providedMatch ? Number(providedMatch[2]) : undefined)
+
+  const mediaKey = providedMediaKey ?? `${mediaType}_${tmdbId}`
+  const match = typeof mediaKey === 'string'
+    ? mediaKey.match(MEDIA_KEY_PATTERN)
+    : null
+
   if (!match || !Number.isSafeInteger(tmdbId) || tmdbId <= 0
     || mediaType !== match[1] || String(tmdbId) !== match[2]) {
     throw new MovieDnaServerError(SERVER_ERROR_CODES.INVALID_SOURCE)
   }
+
   return { mediaKey, mediaType, tmdbId }
 }
 
@@ -69,14 +83,62 @@ export function collectDnaSources(snapshot, maximum = MAX_SOURCE_ITEMS) {
       item.rating = data.score
     })
   }
+  const responseMediaKeys = new Set()
+
   for (const { id, data } of responses) {
-    upsert({ ...data, mediaKey: `movie_${id}` }, 'movie', (item) => {
-      if (!['like', 'dislike', 'skip'].includes(data.reaction)) {
-        throw new MovieDnaServerError(SERVER_ERROR_CODES.INVALID_SOURCE)
-      }
-      item.onboardingReaction = data.reaction
-    })
+    const legacyMovieId = /^[1-9][0-9]{0,11}$/.test(id)
+    const mediaKey = legacyMovieId
+      ? `movie_${id}`
+      : id
+
+    if (
+      legacyMovieId
+      && (
+        (
+          data.mediaType !== undefined
+          && data.mediaType !== 'movie'
+        )
+        || (
+          data.tmdbId !== undefined
+          && String(data.tmdbId) !== id
+        )
+      )
+    ) {
+      throw new MovieDnaServerError(
+        SERVER_ERROR_CODES.INVALID_SOURCE,
+      )
+    }
+
+    if (responseMediaKeys.has(mediaKey)) {
+      throw new MovieDnaServerError(
+        SERVER_ERROR_CODES.INVALID_SOURCE,
+      )
+    }
+
+    responseMediaKeys.add(mediaKey)
+
+    upsert(
+      {
+        ...data,
+        mediaKey,
+      },
+      undefined,
+      (item) => {
+        if (
+          !['like', 'dislike', 'skip'].includes(
+            data.reaction,
+          )
+        ) {
+          throw new MovieDnaServerError(
+            SERVER_ERROR_CODES.INVALID_SOURCE,
+          )
+        }
+
+        item.onboardingReaction = data.reaction
+      },
+    )
   }
+
   for (const { id, data } of savedMedia) {
     if (data.favorite !== true) continue
     upsert({ ...data, mediaKey: id }, undefined, (item) => { item.favorite = true })

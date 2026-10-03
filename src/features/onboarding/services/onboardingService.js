@@ -2,7 +2,7 @@ import { collection, doc, getDocFromServer, getDocsFromServer, runTransaction, s
 import { auth, db } from '../../../shared/config/firebase.js'
 import { normalizeSavedMedia } from '../../library/services/normalizeSavedMedia.js'
 import { getMediaKey, normalizeMediaSnapshot } from '../../library/validation/libraryValidation.js'
-import { getOnboardingCounts, normalizeResponse, validateCompletionCounts, validateUid } from '../validation/onboardingValidation.js'
+import { getOnboardingCounts, getOnboardingMediaKey, normalizeResponse, validateCompletionCounts, validateUid } from '../validation/onboardingValidation.js'
 import { OnboardingError, toOnboardingError } from './onboardingErrors.js'
 
 function requireOwner(uid) {
@@ -15,10 +15,32 @@ function normalizeDocument(snapshot) {
     const data = snapshot.data()
     const fields = ['tmdbId', 'mediaType', 'reaction', 'genreIds', 'createdAt', 'updatedAt']
     if (!data || Object.keys(data).length !== fields.length || !fields.every((key) => Object.hasOwn(data, key))
-      || snapshot.id !== String(data.tmdbId) || !(data.createdAt instanceof Timestamp) || !(data.updatedAt instanceof Timestamp)) {
+      || !(data.createdAt instanceof Timestamp) || !(data.updatedAt instanceof Timestamp)) {
       throw new OnboardingError('invalid-data')
     }
-    return { id: snapshot.id, ...normalizeResponse(data), createdAt: data.createdAt, updatedAt: data.updatedAt }
+
+    const response = normalizeResponse(data)
+    const canonicalId = getOnboardingMediaKey(
+      response.mediaType,
+      response.tmdbId,
+    )
+    const legacyMovieId = response.mediaType === 'movie'
+      ? String(response.tmdbId)
+      : null
+
+    if (
+      snapshot.id !== canonicalId
+      && snapshot.id !== legacyMovieId
+    ) {
+      throw new OnboardingError('invalid-data')
+    }
+
+    return {
+      id: snapshot.id,
+      ...response,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    }
   } catch {
     throw new OnboardingError('invalid-data')
   }
@@ -82,7 +104,10 @@ export async function saveOnboardingResponse({ uid, movie, reaction }) {
       'users',
       uid,
       'onboardingResponses',
-      String(response.tmdbId),
+      getOnboardingMediaKey(
+        response.mediaType,
+        response.tmdbId,
+      ),
     )
 
     const savedMediaRef = media
@@ -165,7 +190,10 @@ export async function saveOnboardingResponse({ uid, movie, reaction }) {
     })
 
     return {
-      id: String(response.tmdbId),
+      id: getOnboardingMediaKey(
+        response.mediaType,
+        response.tmdbId,
+      ),
       ...response,
     }
   } catch (error) {

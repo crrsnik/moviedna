@@ -81,10 +81,35 @@ export function validateTmdbProxyRequest(rawUrl, method = 'GET') {
       || params.get(tail) !== 'false') return null
   } else {
     const match = path.match(/^\/(movie|tv|person)\/([^/]+)$/)
-    if (!match || !validPositiveId(match[2])
-      || !exactParameters(params, ['language', 'append_to_response'])
+
+    if (
+      !match
+      || !validPositiveId(match[2])
       || !validLanguage(params.get('language'))
-      || params.get('append_to_response') !== DETAIL_APPEND[match[1]]) return null
+    ) {
+      return null
+    }
+
+    const summaryRequest = (
+      match[1] !== 'person'
+      && exactParameters(
+        params,
+        ['language'],
+      )
+    )
+
+    const detailRequest = (
+      exactParameters(
+        params,
+        ['language', 'append_to_response'],
+      )
+      && params.get('append_to_response')
+        === DETAIL_APPEND[match[1]]
+    )
+
+    if (!summaryRequest && !detailRequest) {
+      return null
+    }
   }
 
   return { path, query: new URLSearchParams(params), responseKind: responseKind(path) }

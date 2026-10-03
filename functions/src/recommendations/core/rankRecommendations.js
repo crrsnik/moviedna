@@ -9,20 +9,19 @@ import {
 import { RECOMMENDATION_ERROR_CODES, throwRecommendationError } from './recommendationErrors.js'
 
 const MEDIA_TYPES = new Set(['movie', 'tv'])
-const COMMON_DIMENSIONS = ['genres', 'mediaTypes', 'decades', 'languages', 'countries', 'actors']
-const DIMENSION_ORDER = ['genres', 'mediaTypes', 'decades', 'languages', 'countries', 'directors', 'creators', 'actors']
+const COMMON_DIMENSIONS = ['genres', 'mediaTypes', 'decades', 'countries', 'actors']
+const DIMENSION_ORDER = ['genres', 'mediaTypes', 'decades', 'countries', 'directors', 'creators', 'actors']
 const DNA_KEY_PATTERNS = Object.freeze({
   genres: /^genre:[1-9]\d*$/,
   mediaTypes: /^media:(movie|tv)$/,
   decades: /^decade:(18|19|20|21)\d0$/,
-  languages: /^language:[a-z]{2}$/,
   countries: /^country:[A-Z]{2}$/,
   directors: /^person:[1-9]\d*$/,
   creators: /^person:[1-9]\d*$/,
   actors: /^person:[1-9]\d*$/,
 })
 const REASON_LABELS = Object.freeze({
-  genres: 'genre', mediaTypes: 'movie and TV', decades: 'era', languages: 'language',
+  genres: 'genre', mediaTypes: 'movie and TV', decades: 'era',
   countries: 'country', directors: 'director', creators: 'creator', actors: 'cast',
 })
 
@@ -103,8 +102,6 @@ function normalizeCandidate(value) {
   const releaseYear = source.releaseYear
   if (releaseYear !== undefined && releaseYear !== null
     && (!Number.isInteger(releaseYear) || releaseYear < 1800 || releaseYear > 2200)) return null
-  const language = source.originalLanguage
-  if (language !== undefined && language !== null && (typeof language !== 'string' || !/^[a-z]{2}$/.test(language))) return null
   const popularity = value.popularity ?? 0
   if (typeof popularity !== 'number' || !Number.isFinite(popularity) || popularity < 0) return null
   return {
@@ -115,7 +112,6 @@ function normalizeCandidate(value) {
       genres: { available: genres.available, keys: genres.values.map((id) => `genre:${id}`) },
       mediaTypes: { available: true, keys: [`media:${value.mediaType}`] },
       decades: { available: releaseYear !== undefined && releaseYear !== null, keys: releaseYear == null ? [] : [`decade:${Math.floor(releaseYear / 10) * 10}`] },
-      languages: { available: language !== undefined && language !== null, keys: language == null ? [] : [`language:${language}`] },
       countries: { available: countries.available, keys: countries.values.map((code) => `country:${code}`) },
       directors: { available: directors.available, keys: directors.values.map((id) => `person:${id}`) },
       creators: { available: creators.available, keys: creators.values.map((id) => `person:${id}`) },

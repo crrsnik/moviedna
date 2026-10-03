@@ -120,11 +120,20 @@ service cloud.firestore {
 
     function isValidResponse(data, responseId) {
       let fields = ['tmdbId', 'mediaType', 'reaction', 'genreIds', 'createdAt', 'updatedAt'];
+      let tmdbId = string(data.tmdbId);
+      let canonicalId = data.mediaType + '_' + tmdbId;
+
       return data.keys().hasAll(fields) && data.keys().hasOnly(fields)
-        && responseId.matches('^[1-9][0-9]{0,11}$')
         && data.tmdbId is int && data.tmdbId > 0
-        && string(data.tmdbId) == responseId
-        && data.mediaType == 'movie'
+        && tmdbId.matches('^[1-9][0-9]{0,11}$')
+        && data.mediaType in ['movie', 'tv']
+        && (
+          responseId == canonicalId
+          || (
+            data.mediaType == 'movie'
+            && responseId == tmdbId
+          )
+        )
         && data.reaction in ['like', 'dislike', 'skip']
         && data.genreIds is list && data.genreIds.size() <= 10
         && data.createdAt is timestamp

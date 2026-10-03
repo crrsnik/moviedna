@@ -282,6 +282,85 @@ describe('Onboarding security rules', { concurrency: false }, () => {
         assert.ok(saved.createdAt.isEqual(saved.updatedAt))
       })
     }
+    it('allows canonical movie and TV response identities', async () => {
+      const db = userDb()
+
+      await assertSucceeds(
+        setDoc(
+          responseRef(db, 'alice', 'movie_123'),
+          responseData(),
+        ),
+      )
+
+      await assertSucceeds(
+        setDoc(
+          responseRef(db, 'alice', 'tv_124'),
+          responseData({
+            tmdbId: 124,
+            mediaType: 'tv',
+          }),
+        ),
+      )
+
+      const movieResponse = await assertSucceeds(
+        getDoc(
+          responseRef(
+            db,
+            'alice',
+            'movie_123',
+          ),
+        ),
+      )
+
+      const tvResponse = await assertSucceeds(
+        getDoc(
+          responseRef(
+            db,
+            'alice',
+            'tv_124',
+          ),
+        ),
+      )
+
+      assert.equal(
+        movieResponse.data().mediaType,
+        'movie',
+      )
+      assert.equal(
+        tvResponse.data().mediaType,
+        'tv',
+      )
+    })
+
+    it('denies mismatched canonical response identities', async () => {
+      const db = userDb()
+
+      await assertFails(
+        setDoc(
+          responseRef(db, 'alice', 'tv_123'),
+          responseData(),
+        ),
+      )
+
+      await assertFails(
+        setDoc(
+          responseRef(db, 'alice', 'movie_123'),
+          responseData({
+            mediaType: 'tv',
+          }),
+        ),
+      )
+
+      await assertFails(
+        setDoc(
+          responseRef(db, 'alice', 'tv_124'),
+          responseData({
+            mediaType: 'tv',
+          }),
+        ),
+      )
+    })
+
     it('allows owner list and reading after completion', async () => {
       const db = userDb()
       await setDoc(responseRef(db), responseData())

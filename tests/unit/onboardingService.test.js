@@ -89,18 +89,74 @@ describe('Onboarding service with Firebase boundaries mocked', { concurrency: fa
   })
   it('creates an exact response with server timestamps in a transaction', async () => {
     const result = await service.saveOnboardingResponse({ uid: 'demo-user', movie, reaction: 'skip' })
-    assert.deepEqual(writes, [['set', 'users/demo-user/onboardingResponses/123', {
+    assert.deepEqual(writes, [['set', 'users/demo-user/onboardingResponses/movie_123', {
       tmdbId: 123, mediaType: 'movie', reaction: 'skip', genreIds: [18, 35], createdAt: serverTime, updatedAt: serverTime,
     }]])
-    assert.deepEqual(result, { id: '123', tmdbId: 123, mediaType: 'movie', reaction: 'skip', genreIds: [18, 35] })
+    assert.deepEqual(result, { id: 'movie_123', tmdbId: 123, mediaType: 'movie', reaction: 'skip', genreIds: [18, 35] })
     assert.deepEqual(calls.map((c) => c[0]), ['transaction', 'transaction-get', 'transaction-get'])
     assert.ok(!JSON.stringify(writes).includes('Synthetic'))
   })
+  it('creates TV responses under a canonical TV media key', async () => {
+    const tv = {
+      ...movie,
+      id: 123,
+      mediaType: 'tv',
+      title: 'Synthetic series',
+    }
+
+    const result = await service.saveOnboardingResponse({
+      uid: 'demo-user',
+      movie: tv,
+      reaction: 'skip',
+    })
+
+    assert.deepEqual(writes, [[
+      'set',
+      'users/demo-user/onboardingResponses/tv_123',
+      {
+        tmdbId: 123,
+        mediaType: 'tv',
+        reaction: 'skip',
+        genreIds: [18, 35],
+        createdAt: serverTime,
+        updatedAt: serverTime,
+      },
+    ]])
+
+    assert.deepEqual(result, {
+      id: 'tv_123',
+      tmdbId: 123,
+      mediaType: 'tv',
+      reaction: 'skip',
+      genreIds: [18, 35],
+    })
+  })
+
+  it('continues reading legacy numeric movie response ids', async () => {
+    docs = [
+      document(
+        data(123, {
+          mediaType: 'movie',
+        }),
+        '123',
+      ),
+    ]
+
+    const result = await service.loadOnboardingResponses({
+      uid: 'demo-user',
+    })
+
+    assert.equal(result.length, 1)
+    assert.equal(result[0].id, '123')
+    assert.equal(result[0].mediaType, 'movie')
+    assert.equal(result[0].tmdbId, 123)
+  })
+
   it('updates only mutable fields and keeps createdAt/tmdbId/mediaType', async () => {
     saved = data()
     await service.saveOnboardingResponse({ uid: 'demo-user', movie, reaction: 'dislike' })
     assert.deepEqual(writes, [
-      ['update', 'users/demo-user/onboardingResponses/123', {
+      ['update', 'users/demo-user/onboardingResponses/movie_123', {
         reaction: 'dislike',
         genreIds: [18, 35],
         updatedAt: serverTime,

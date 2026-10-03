@@ -61,6 +61,9 @@ describe('TMDB proxy request contract', () => {
       '/api/tmdb/genre/tv/list?language=en-US',
       '/api/tmdb/discover/movie?language=en-US&page=1&sort_by=popularity.desc&include_adult=false&with_genres=28&include_video=false',
       '/api/tmdb/discover/tv?language=en-US&page=1&sort_by=popularity.desc&include_adult=false&with_genres=18&include_null_first_air_dates=false',
+      '/api/tmdb/movie/1?language=en-US',
+      '/api/tmdb/movie/1?language=fr-FR',
+      '/api/tmdb/tv/1?language=ru-RU',
       '/api/tmdb/movie/1?language=en-US&append_to_response=credits%2Cvideos%2Crelease_dates%2Crecommendations',
       '/api/tmdb/tv/1?language=en-US&append_to_response=aggregate_credits%2Cvideos%2Ccontent_ratings%2Crecommendations',
       '/api/tmdb/person/1?language=en-US&append_to_response=combined_credits%2Cimages%2Cexternal_ids',
@@ -70,6 +73,8 @@ describe('TMDB proxy request contract', () => {
 
   for (const [name, url] of [
     ['unknown path', '/api/tmdb/account?language=en-US'],
+    ['person summary', '/api/tmdb/person/1?language=en-US'],
+    ['summary extra parameter', '/api/tmdb/movie/1?language=en-US&page=1'],
     ['invalid media ID', '/api/tmdb/movie/01?language=en-US&append_to_response=credits%2Cvideos%2Crelease_dates%2Crecommendations'],
     ['invalid page', '/api/tmdb/movie/popular?language=en-US&page=501'],
     ['long query', `/api/tmdb/search/movie?query=${'a'.repeat(101)}&language=en-US&page=1&include_adult=false`],

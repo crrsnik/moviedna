@@ -22,18 +22,17 @@ function expectCode(run, code) { assert.throws(run, error => error instanceof Re
 
 describe('recommendation v1.1 formula', () => {
   it('has an independent version and applicable weights sum exactly to one', () => {
-    assert.equal(RECOMMENDATION_ALGORITHM_VERSION, '1.1.0')
+    assert.equal(RECOMMENDATION_ALGORITHM_VERSION, '1.2.0')
     assert.deepEqual(RECOMMENDATION_DIMENSION_WEIGHTS, {
-      genres: 0.32,
+      genres: 0.35,
       mediaTypes: 0.05,
-      decades: 0.14,
-      languages: 0.09,
-      countries: 0.12,
-      actors: 0.14,
-      directors: 0.14,
-      creators: 0.14,
+      decades: 0.15,
+      countries: 0.13,
+      actors: 0.16,
+      directors: 0.16,
+      creators: 0.16,
     })
-    const common = ['genres', 'mediaTypes', 'decades', 'languages', 'countries', 'actors'].reduce((sum, key) => sum + RECOMMENDATION_DIMENSION_WEIGHTS[key], 0)
+    const common = ['genres', 'mediaTypes', 'decades', 'countries', 'actors'].reduce((sum, key) => sum + RECOMMENDATION_DIMENSION_WEIGHTS[key], 0)
     assert.ok(Math.abs(common + RECOMMENDATION_DIMENSION_WEIGHTS.directors - 1) < Number.EPSILON)
     assert.ok(Math.abs(common + RECOMMENDATION_DIMENSION_WEIGHTS.creators - 1) < Number.EPSILON)
   })
@@ -41,13 +40,13 @@ describe('recommendation v1.1 formula', () => {
     const ranked = result(dna({ mediaTypes: [entry('media:movie')] }), [movie()]).results[0]
     assert.equal(ranked.score, 100); assert.equal(ranked.metadataCoverage, 1)
     assert.equal(ranked.profileEvidenceCoverage, 1); assert.equal(ranked.hasPersonalizationEvidence, true)
-    assert.deepEqual(ranked.breakdown.map(value => value.dimension), ['genres', 'mediaTypes', 'decades', 'languages', 'countries', 'actors', 'directors'])
+    assert.deepEqual(ranked.breakdown.map(value => value.dimension), ['genres', 'mediaTypes', 'decades', 'countries', 'actors', 'directors'])
     assert.ok(ranked.reasons.length >= 1 && ranked.reasons.length <= 3)
   })
   it('uses score multiplied by entry confidence', () => {
     const low = result(only({ genres: [entry('genre:28', 1, 0.2)] }), [movie()]).results[0]
     const high = result(only({ genres: [entry('genre:28', 1, 0.8)] }), [movie()]).results[0]
-    assert.equal(low.score, 53.2); assert.equal(high.score, 62.8)
+    assert.equal(low.score, 53.5); assert.equal(high.score, 64)
   })
   it('applies negative preferences and clamps exact boundaries', () => {
     const dimensions = Object.fromEntries(Object.entries(dna().dimensions).map(([name, entries]) => [name, entries.map(value => ({ ...value, score: -1, confidence: 1 }))]))
@@ -58,13 +57,13 @@ describe('recommendation v1.1 formula', () => {
   it('caps a dimension and averages known and unknown candidate features', () => {
     const ranked = result(only({ genres: [entry('genre:28')] }), [movie(1, { metadata: { ...movie().metadata, genreIds: [28, 999999] } })]).results[0]
     const genres = ranked.breakdown.find(value => value.dimension === 'genres')
-    assert.equal(genres.match, 0.5); assert.equal(genres.contribution, 0.16); assert.equal(ranked.score, 58)
+    assert.equal(genres.match, 0.5); assert.equal(genres.contribution, 0.175); assert.equal(ranked.score, 58.75)
   })
   it('handles scalar and people dimensions without cross-role matching', () => {
     const movieRank = result(dna(), [movie()]).results[0]; const tvRank = result(dna(), [tv()]).results[0]
     assert.ok(movieRank.breakdown.some(value => value.dimension === 'directors' && value.contribution > 0)); assert.equal(movieRank.breakdown.some(value => value.dimension === 'creators'), false)
     assert.ok(tvRank.breakdown.some(value => value.dimension === 'creators' && value.contribution > 0)); assert.equal(tvRank.breakdown.some(value => value.dimension === 'directors'), false)
-    for (const name of ['decades', 'languages', 'countries', 'actors']) assert.ok(movieRank.breakdown.some(value => value.dimension === name && value.contribution > 0), name)
+    for (const name of ['decades', 'countries', 'actors']) assert.ok(movieRank.breakdown.some(value => value.dimension === name && value.contribution > 0), name)
   })
   it('keeps missing and unknown metadata neutral and reports coverage', () => {
     const partial = result(dna(), [movie(1, { metadata: {} })]).results[0]
@@ -89,8 +88,8 @@ describe('recommendation v1.1 formula', () => {
     const ranked = result(only({ genres: [entry('genre:28')] }), [
       movie(1, { metadata: { ...movie().metadata, genreIds: [28, 18] } }),
     ]).results[0]
-    assert.equal(ranked.score, 58)
-    assert.equal(ranked.profileEvidenceCoverage, 0.16)
+    assert.equal(ranked.score, 58.75)
+    assert.equal(ranked.profileEvidenceCoverage, 0.175)
     assert.equal(ranked.hasPersonalizationEvidence, true)
     assert.equal(ranked.breakdown.find(value => value.dimension === 'genres').profileEvidenceCoverage, 0.5)
   })
@@ -98,9 +97,9 @@ describe('recommendation v1.1 formula', () => {
     const positive = result(dna({ mediaTypes: [entry('media:movie')] }), [movie()]).results[0]
     const negative = result(only({ genres: [entry('genre:28', -1)] }), [movie()]).results[0]
     assert.equal(positive.profileEvidenceCoverage, 1)
-    assert.equal(negative.profileEvidenceCoverage, 0.32)
+    assert.equal(negative.profileEvidenceCoverage, 0.35)
     assert.equal(negative.hasPersonalizationEvidence, true)
-    assert.equal(negative.score, 34)
+    assert.equal(negative.score, 32.5)
   })
 })
 
@@ -115,7 +114,7 @@ describe('recommendation validation, ordering and exclusions', () => {
     assert.deepEqual(result(profile, [movie(3, { popularity: 1 }), movie(2, { popularity: 2 }), movie(1, { popularity: 2 })]).results.map(value => value.mediaKey), ['movie_1', 'movie_2', 'movie_3'])
   })
   it('returns empty results and rejects malformed or duplicate candidates safely', () => {
-    assert.deepEqual(result(dna(), []), { algorithmVersion: '1.1.0', results: [], rejectedCount: 0 })
+    assert.deepEqual(result(dna(), []), { algorithmVersion: '1.2.0', results: [], rejectedCount: 0 })
     const ranked = result(dna(), [null, movie(1), movie(1), movie(2, { metadata: { genreIds: ['28'] } }), movie(3)])
     assert.deepEqual(ranked.results.map(value => value.mediaKey), ['movie_3']); assert.equal(ranked.rejectedCount, 4)
   })

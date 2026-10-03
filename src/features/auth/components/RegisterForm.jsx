@@ -32,7 +32,11 @@ function RegisterForm() {
     return () => {
       mounted.current = false
       // Do not release a still-running operation if the user navigates away.
-      setRegistrationStatus((status) => status === 'rollback-failed' ? 'idle' : status)
+      setRegistrationStatus((status) => (
+        status === 'rollback-failed'
+          ? 'idle'
+          : status
+      ))
     }
   }, [setRegistrationStatus])
 
@@ -71,9 +75,12 @@ function RegisterForm() {
     } finally {
       pending.current = false
     }
-    // Navigation is outside the registration error handler: the account is complete.
-    if (mounted.current) navigate('/onboarding', { replace: true })
-    setRegistrationStatus('idle')
+    // Keep a distinct success state until OnboardingPage has actually mounted.
+    // GuestOnlyRoute can therefore never race this first-run navigation to "/".
+    if (mounted.current) {
+      setRegistrationStatus('succeeded')
+      navigate('/onboarding', { replace: true })
+    }
   }
 
   return (

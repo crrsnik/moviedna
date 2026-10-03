@@ -22,6 +22,20 @@ export function isAllowedMovieDetailRequest(url) {
 export function isTvDetailPath(path) {
   return typeof path === 'string' && /^\/tv\/[1-9]\d*$/.test(path) && isValidSeriesId(path.slice(4))
 }
+export function isAllowedMediaSummaryRequest(url) {
+  const path = url.pathname.replace(/^\/api\/tmdb/, '')
+  const params = url.searchParams
+
+  return url.pathname.startsWith('/api/tmdb/')
+    && (
+      isMovieDetailPath(path)
+      || isTvDetailPath(path)
+    )
+    && [...params].length === 1
+    && params.getAll('language').length === 1
+    && isTmdbLanguage(params.get('language'))
+}
+
 export function isAllowedTvDetailRequest(url) {
   const path = url.pathname.replace(/^\/api\/tmdb/, '')
   const p = url.searchParams

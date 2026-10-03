@@ -1,3 +1,5 @@
+import DnaOnboardingPrompt from './DnaOnboardingPrompt.jsx'
+
 import {
   useTranslation,
 } from '../../localization/hooks/useTranslation.js'
@@ -58,6 +60,7 @@ export default function DnaStatePanel({
       >
         {t(detailKey)}
       </p>
-    </section>
+        <DnaOnboardingPrompt />
+</section>
   )
 }

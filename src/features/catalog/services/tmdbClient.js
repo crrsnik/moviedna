@@ -11,10 +11,37 @@ import { tmdbTransport } from './tmdbTransport.js'
 const searchEndpoints = new Set(['/search/multi', '/search/movie', '/search/tv', '/search/person'])
 const endpoints = new Set(['/trending/movie/day', '/trending/tv/day'])
 
-export async function getTmdb(path, { language = TMDB_DEFAULT_LANGUAGE, signal, search, browse, details = false, transport = tmdbTransport } = {}) {
-  if ((!endpoints.has(path) && !searchEndpoints.has(path) && !(details && (isMovieDetailPath(path) || isTvDetailPath(path) || isPersonDetailPath(path))) && !isBrowsePath(path)) || !isTmdbLanguage(language)) {
+export async function getTmdb(path, {
+  language = TMDB_DEFAULT_LANGUAGE,
+  signal,
+  search,
+  browse,
+  details = false,
+  summary = false,
+  transport = tmdbTransport,
+} = {}) {
+  const detailPath = isMovieDetailPath(path)
+    || isTvDetailPath(path)
+    || isPersonDetailPath(path)
+
+  const mediaSummaryPath = isMovieDetailPath(path)
+    || isTvDetailPath(path)
+
+  if (
+    (details && summary)
+    || (summary && !mediaSummaryPath)
+    || (
+      !endpoints.has(path)
+      && !searchEndpoints.has(path)
+      && !(details && detailPath)
+      && !(summary && mediaSummaryPath)
+      && !isBrowsePath(path)
+    )
+    || !isTmdbLanguage(language)
+  ) {
     throw new TmdbError('request')
   }
+
   const query = new URLSearchParams({ language })
   if (searchEndpoints.has(path)) {
     if (!search || typeof search.query !== 'string' || search.query.length < 2 || search.query.length > 100

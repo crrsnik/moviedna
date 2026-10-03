@@ -6,9 +6,22 @@ const movie = (id, overrides = {}) => ({ id, mediaType: 'movie', title: 'Synthet
 const response = (id, reaction = 'like') => ({ tmdbId: id, mediaType: 'movie', reaction, genreIds: [] })
 
 describe('Onboarding deck and progress', () => {
-  it('deduplicates, filters malformed movies and excludes saved responses', () => {
+  it('deduplicates, filters malformed media and excludes saved responses', () => {
     const original = [null, {}, movie(-1), movie(1), movie(2), movie(2), movie(3, { title: ' ' }), movie(4, { mediaType: 'tv' }), movie('5'), movie(6)]
-    assert.deepEqual(prepareOnboardingDeck(original, [response(1)]).map((item) => item.id), [2, 6])
+    assert.deepEqual(
+      prepareOnboardingDeck(
+        original,
+        [response(1)],
+      ).map((item) => [
+        item.mediaType,
+        item.id,
+      ]),
+      [
+        ['movie', 2],
+        ['tv', 4],
+        ['movie', 6],
+      ],
+    )
     assert.equal(original.length, 10)
   })
   it('caps new unique movies at 20 and tolerates missing poster', () => {
@@ -17,6 +30,52 @@ describe('Onboarding deck and progress', () => {
     assert.equal(deck[0].posterPath, null)
   })
   it('handles malformed upstream list', () => assert.deepEqual(prepareOnboardingDeck(null), []))
+
+  it('keeps movie and TV with the same TMDB id as separate cards', () => {
+    const deck = prepareOnboardingDeck([
+      movie(123),
+      movie(123, {
+        mediaType: 'tv',
+        title: 'Synthetic TV',
+      }),
+    ])
+
+    assert.deepEqual(
+      deck.map((item) => [
+        item.mediaType,
+        item.id,
+      ]),
+      [
+        ['movie', 123],
+        ['tv', 123],
+      ],
+    )
+  })
+
+  it('excludes only the exact media identity already answered', () => {
+    const deck = [
+      movie(123),
+      movie(123, {
+        mediaType: 'tv',
+        title: 'Synthetic TV',
+      }),
+    ]
+
+    const state = getDeckState(
+      deck,
+      [response(123)],
+    )
+
+    assert.deepEqual(
+      state.remainingMovies.map((item) => [
+        item.mediaType,
+        item.id,
+      ]),
+      [
+        ['tv', 123],
+      ],
+    )
+  })
   it('selects the next unevaluated movie and remaining cards', () => {
     const deck = [movie(1), movie(2), movie(3)]
     assert.deepEqual(getDeckState(deck, [response(1)]), { currentMovie: deck[1], remainingMovies: deck.slice(1) })
