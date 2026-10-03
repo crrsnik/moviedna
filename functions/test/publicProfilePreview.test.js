@@ -243,6 +243,7 @@ describe('public profile preview projection', () => {
     const writes = []
 
     const handlers = createPublicProfilePreviewHandlers({
+      loadAchievements: async () => null,
       loadViewingHistory: async () => [
         {
           schemaVersion: 1,
@@ -296,6 +297,7 @@ describe('public profile preview projection', () => {
         },
       }),
 
+      loadAchievements: async () => null,
       loadViewingHistory: async () => [
         {
           schemaVersion: 1,
@@ -321,7 +323,8 @@ describe('public profile preview projection', () => {
       },
     })
 
-    assert.deepEqual(result, {
+    
+assert.deepEqual(result, {
       status: 'rebuilt',
     })
 
@@ -329,6 +332,11 @@ describe('public profile preview projection', () => {
       'alice',
       {
         schemaVersion: 1,
+        achievements: {
+          completedCount: 0,
+          totalCount: 0,
+          achievements: [],
+        },
         dna: {
           genres: [
             {
@@ -361,6 +369,7 @@ describe('public profile preview projection', () => {
         },
       }),
 
+      loadAchievements: async () => null,
       loadViewingHistory: async () => [
         {
           schemaVersion: 1,
@@ -386,7 +395,8 @@ describe('public profile preview projection', () => {
       },
     })
 
-    assert.deepEqual(result, {
+    
+assert.deepEqual(result, {
       status: 'rebuilt',
     })
 
@@ -395,6 +405,11 @@ describe('public profile preview projection', () => {
         'alice',
         {
           schemaVersion: 1,
+          achievements: {
+            completedCount: 0,
+            totalCount: 0,
+            achievements: [],
+          },
           dna: {
             genres: [
               {

@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../features/auth/hooks/useAuth.js'
+import AchievementsSection from '../features/achievements/components/AchievementsSection.jsx'
+import { useAchievements } from '../features/achievements/hooks/useAchievements.js'
 import { useMovieDna } from '../features/dna/hooks/useMovieDna.js'
 import { selectDnaPreviewTraits } from '../features/dna/utils/selectDnaPreviewTraits.js'
 import { useTranslation } from '../features/localization/hooks/useTranslation.js'
@@ -123,6 +125,7 @@ export default function ProfileOverviewPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const dnaState = useMovieDna()
+  const achievementsState = useAchievements()
   const history = useViewingHistory()
   const publicBoards = usePublicBoards(user.uid)
   const today = localDateString()
@@ -169,6 +172,8 @@ export default function ProfileOverviewPage() {
           <DnaPreview state={dnaState} />
         </div>
       </section>
+
+      <AchievementsSection state={achievementsState} />
 
       <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">

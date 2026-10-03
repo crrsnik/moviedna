@@ -5,14 +5,20 @@ const MAX_GENRES = 4
 const MEDIA_TYPES = new Set(['movie', 'tv'])
 
 function validUid(uid) {
-  return typeof uid === 'string' && uid.length > 0 && !uid.includes('/')
+  return (
+    typeof uid === 'string'
+    && uid.length > 0
+    && !uid.includes('/')
+  )
 }
 
 function eventUid(event) {
   const uid = event?.params?.uid
 
   if (!validUid(uid)) {
-    throw new TypeError('Invalid profile preview UID.')
+    throw new TypeError(
+      'Invalid profile preview UID.',
+    )
   }
 
   return uid
@@ -20,18 +26,30 @@ function eventUid(event) {
 
 function snapshotData(snapshot) {
   if (!snapshot?.exists) return null
-  return typeof snapshot.data === 'function' ? snapshot.data() : null
+
+  return typeof snapshot.data === 'function'
+    ? snapshot.data()
+    : null
+}
+
+function validNonNegativeInteger(value) {
+  return (
+    Number.isSafeInteger(value)
+    && value >= 0
+  )
 }
 
 export function buildPublicDnaPreview(movieDna) {
-  const source = Array.isArray(movieDna?.dimensions?.genres)
+  const source = Array.isArray(
+    movieDna?.dimensions?.genres,
+  )
     ? movieDna.dimensions.genres
     : []
 
   const seen = new Set()
 
   const genres = source
-    .map((entry) => ({
+    .map(entry => ({
       entry,
       label: resolvePublicGenreLabel(entry),
     }))
@@ -47,9 +65,12 @@ export function buildPublicDnaPreview(movieDna) {
       || a.label.localeCompare(b.label)
     ))
     .filter(({ label }) => {
-      const canonical = label.toLocaleLowerCase()
+      const canonical =
+        label.toLocaleLowerCase()
 
-      if (seen.has(canonical)) return false
+      if (seen.has(canonical)) {
+        return false
+      }
 
       seen.add(canonical)
       return true
@@ -71,14 +92,19 @@ export function buildPublicStatisticsPreview(events) {
     tv: 0,
   }
 
-  for (const event of Array.isArray(events) ? events : []) {
+  for (
+    const event
+    of Array.isArray(events) ? events : []
+  ) {
     if (
       !event
       || typeof event !== 'object'
       || event.schemaVersion !== 1
       || !MEDIA_TYPES.has(event.mediaType)
       || typeof event.watchedDate !== 'string'
-      || !/^\d{4}-\d{2}-\d{2}$/.test(event.watchedDate)
+      || !/^\d{4}-\d{2}-\d{2}$/.test(
+        event.watchedDate,
+      )
     ) {
       continue
     }
@@ -87,57 +113,196 @@ export function buildPublicStatisticsPreview(events) {
   }
 
   return {
-    totalViewings: counts.movie + counts.tv,
+    totalViewings:
+      counts.movie + counts.tv,
+
     movieCount: counts.movie,
     tvCount: counts.tv,
   }
 }
 
-export async function rebuildPublicProfilePreview(store, uid) {
-  const [movieDna, viewingHistory] = await Promise.all([
+export function buildPublicAchievementsPreview(
+  source,
+) {
+  const raw = (
+    source
+    && typeof source === 'object'
+    && !Array.isArray(source)
+    && source.achievements
+    && typeof source.achievements === 'object'
+    && !Array.isArray(source.achievements)
+  )
+    ? source.achievements
+    : {}
+
+  const achievements = []
+
+  for (const [id, value] of Object.entries(raw)) {
+    if (
+      !/^[a-z][a-z0-9_]*$/.test(id)
+      || !value
+      || typeof value !== 'object'
+      || Array.isArray(value)
+      || typeof value.category !== 'string'
+      || !value.category
+      || !validNonNegativeInteger(
+        value.displayOrder,
+      )
+      || !validNonNegativeInteger(
+        value.current,
+      )
+      || !Number.isSafeInteger(value.target)
+      || value.target <= 0
+      || value.current > value.target
+      || typeof value.unlocked !== 'boolean'
+    ) {
+      continue
+    }
+
+    const unlockedAt = (
+      value.unlocked
+      && typeof value.unlockedAt?.toDate
+        === 'function'
+    )
+      ? value.unlockedAt
+      : null
+
+    if (
+      value.unlocked
+      && !unlockedAt
+    ) {
+      continue
+    }
+
+    achievements.push({
+      id,
+      category: value.category,
+      displayOrder: value.displayOrder,
+      current: value.current,
+      target: value.target,
+      unlocked: value.unlocked,
+      unlockedAt,
+    })
+  }
+
+  achievements.sort((a, b) => (
+    a.displayOrder - b.displayOrder
+    || a.id.localeCompare(b.id)
+  ))
+
+  return {
+    completedCount: achievements.filter(
+      achievement => achievement.unlocked,
+    ).length,
+
+    totalCount: achievements.length,
+    achievements,
+  }
+}
+
+export async function rebuildPublicProfilePreview(
+  store,
+  uid,
+) {
+  const [
+    movieDna,
+    viewingHistory,
+    achievements,
+  ] = await Promise.all([
     store.loadMovieDna(uid),
     store.loadViewingHistory(uid),
+    store.loadAchievements(uid),
   ])
 
   await store.writePreview(uid, {
-    schemaVersion: PROFILE_PREVIEW_SCHEMA_VERSION,
+    schemaVersion:
+      PROFILE_PREVIEW_SCHEMA_VERSION,
+
     dna: buildPublicDnaPreview(movieDna),
-    statistics: buildPublicStatisticsPreview(viewingHistory),
+
+    statistics:
+      buildPublicStatisticsPreview(
+        viewingHistory,
+      ),
+
+    achievements:
+      buildPublicAchievementsPreview(
+        achievements,
+      ),
   })
 }
 
-export function createPublicProfilePreviewHandlers(store) {
+export function createPublicProfilePreviewHandlers(
+  store,
+) {
   async function movieDnaWrite(event) {
     const uid = eventUid(event)
-    const movieDna = snapshotData(event?.data?.after)
+
+    const movieDna = snapshotData(
+      event?.data?.after,
+    )
 
     await store.mergePreview(uid, {
       dna: buildPublicDnaPreview(movieDna),
     })
 
-    return { status: 'updated' }
+    return {
+      status: 'updated',
+    }
   }
 
   async function viewingHistoryWrite(event) {
     const uid = eventUid(event)
-    const events = await store.loadViewingHistory(uid)
+
+    const events =
+      await store.loadViewingHistory(uid)
 
     await store.mergePreview(uid, {
-      statistics: buildPublicStatisticsPreview(events),
+      statistics:
+        buildPublicStatisticsPreview(events),
     })
 
-    return { status: 'updated' }
+    return {
+      status: 'updated',
+    }
+  }
+
+  async function achievementsWrite(event) {
+    const uid = eventUid(event)
+
+    const achievements = snapshotData(
+      event?.data?.after,
+    )
+
+    await store.mergePreview(uid, {
+      achievements:
+        buildPublicAchievementsPreview(
+          achievements,
+        ),
+    })
+
+    return {
+      status: 'updated',
+    }
   }
 
   async function publicProfileWrite(event) {
     const uid = eventUid(event)
 
-    const before = snapshotData(event?.data?.before)
-    const after = snapshotData(event?.data?.after)
+    const before = snapshotData(
+      event?.data?.before,
+    )
+
+    const after = snapshotData(
+      event?.data?.after,
+    )
 
     if (!after) {
       await store.deletePreview(uid)
-      return { status: 'deleted' }
+
+      return {
+        status: 'deleted',
+      }
     }
 
     const profileCreated = !before
@@ -148,18 +313,29 @@ export function createPublicProfilePreviewHandlers(store) {
         !== after.profileVisibility
     )
 
-    if (profileCreated || visibilityChanged) {
-      await rebuildPublicProfilePreview(store, uid)
+    if (
+      profileCreated
+      || visibilityChanged
+    ) {
+      await rebuildPublicProfilePreview(
+        store,
+        uid,
+      )
 
-      return { status: 'rebuilt' }
+      return {
+        status: 'rebuilt',
+      }
     }
 
-    return { status: 'unchanged' }
+    return {
+      status: 'unchanged',
+    }
   }
 
   return {
     movieDnaWrite,
     viewingHistoryWrite,
+    achievementsWrite,
     publicProfileWrite,
   }
 }

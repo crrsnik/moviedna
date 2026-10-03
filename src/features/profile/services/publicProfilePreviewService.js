@@ -34,6 +34,123 @@ function nonNegativeInteger(value) {
   return Number.isSafeInteger(value) && value >= 0
 }
 
+function normalizePublicAchievement(value) {
+  if (
+    !plain(value)
+    || typeof value.id !== 'string'
+    || !/^[a-z][a-z0-9_]*$/.test(value.id)
+    || typeof value.category !== 'string'
+    || !value.category
+    || !nonNegativeInteger(value.displayOrder)
+    || !nonNegativeInteger(value.current)
+    || !Number.isSafeInteger(value.target)
+    || value.target <= 0
+    || value.current > value.target
+    || typeof value.unlocked !== 'boolean'
+  ) {
+    throw new PublicProfilePreviewError(
+      'public-profile-preview/invalid',
+    )
+  }
+
+  let unlockedAt = null
+
+  if (value.unlocked) {
+    if (
+      typeof value.unlockedAt?.toDate
+        !== 'function'
+    ) {
+      throw new PublicProfilePreviewError(
+        'public-profile-preview/invalid',
+      )
+    }
+
+    unlockedAt = value.unlockedAt.toDate()
+
+    if (
+      !(unlockedAt instanceof Date)
+      || Number.isNaN(
+        unlockedAt.getTime(),
+      )
+    ) {
+      throw new PublicProfilePreviewError(
+        'public-profile-preview/invalid',
+      )
+    }
+  } else if (value.unlockedAt !== null) {
+    throw new PublicProfilePreviewError(
+      'public-profile-preview/invalid',
+    )
+  }
+
+  return {
+    id: value.id,
+    category: value.category,
+    displayOrder: value.displayOrder,
+    current: value.current,
+    target: value.target,
+    unlocked: value.unlocked,
+    unlockedAt,
+  }
+}
+
+function normalizePublicAchievements(value) {
+  if (value == null) {
+    return {
+      completedCount: 0,
+      totalCount: 0,
+      achievements: [],
+    }
+  }
+
+  if (
+    !plain(value)
+    || !nonNegativeInteger(
+      value.completedCount,
+    )
+    || !nonNegativeInteger(
+      value.totalCount,
+    )
+    || !Array.isArray(value.achievements)
+  ) {
+    throw new PublicProfilePreviewError(
+      'public-profile-preview/invalid',
+    )
+  }
+
+  const achievements =
+    value.achievements.map(
+      normalizePublicAchievement,
+    )
+
+  achievements.sort((a, b) => (
+    a.displayOrder - b.displayOrder
+    || a.id.localeCompare(b.id)
+  ))
+
+  if (
+    achievements.length
+      !== value.totalCount
+    || achievements.filter(
+      item => item.unlocked,
+    ).length !== value.completedCount
+  ) {
+    throw new PublicProfilePreviewError(
+      'public-profile-preview/invalid',
+    )
+  }
+
+  return {
+    completedCount:
+      value.completedCount,
+
+    totalCount:
+      value.totalCount,
+
+    achievements,
+  }
+}
+
 function normalizeGenre(value) {
   if (
     !plain(value)
@@ -109,6 +226,11 @@ function normalizePreview(snapshot) {
       movieCount: data.statistics.movieCount,
       tvCount: data.statistics.tvCount,
     },
+
+    achievements:
+      normalizePublicAchievements(
+        data.achievements,
+      ),
 
     updatedAt: date.toISOString(),
   }

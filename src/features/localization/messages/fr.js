@@ -369,6 +369,155 @@ export const fr = {
     deleteError: 'Le compte n’a pas pu être supprimé. Veuillez réessayer.',
   },
 
+  achievementsUi: {
+    title: 'Succès',
+    description: 'Votre collection de récompenses pour votre activité sur MovieDNA.',
+    publicDescription: 'La collection de succès de ce membre MovieDNA.',
+    loading: 'Chargement des succès…',
+    error: 'Impossible de charger les succès.',
+    preparing: 'Vos succès sont encore en préparation.',
+    summary: '{completed} sur {total}',
+    unlocked: 'Débloqué',
+    locked: 'Verrouillé',
+    progress: 'Progression',
+    progressLabel: 'Progression du succès : {title}',
+    obtained: 'Débloqué : {date}',
+    close: 'Fermer',
+    showLess: 'Afficher moins',
+    showAll: 'Tout afficher ({count})',
+    openAchievement: 'Ouvrir le succès : {title}',
+    items: {
+      onboarding_complete: {
+        title: 'Premier pas',
+        description: 'Terminez l’onboarding MovieDNA.',
+      },
+      dna_ready: {
+        title: 'DNA prêt',
+        description: 'Créez votre premier profil MovieDNA.',
+      },
+      rating_1: {
+        title: 'Premier verdict',
+        description: 'Attribuez votre première note.',
+      },
+      rating_10: {
+        title: 'Critique cinéma',
+        description: 'Notez 10 films ou séries.',
+      },
+      rating_25: {
+        title: 'Observateur',
+        description: 'Notez 25 films ou séries.',
+      },
+      rating_50: {
+        title: 'Critique confirmé',
+        description: 'Notez 50 films ou séries.',
+      },
+      rating_100: {
+        title: 'Cent notes',
+        description: 'Notez 100 films ou séries.',
+      },
+      watched_1: {
+        title: 'Premier visionnage',
+        description: 'Marquez votre premier titre comme vu.',
+      },
+      watched_10: {
+        title: 'Marathon cinéma',
+        description: 'Regardez 10 titres différents.',
+      },
+      watched_25: {
+        title: 'En pleine lancée',
+        description: 'Regardez 25 titres différents.',
+      },
+      watched_50: {
+        title: 'Cinquante histoires',
+        description: 'Regardez 50 titres différents.',
+      },
+      watched_100: {
+        title: 'Cent écrans',
+        description: 'Regardez 100 titres différents.',
+      },
+      movies_10: {
+        title: 'Cinéphile',
+        description: 'Regardez 10 films.',
+      },
+      movies_50: {
+        title: 'Grand écran',
+        description: 'Regardez 50 films.',
+      },
+      tv_10: {
+        title: 'Début en série',
+        description: 'Regardez 10 séries.',
+      },
+      tv_50: {
+        title: 'Fan de séries',
+        description: 'Regardez 50 séries.',
+      },
+      favorite_1: {
+        title: 'Coup de cœur',
+        description: 'Ajoutez votre premier titre aux favoris.',
+      },
+      favorite_10: {
+        title: 'Collection personnelle',
+        description: 'Ajoutez 10 titres aux favoris.',
+      },
+      favorite_25: {
+        title: 'Étagère dorée',
+        description: 'Ajoutez 25 titres aux favoris.',
+      },
+      genres_5: {
+        title: 'Spectateur curieux',
+        description: 'Regardez des titres de cinq genres différents.',
+      },
+      genres_10: {
+        title: 'Explorateur de genres',
+        description: 'Regardez des titres de dix genres différents.',
+      },
+      decades_3: {
+        title: 'Voyageur du temps',
+        description: 'Regardez des titres de trois décennies différentes.',
+      },
+      decades_5: {
+        title: 'À travers les époques',
+        description: 'Regardez des titres de cinq décennies différentes.',
+      },
+      countries_3: {
+        title: 'Tour du monde',
+        description: 'Regardez des titres de trois pays différents.',
+      },
+      countries_5: {
+        title: 'Cinéma du monde',
+        description: 'Regardez des titres de cinq pays différents.',
+      },
+      horror_10: {
+        title: 'Même pas peur',
+        description: 'Regardez 10 œuvres d’horreur.',
+      },
+      comedy_10: {
+        title: 'Rire à l’écran',
+        description: 'Regardez 10 comédies.',
+      },
+      scifi_10: {
+        title: 'Au-delà de la Terre',
+        description: 'Regardez 10 œuvres de science-fiction.',
+      },
+      romance_10: {
+        title: 'Romantique',
+        description: 'Regardez 10 œuvres romantiques.',
+      },
+      friend_1: {
+        title: 'Premier ami',
+        description: 'Ajoutez votre premier ami sur MovieDNA.',
+      },
+      friends_5: {
+        title: 'La bande',
+        description: 'Connectez-vous avec cinq amis sur MovieDNA.',
+      },
+      friends_10: {
+        title: 'Ciné-club',
+        description: 'Connectez-vous avec dix amis sur MovieDNA.',
+      },
+    },
+  },
+
   dnaUi: {
     title: 'Mon DNA',
     description: 'Les tendances les plus fortes de vos préférences en matière de films et de séries.',

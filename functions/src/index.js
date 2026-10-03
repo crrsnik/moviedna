@@ -7,6 +7,11 @@ import { onDocumentWritten } from 'firebase-functions/v2/firestore'
 import { onCall, onRequest } from 'firebase-functions/v2/https'
 
 import { createFirestoreAdapter } from './adapters/firestoreAdapter.js'
+import { createAchievementRunner } from './achievements/achievementRunner.js'
+import {
+  createFriendshipAchievementHandler,
+} from './achievements/friendshipAchievementHandler.js'
+import { createFirestoreAchievementStore } from './achievements/firestoreAchievementStore.js'
 import {
   createDeleteAccountHandler,
 } from './accountDeletion/deleteAccountHandler.js'
@@ -97,6 +102,49 @@ function createRuntimeHandlers() {
   return createHandlers(createRecalculationRunner({ store, metadataResolver }))
 }
 
+function createAchievementRuntimeHandler() {
+  const db = getFirestore()
+  const achievementStore = createFirestoreAchievementStore(db)
+  const dnaStore = createFirestoreAdapter(db)
+  const fetchImpl = createRuntimeFetch()
+
+  const tmdbClient = {
+    getMetadata(mediaType, tmdbId) {
+      return createTmdbClient({
+        token: tmdbToken.value(),
+        fetchImpl,
+      }).getMetadata(mediaType, tmdbId)
+    },
+  }
+
+  const metadataResolver = createMetadataResolver({
+    cache: dnaStore.cache,
+    tmdbClient,
+  })
+
+  return createAchievementRunner({
+    store: achievementStore,
+    metadataResolver,
+  })
+}
+
+function createFriendshipAchievementRuntimeHandler() {
+  const db = getFirestore()
+  const recalculate = createAchievementRuntimeHandler()
+
+  return createFriendshipAchievementHandler({
+    userExists: async uid => {
+      const profile = await db
+        .collection('users')
+        .doc(uid)
+        .get()
+
+      return profile.exists
+    },
+    recalculate,
+  })
+}
+
 function createRecommendationRuntimeHandler() {
   const store = createFirestoreAdapter(getFirestore())
 
@@ -152,7 +200,17 @@ export const onRatingWritten = onDocumentWritten({
   document: 'users/{uid}/ratings/{mediaKey}',
 }, event => runForActiveUser(
   event,
-  () => createRuntimeHandlers().sourceWrite(event),
+  async () => {
+    const [movieDna, achievements] = await Promise.all([
+      createRuntimeHandlers().sourceWrite(event),
+      createAchievementRuntimeHandler()(event.params.uid),
+    ])
+
+    return {
+      movieDna,
+      achievements,
+    }
+  },
 ))
 
 export const onOnboardingSummaryWritten = onDocumentWritten({
@@ -160,7 +218,17 @@ export const onOnboardingSummaryWritten = onDocumentWritten({
   document: 'users/{uid}/onboarding/summary',
 }, event => runForActiveUser(
   event,
-  () => createRuntimeHandlers().sourceWrite(event),
+  async () => {
+    const [movieDna, achievements] = await Promise.all([
+      createRuntimeHandlers().sourceWrite(event),
+      createAchievementRuntimeHandler()(event.params.uid),
+    ])
+
+    return {
+      movieDna,
+      achievements,
+    }
+  },
 ))
 
 export const onSavedMediaWritten = onDocumentWritten({
@@ -172,15 +240,18 @@ export const onSavedMediaWritten = onDocumentWritten({
     const [
       movieDna,
       publicBoards,
+      achievements,
     ] = await Promise.all([
       createRuntimeHandlers().savedMediaWrite(event),
       createPublicBoardRuntimeHandlers()
         .savedMediaWrite(event),
+      createAchievementRuntimeHandler()(event.params.uid),
     ])
 
     return {
       movieDna,
       publicBoards,
+      achievements,
     }
   },
 ))
@@ -201,9 +272,31 @@ export const onMovieDnaCurrentWritten = onDocumentWritten({
   document: 'users/{uid}/movieDna/current',
 }, event => runForActiveUser(
   event,
+  async () => {
+    const [
+      publicProfilePreview,
+      achievements,
+    ] = await Promise.all([
+      createPublicProfilePreviewRuntimeHandlers()
+        .movieDnaWrite(event),
+      createAchievementRuntimeHandler()(event.params.uid),
+    ])
+
+    return {
+      publicProfilePreview,
+      achievements,
+    }
+  },
+))
+
+export const onAchievementCurrentWritten = onDocumentWritten({
+  ...profilePreviewTriggerOptions,
+  document: 'users/{uid}/achievements/current',
+}, event => runForActiveUser(
+  event,
   () => (
     createPublicProfilePreviewRuntimeHandlers()
-      .movieDnaWrite(event)
+      .achievementsWrite(event)
   ),
 ))
 
@@ -227,6 +320,13 @@ export const onPublicProfileWritten = onDocumentWritten({
     createPublicProfilePreviewRuntimeHandlers()
       .publicProfileWrite(event)
   ),
+))
+
+export const onFriendshipWritten = onDocumentWritten({
+  ...triggerOptions,
+  document: 'friendships/{friendshipId}',
+}, event => (
+  createFriendshipAchievementRuntimeHandler()(event)
 ))
 
 export const deleteAccount = onCall({

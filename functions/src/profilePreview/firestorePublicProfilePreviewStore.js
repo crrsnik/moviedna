@@ -16,6 +16,17 @@ export function createFirestorePublicProfilePreviewStore(db) {
         : null
     },
 
+    async loadAchievements(uid) {
+      const snapshot = await user(uid)
+        .collection('achievements')
+        .doc('current')
+        .get()
+
+      return snapshot.exists
+        ? snapshot.data()
+        : null
+    },
+
     async loadViewingHistory(uid) {
       const snapshot = await user(uid)
         .collection('viewingHistory')

@@ -1,0 +1,37 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 256 256"
+>
+  
+        <rect x="34" y="34" width="188" height="188" rx="44"
+          fill="#18181b"
+          stroke="#22d3ee"
+          stroke-width="7"/>
+        
+
+  <path
+    d="M52 57L204 199"
+    stroke="#22d3ee"
+    stroke-width="3"
+    stroke-opacity=".12"
+  />
+
+  <path
+    d="M52 199L204 57"
+    stroke="#22d3ee"
+    stroke-width="3"
+    stroke-opacity=".07"
+  />
+
+  
+        <rect x="76" y="87" width="104" height="76" rx="14"
+          fill="none" stroke="#f4f4f5" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M105 70l23 17 23-17"
+          fill="none" stroke="#f4f4f5" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="91" y="102" width="74" height="46" rx="7"
+          fill="#22d3ee"/>
+        
+
+  <rect x="112.5" y="200" width="12" height="5" rx="2.5" fill="#22d3ee"/>
+<rect x="131.5" y="200" width="12" height="5" rx="2.5" fill="#22d3ee"/>
+</svg>

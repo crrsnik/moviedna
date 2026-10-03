@@ -1,0 +1,38 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 256 256"
+>
+  
+        <circle cx="128" cy="128" r="96"
+          fill="#18181b"
+          stroke="#e11d48"
+          stroke-width="7"/>
+        
+
+  <path
+    d="M52 57L204 199"
+    stroke="#e11d48"
+    stroke-width="3"
+    stroke-opacity=".12"
+  />
+
+  <path
+    d="M52 199L204 57"
+    stroke="#e11d48"
+    stroke-width="3"
+    stroke-opacity=".07"
+  />
+
+  
+        <path d="M128 174
+                 C108 151 79 134 79 104
+                 C79 82 105 70 128 94
+                 C151 70 177 82 177 104
+                 C177 134 148 151 128 174Z"
+          fill="#e11d48"/>
+        
+
+  <rect x="103.0" y="200" width="12" height="5" rx="2.5" fill="#e11d48"/>
+<rect x="122.0" y="200" width="12" height="5" rx="2.5" fill="#e11d48"/>
+<rect x="141.0" y="200" width="12" height="5" rx="2.5" fill="#e11d48"/>
+</svg>

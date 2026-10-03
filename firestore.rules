@@ -519,6 +519,14 @@ service cloud.firestore {
         allow list, create, update, delete: if false;
       }
 
+      // Achievements are calculated only by trusted backend code.
+      // Clients may read their current snapshot but never mutate it.
+      match /achievements/{documentId} {
+        allow get: if isOwner(userId)
+          && documentId == 'current';
+        allow list, create, update, delete: if false;
+      }
+
       match /onboardingResponses/{responseId} {
         allow get, list: if isOwner(userId);
         allow create: if isOwner(userId) && hasIncompleteProfile(userId)

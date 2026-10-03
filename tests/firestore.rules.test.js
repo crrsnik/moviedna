@@ -3320,3 +3320,216 @@ describe('Stage 12 private profile friend access', { concurrency: false }, () =>
 
 
 })
+
+// Stage 14: achievements are trusted-backend output.
+// Owners may read only the current snapshot.
+// Clients can never create, update, delete, or list achievement documents.
+
+const achievementData = (overrides = {}) => ({
+  schemaVersion: 1,
+  completedCount: 1,
+  totalCount: 32,
+  achievements: {
+    rating_1: {
+      category: 'ratings',
+      displayOrder: 100,
+      current: 1,
+      target: 1,
+      unlocked: true,
+      unlockedAt: Timestamp.fromMillis(1_000),
+    },
+    rating_10: {
+      category: 'ratings',
+      displayOrder: 110,
+      current: 1,
+      target: 10,
+      unlocked: false,
+      unlockedAt: null,
+    },
+  },
+  updatedAt: Timestamp.fromMillis(2_000),
+  ...overrides,
+})
+
+describe(
+  'Achievements security model',
+  { concurrency: false },
+  () => {
+    before(async () => {
+      testEnv = await initializeTestEnvironment({
+        projectId,
+        firestore: {
+          host: '127.0.0.1',
+          port: 8080,
+          rules: await readFile(
+            new URL(
+              '../firestore.rules',
+              import.meta.url,
+            ),
+            'utf8',
+          ),
+        },
+      })
+    })
+
+    beforeEach(async () => {
+      await testEnv.clearFirestore()
+
+      await testEnv.withSecurityRulesDisabled(
+        async context => {
+          const db = context.firestore()
+
+          await setDoc(
+            doc(
+              db,
+              'users/alice/achievements/current',
+            ),
+            achievementData(),
+          )
+        },
+      )
+    })
+
+    after(async () => {
+      await testEnv?.cleanup()
+    })
+
+    it(
+      'allows owner to read achievements/current',
+      async () => {
+        const snapshot = await assertSucceeds(
+          getDoc(
+            doc(
+              userDb(),
+              'users/alice/achievements/current',
+            ),
+          ),
+        )
+
+        assert.equal(snapshot.exists(), true)
+        assert.equal(
+          snapshot.data().completedCount,
+          1,
+        )
+        assert.equal(
+          snapshot.data().totalCount,
+          32,
+        )
+      },
+    )
+
+    it(
+      'denies owner listing achievements',
+      async () => {
+        await assertFails(
+          getDocs(
+            collection(
+              userDb(),
+              'users/alice/achievements',
+            ),
+          ),
+        )
+      },
+    )
+
+    for (const operation of [
+      'create',
+      'update',
+      'delete',
+    ]) {
+      it(
+        `denies owner ${operation} of achievements/current`,
+        async () => {
+          const db = userDb()
+          const ref = doc(
+            db,
+            'users/alice/achievements/current',
+          )
+
+          const actions = {
+            create: () => setDoc(
+              doc(
+                db,
+                'users/alice/achievements/other',
+              ),
+              achievementData(),
+            ),
+
+            update: () => updateDoc(
+              ref,
+              {
+                completedCount: 32,
+              },
+            ),
+
+            delete: () => deleteDoc(ref),
+          }
+
+          await assertFails(
+            actions[operation](),
+          )
+        },
+      )
+    }
+
+    for (const identity of [
+      'bob',
+      'guest',
+    ]) {
+      it(
+        `denies ${identity} reading achievements/current`,
+        async () => {
+          const db = identity === 'guest'
+            ? testEnv
+              .unauthenticatedContext()
+              .firestore()
+            : userDb('bob')
+
+          await assertFails(
+            getDoc(
+              doc(
+                db,
+                'users/alice/achievements/current',
+              ),
+            ),
+          )
+        },
+      )
+    }
+
+    it(
+      'denies owner access to unknown achievement documents',
+      async () => {
+        await assertFails(
+          getDoc(
+            doc(
+              userDb(),
+              'users/alice/achievements/history',
+            ),
+          ),
+        )
+      },
+    )
+
+    it(
+      'keeps nested achievement paths deny-by-default',
+      async () => {
+        const ref = doc(
+          userDb(),
+          'users/alice/achievements/current/private/data',
+        )
+
+        await assertFails(getDoc(ref))
+
+        await assertFails(
+          setDoc(
+            ref,
+            {
+              unlocked: true,
+            },
+          ),
+        )
+      },
+    )
+  },
+)
