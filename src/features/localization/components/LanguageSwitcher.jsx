@@ -73,7 +73,7 @@ export default function LanguageSwitcher() {
         title={t('language.label')}
         onClick={() => setOpen(value => !value)}
         className="
-          flex size-9 cursor-pointer items-center justify-center
+          ui-pressable flex size-9 cursor-pointer items-center justify-center
           rounded-full border border-border bg-surface
           text-[11px] font-bold uppercase tracking-wide text-primary
           transition-colors
@@ -90,7 +90,7 @@ export default function LanguageSwitcher() {
           role="menu"
           aria-label={t('language.label')}
           className="
-            absolute right-0 z-50 mt-2 min-w-36
+            ui-popover-enter absolute right-0 z-50 mt-2 min-w-36
             rounded-xl border border-border bg-surface p-1.5
             text-primary shadow-[var(--app-shadow-md)]
           "

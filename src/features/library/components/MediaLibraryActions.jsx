@@ -16,7 +16,7 @@ import {
 import { mediaLibraryService } from '../services/mediaLibraryService.js'
 
 const iconButtonBase = (
-  'inline-flex size-10 cursor-pointer items-center justify-center '
+  'ui-pressable inline-flex size-10 cursor-pointer items-center justify-center '
   + 'rounded-full border transition-colors '
   + 'focus-visible:outline-2 focus-visible:outline-offset-2 '
   + 'focus-visible:outline-focus disabled:cursor-wait '

@@ -108,9 +108,7 @@ function RatingStars({
 
               <span
                 className={[
-                  'block transition-transform',
-                  'hover:scale-110',
-                  'motion-reduce:transition-none',
+                  'rating-star block',
                   active
                     ? 'text-amber-400'
                     : 'text-tertiary',

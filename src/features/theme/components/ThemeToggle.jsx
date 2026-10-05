@@ -57,7 +57,7 @@ function ThemeToggle() {
       title={dark ? 'Light mode' : 'Dark mode'}
       className="
         flex size-9 shrink-0 cursor-pointer items-center justify-center
-        rounded-lg border border-border bg-surface
+        rounded-full border border-border bg-surface
         text-secondary
         transition-colors
         hover:border-border-strong hover:bg-surface-muted hover:text-primary

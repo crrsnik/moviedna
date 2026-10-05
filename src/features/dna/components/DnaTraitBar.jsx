@@ -36,12 +36,10 @@ export default function DnaTraitBar({
       <div
         aria-hidden="true"
         className="
-          h-full rounded-full
-          transition-[width] duration-300
-          motion-reduce:transition-none
+          dna-trait-fill h-full rounded-full
         "
         style={{
-          width: `${normalizedPercent}%`,
+          '--dna-width': `${normalizedPercent}%`,
           backgroundColor: color,
           opacity: negative ? 0.72 : 1,
         }}

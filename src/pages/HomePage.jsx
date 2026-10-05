@@ -27,19 +27,8 @@ function HomePage() {
   return (
     <div className="w-full min-w-0 space-y-12">
       <section
-        className="space-y-5 py-4 text-center sm:py-8"
-        aria-labelledby="home-title"
+        className="py-2 text-center sm:py-5"
       >
-        <h1
-          id="home-title"
-          className="text-4xl font-bold tracking-[-0.025em] text-primary sm:text-6xl"
-        >
-          MovieDNA
-        </h1>
-
-        <p className="text-lg text-secondary">
-          {t('catalog.home.tagline')}
-        </p>
 
         <SearchForm />
       </section>
