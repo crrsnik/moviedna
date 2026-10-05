@@ -215,6 +215,33 @@ export const en = {
     },
   },
 
+  notifications: {
+    ariaLabel: 'Notifications. {count} unread',
+    title: 'Notifications',
+    unreadCount: '{count} unread',
+    loading: 'Loading notifications…',
+    unavailable: "We couldn't load notifications.",
+    empty: 'No new notifications yet.',
+    markAllRead: 'Mark all read',
+    markingAllRead: 'Saving…',
+    friendRequest: '{name} wants to add you as a friend.',
+    friendAccepted: '{name} is now your friend.',
+    achievementUnlocked: 'You unlocked a new achievement.',
+    fallback: 'New MovieDNA notification.',
+    unknownUser: 'MovieDNA user',
+    actionError: "We couldn't update this notification.",
+    unavailableTitle: 'Notifications unavailable',
+    description: 'All your MovieDNA account activity in one place.',
+    viewAll: 'View all notifications',
+    historyEmpty: 'You do not have any notifications yet.',
+    loadMore: 'Load more',
+    loadingMore: 'Loading…',
+    markRead: 'Mark read',
+    markUnread: 'Mark unread',
+    unknownAchievement: 'New achievement',
+    achievementUnlockedNamed: 'New achievement: {title}',
+  },
+
   social: {
     friends: {
       loading: 'Loading friends…',

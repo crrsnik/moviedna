@@ -16,6 +16,7 @@ import HomePage from '../pages/HomePage.jsx'
 import LibraryPage from '../pages/LibraryPage.jsx'
 import LoginPage from '../pages/LoginPage.jsx'
 import MovieDetailPage from '../pages/MovieDetailPage.jsx'
+import NotificationsPage from '../pages/NotificationsPage.jsx'
 import MoviesPage from '../pages/MoviesPage.jsx'
 import NotFoundPage from '../pages/NotFoundPage.jsx'
 import OnboardingPage from '../pages/OnboardingPage.jsx'
@@ -63,6 +64,7 @@ const router = createBrowserRouter([
             element: <Navigate to="/friends" replace />,
           },
           { path: 'friends', element: <FriendsPage /> },
+          { path: 'notifications', element: <NotificationsPage /> },
           { path: 'users/:username', element: <PublicProfilePage /> },
           {
             path: 'users/:username/boards/:boardId',

@@ -13,6 +13,15 @@ import {
 } from './achievements/friendshipAchievementHandler.js'
 import { createFirestoreAchievementStore } from './achievements/firestoreAchievementStore.js'
 import {
+  createAchievementNotificationHandler,
+} from './notifications/achievementNotificationHandler.js'
+import {
+  createFirestoreNotificationStore,
+} from './notifications/firestoreNotificationStore.js'
+import {
+  createFriendshipNotificationHandler,
+} from './notifications/friendshipNotificationHandler.js'
+import {
   createDeleteAccountHandler,
 } from './accountDeletion/deleteAccountHandler.js'
 import {
@@ -142,6 +151,26 @@ function createFriendshipAchievementRuntimeHandler() {
       return profile.exists
     },
     recalculate,
+  })
+}
+
+function createNotificationRuntimeWriter() {
+  const store = createFirestoreNotificationStore(
+    getFirestore(),
+  )
+
+  return notification => store.create(notification)
+}
+
+function createFriendshipNotificationRuntimeHandler() {
+  return createFriendshipNotificationHandler({
+    notify: createNotificationRuntimeWriter(),
+  })
+}
+
+function createAchievementNotificationRuntimeHandler() {
+  return createAchievementNotificationHandler({
+    notify: createNotificationRuntimeWriter(),
   })
 }
 
@@ -294,10 +323,23 @@ export const onAchievementCurrentWritten = onDocumentWritten({
   document: 'users/{uid}/achievements/current',
 }, event => runForActiveUser(
   event,
-  () => (
-    createPublicProfilePreviewRuntimeHandlers()
-      .achievementsWrite(event)
-  ),
+  async () => {
+    const [
+      publicProfilePreview,
+      notifications,
+    ] = await Promise.all([
+      createPublicProfilePreviewRuntimeHandlers()
+        .achievementsWrite(event),
+      createAchievementNotificationRuntimeHandler()(
+        event,
+      ),
+    ])
+
+    return {
+      publicProfilePreview,
+      notifications,
+    }
+  },
 ))
 
 export const onViewingHistoryWritten = onDocumentWritten({
@@ -325,9 +367,24 @@ export const onPublicProfileWritten = onDocumentWritten({
 export const onFriendshipWritten = onDocumentWritten({
   ...triggerOptions,
   document: 'friendships/{friendshipId}',
-}, event => (
-  createFriendshipAchievementRuntimeHandler()(event)
-))
+}, async event => {
+  const [
+    achievements,
+    notifications,
+  ] = await Promise.all([
+    createFriendshipAchievementRuntimeHandler()(
+      event,
+    ),
+    createFriendshipNotificationRuntimeHandler()(
+      event,
+    ),
+  ])
+
+  return {
+    achievements,
+    notifications,
+  }
+})
 
 export const deleteAccount = onCall({
   ...RUNTIME_OPTIONS,

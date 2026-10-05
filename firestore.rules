@@ -527,6 +527,22 @@ service cloud.firestore {
         allow list, create, update, delete: if false;
       }
 
+      // Notifications are created only by trusted backend code.
+      // Owners may read their own notifications and may only change readAt.
+      match /notifications/{notificationId} {
+        allow get, list: if isOwner(userId);
+
+        allow create, delete: if false;
+
+        allow update: if isOwner(userId)
+          && request.resource.data.diff(resource.data)
+            .affectedKeys().hasOnly(['readAt'])
+          && (
+            request.resource.data.readAt == null
+            || request.resource.data.readAt == request.time
+          );
+      }
+
       match /onboardingResponses/{responseId} {
         allow get, list: if isOwner(userId);
         allow create: if isOwner(userId) && hasIncompleteProfile(userId)

@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../../../features/auth/hooks/useAuth.js'
 import { useIncomingFriendRequestCount } from '../../../features/friends/hooks/useIncomingFriendRequestCount.js'
 import LanguageSwitcher from '../../../features/localization/components/LanguageSwitcher.jsx'
+import NotificationBell from '../../../features/notifications/components/NotificationBell.jsx'
 import { useTranslation } from '../../../features/localization/hooks/useTranslation.js'
 import { PROFILE_AVATARS } from '../../../features/profile/constants/profileSettings.js'
 import { useUserProfile } from '../../../features/profile/hooks/useUserProfile.js'
@@ -183,6 +184,10 @@ function Header() {
           aria-label={t('nav.accountNavigation')}
         >
           <LanguageSwitcher />
+
+          {isAuthenticated && (
+            <NotificationBell />
+          )}
 
           {registrationStatus === 'pending' ? (
             <span
