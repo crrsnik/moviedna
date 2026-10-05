@@ -283,8 +283,19 @@ export default function NotificationBell() {
           },
         )}
         onClick={() => {
-          setOpen(value => !value)
           setActionError(false)
+
+          if (
+            window.matchMedia(
+              '(max-width: 639px)',
+            ).matches
+          ) {
+            setOpen(false)
+            navigate('/notifications')
+            return
+          }
+
+          setOpen(value => !value)
         }}
         className="relative flex size-10 cursor-pointer items-center justify-center rounded-full border border-border bg-surface-muted text-primary hover:border-border-strong hover:bg-surface-muted hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
@@ -320,7 +331,7 @@ export default function NotificationBell() {
           aria-label={t(
             'notifications.title',
           )}
-          className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-surface shadow-2xl"
+          className="absolute right-0 z-50 mt-2 hidden w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-surface shadow-2xl sm:block"
         >
           <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
             <div className="min-w-0">
