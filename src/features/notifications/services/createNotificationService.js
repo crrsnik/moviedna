@@ -131,6 +131,7 @@ export function createNotificationService({
   orderBy,
   query,
   serverTimestamp,
+  startAfter,
   updateDoc,
   where,
   writeBatch,
@@ -243,6 +244,67 @@ export function createNotificationService({
     }
   }
 
+  async function loadNotificationsPage({
+    pageSize = 25,
+    cursor = null,
+  } = {}) {
+    try {
+      const session = currentSession()
+
+      if (
+        !Number.isInteger(pageSize)
+        || pageSize < 1
+        || pageSize > 50
+      ) {
+        throw new NotificationServiceError(
+          'notification/invalid-limit',
+        )
+      }
+
+      const constraints = [
+        orderBy('createdAt', 'desc'),
+      ]
+
+      if (cursor) {
+        constraints.push(
+          startAfter(cursor),
+        )
+      }
+
+      constraints.push(
+        limit(pageSize),
+      )
+
+      const snapshot = await getDocs(
+        query(
+          collection(
+            db,
+            'users',
+            session.uid,
+            'notifications',
+          ),
+          ...constraints,
+        ),
+      )
+
+      ensureSession(session)
+
+      const notifications = snapshot.docs
+        .map(normalizeNotificationSnapshot)
+        .filter(Boolean)
+
+      return {
+        notifications,
+        cursor:
+          snapshot.docs.at(-1) ?? null,
+        hasMore:
+          snapshot.size === pageSize,
+      }
+    } catch (error) {
+      throw mapError(error)
+    }
+  }
+
   async function markAsRead(notificationId) {
     try {
       await updateDoc(
@@ -320,6 +382,7 @@ export function createNotificationService({
 
   return {
     subscribeToNotifications,
+    loadNotificationsPage,
     markAsRead,
     markAsUnread,
     markAllAsRead,

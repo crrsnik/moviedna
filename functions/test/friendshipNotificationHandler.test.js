@@ -13,6 +13,7 @@ const snapshot = data => ({
 
 function event(before, after) {
   return {
+    id: 'friendship-event-1',
     params: {
       friendshipId: 'friendship-1',
     },
@@ -45,6 +46,8 @@ describe('friendship notification handler', () => {
         type: 'friend_request',
         actorUid: 'alice',
         entityId: 'friendship-1',
+        occurrenceId:
+          'friendship-event-1',
         metadata: {},
       },
     )
@@ -60,6 +63,8 @@ describe('friendship notification handler', () => {
         type: 'friend_accepted',
         actorUid: 'bob',
         entityId: 'friendship-1',
+        occurrenceId:
+          'friendship-event-1',
         metadata: {},
       },
     )

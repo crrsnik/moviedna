@@ -13,6 +13,7 @@ const snapshot = data => ({
 
 function event(before, after) {
   return {
+    id: 'achievement-event-1',
     params: {
       uid: 'alice',
     },

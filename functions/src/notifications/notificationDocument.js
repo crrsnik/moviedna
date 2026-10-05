@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 export const NOTIFICATION_SCHEMA_VERSION = 1
 
 const TYPE_PREFIX = Object.freeze({
@@ -15,6 +17,13 @@ function validId(value) {
   )
 }
 
+function validOccurrenceId(value) {
+  return (
+    typeof value === 'string'
+    && value.length > 0
+  )
+}
+
 function validMetadata(value) {
   return (
     value
@@ -23,20 +32,44 @@ function validMetadata(value) {
   )
 }
 
-export function createNotificationId(type, entityId) {
+function occurrenceHash(value) {
+  if (!validOccurrenceId(value)) {
+    throw new TypeError(
+      'Invalid notification occurrence',
+    )
+  }
+
+  return createHash('sha256')
+    .update(value)
+    .digest('hex')
+    .slice(0, 24)
+}
+
+export function createNotificationId(
+  type,
+  entityId,
+  occurrenceId,
+) {
   const prefix = TYPE_PREFIX[type]
 
   if (!prefix || !validId(entityId)) {
-    throw new TypeError('Invalid notification identity')
+    throw new TypeError(
+      'Invalid notification identity',
+    )
   }
 
-  return `${prefix}__${entityId}`
+  return [
+    prefix,
+    entityId,
+    occurrenceHash(occurrenceId),
+  ].join('__')
 }
 
 export function buildNotificationDocument({
   type,
   actorUid,
   entityId,
+  occurrenceId,
   metadata = {},
   serverTimestamp,
 }) {
@@ -44,7 +77,9 @@ export function buildNotificationDocument({
     typeof serverTimestamp !== 'function'
     || !validMetadata(metadata)
   ) {
-    throw new TypeError('Invalid notification input')
+    throw new TypeError(
+      'Invalid notification input',
+    )
   }
 
   if (
@@ -65,12 +100,17 @@ export function buildNotificationDocument({
     )
   }
 
-  const id = createNotificationId(type, entityId)
+  const id = createNotificationId(
+    type,
+    entityId,
+    occurrenceId,
+  )
 
   return {
     id,
     document: {
-      schemaVersion: NOTIFICATION_SCHEMA_VERSION,
+      schemaVersion:
+        NOTIFICATION_SCHEMA_VERSION,
       type,
       actorUid,
       entityId,

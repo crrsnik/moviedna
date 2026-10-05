@@ -230,6 +230,16 @@ export const ru = {
     fallback: 'Новое уведомление MovieDNA.',
     unknownUser: 'Пользователь MovieDNA',
     actionError: 'Не удалось обновить уведомление.',
+    unavailableTitle: 'Уведомления недоступны',
+    description: 'Все события вашего аккаунта MovieDNA в одном месте.',
+    viewAll: 'Все уведомления',
+    historyEmpty: 'У вас пока нет уведомлений.',
+    loadMore: 'Показать ещё',
+    loadingMore: 'Загрузка…',
+    markRead: 'Прочитано',
+    markUnread: 'Не прочитано',
+    unknownAchievement: 'Новое достижение',
+    achievementUnlockedNamed: 'Новое достижение: {title}',
   },
 
   social: {

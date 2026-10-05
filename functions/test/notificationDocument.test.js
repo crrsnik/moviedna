@@ -12,24 +12,39 @@ describe('notification document', () => {
       createNotificationId(
         'friend_request',
         'friendship-1',
+        'event-1',
       ),
-      'friend-request__friendship-1',
+      createNotificationId(
+        'friend_request',
+        'friendship-1',
+        'event-1',
+      ),
     )
 
     assert.equal(
       createNotificationId(
         'friend_accepted',
         'friendship-1',
+        'event-2',
       ),
-      'friend-accepted__friendship-1',
+      createNotificationId(
+        'friend_accepted',
+        'friendship-1',
+        'event-2',
+      ),
     )
 
     assert.equal(
       createNotificationId(
         'achievement_unlocked',
         'rating_10',
+        'event-3',
       ),
-      'achievement-unlocked__rating_10',
+      createNotificationId(
+        'achievement_unlocked',
+        'rating_10',
+        'event-3',
+      ),
     )
   })
 
@@ -41,12 +56,17 @@ describe('notification document', () => {
       actorUid: 'bob',
       entityId: 'friendship-1',
       metadata: {},
+      occurrenceId: 'event-1',
       serverTimestamp: () => timestamp,
     })
 
     assert.equal(
       result.id,
-      'friend-request__friendship-1',
+      createNotificationId(
+        'friend_request',
+        'friendship-1',
+        'event-1',
+      ),
     )
 
     assert.deepEqual(
@@ -69,6 +89,7 @@ describe('notification document', () => {
         type: 'achievement_unlocked',
         actorUid: 'alice',
         entityId: 'rating_10',
+        occurrenceId: 'event-1',
         serverTimestamp: () => null,
       }),
       /actor must be null/,
@@ -81,9 +102,37 @@ describe('notification document', () => {
         type: 'friend_request',
         actorUid: null,
         entityId: 'friendship-1',
+        occurrenceId: 'event-1',
         serverTimestamp: () => null,
       }),
       /requires an actor/,
+    )
+  })
+
+  it('creates different ids for repeated real-world events', () => {
+    const first = createNotificationId(
+      'friend_request',
+      'same-friendship',
+      'cloud-event-1',
+    )
+
+    const retry = createNotificationId(
+      'friend_request',
+      'same-friendship',
+      'cloud-event-1',
+    )
+
+    const secondRequest =
+      createNotificationId(
+        'friend_request',
+        'same-friendship',
+        'cloud-event-2',
+      )
+
+    assert.equal(first, retry)
+    assert.notEqual(
+      first,
+      secondRequest,
     )
   })
 
@@ -92,6 +141,7 @@ describe('notification document', () => {
       () => createNotificationId(
         'unknown',
         'entity',
+        'event-1',
       ),
       /Invalid notification identity/,
     )
@@ -100,6 +150,7 @@ describe('notification document', () => {
       () => createNotificationId(
         'friend_request',
         'unsafe/id',
+        'event-1',
       ),
       /Invalid notification identity/,
     )

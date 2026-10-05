@@ -18,6 +18,7 @@ export function createFirestoreNotificationStore(db) {
     type,
     actorUid,
     entityId,
+    occurrenceId,
     metadata = {},
   }) {
     if (!validUid(uid)) {
@@ -31,6 +32,7 @@ export function createFirestoreNotificationStore(db) {
       type,
       actorUid,
       entityId,
+      occurrenceId,
       metadata,
       serverTimestamp:
         () => FieldValue.serverTimestamp(),

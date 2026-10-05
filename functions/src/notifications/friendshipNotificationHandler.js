@@ -46,8 +46,15 @@ function otherMember(data, uid) {
 
 export function friendshipNotificationForEvent(event) {
   const friendshipId = event?.params?.friendshipId
+  const occurrenceId = event?.id
 
-  if (!validUid(friendshipId)) return null
+  if (
+    !validUid(friendshipId)
+    || typeof occurrenceId !== 'string'
+    || !occurrenceId
+  ) {
+    return null
+  }
 
   const before = snapshotData(event?.data?.before)
   const after = snapshotData(event?.data?.after)
@@ -69,6 +76,7 @@ export function friendshipNotificationForEvent(event) {
       type: 'friend_request',
       actorUid: after.requestedBy,
       entityId: friendshipId,
+      occurrenceId,
       metadata: {},
     }
   }
@@ -92,6 +100,7 @@ export function friendshipNotificationForEvent(event) {
       type: 'friend_accepted',
       actorUid,
       entityId: friendshipId,
+      occurrenceId,
       metadata: {},
     }
   }

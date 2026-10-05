@@ -480,6 +480,19 @@ export default function NotificationBell() {
               )}
             </p>
           )}
+
+          <div className="border-t border-zinc-800 p-2">
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false)
+                navigate('/notifications')
+              }}
+              className="w-full cursor-pointer rounded-lg px-3 py-2 text-center text-sm font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white focus-visible:outline-2 focus-visible:outline-zinc-100"
+            >
+              {t('notifications.viewAll')}
+            </button>
+          </div>
         </div>
       )}
     </div>

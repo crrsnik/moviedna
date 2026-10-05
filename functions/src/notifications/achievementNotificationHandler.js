@@ -60,8 +60,13 @@ export function createAchievementNotificationHandler({
     event,
   ) {
     const uid = event?.params?.uid
+    const occurrenceId = event?.id
 
-    if (!validUid(uid)) {
+    if (
+      !validUid(uid)
+      || typeof occurrenceId !== 'string'
+      || !occurrenceId
+    ) {
       return {
         status: 'ignored',
         notifications: [],
@@ -83,6 +88,7 @@ export function createAchievementNotificationHandler({
         type: 'achievement_unlocked',
         actorUid: null,
         entityId: achievementId,
+        occurrenceId,
         metadata: {
           achievementId,
         },

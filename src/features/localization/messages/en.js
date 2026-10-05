@@ -230,6 +230,16 @@ export const en = {
     fallback: 'New MovieDNA notification.',
     unknownUser: 'MovieDNA user',
     actionError: "We couldn't update this notification.",
+    unavailableTitle: 'Notifications unavailable',
+    description: 'All your MovieDNA account activity in one place.',
+    viewAll: 'View all notifications',
+    historyEmpty: 'You do not have any notifications yet.',
+    loadMore: 'Load more',
+    loadingMore: 'Loading…',
+    markRead: 'Mark read',
+    markUnread: 'Mark unread',
+    unknownAchievement: 'New achievement',
+    achievementUnlockedNamed: 'New achievement: {title}',
   },
 
   social: {
