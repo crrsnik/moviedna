@@ -25,12 +25,136 @@ describe('Browse services with synthetic fetch responses', () => {
     assert.deepEqual(options.headers, { Accept: 'application/json' })
     assert.equal(options.credentials, 'omit')
   })
-  for (const [load, type, extra] of [[browseMovies, 'movie', 'include_video'], [browseTvShows, 'tv', 'include_null_first_air_dates']]) it(`discover ${type} sends exact safe filters`, async () => {
-    await load({ genre: 28, view: 'top-rated', page: 3 })
-    const url = new URL(fetchMock.mock.calls[0].arguments[0], 'http://localhost')
-    assert.equal(url.pathname, `/api/tmdb/discover/${type}`)
-    assert.deepEqual(Object.fromEntries(url.searchParams), { language: 'en-US', page: '3', sort_by: 'popularity.desc', include_adult: 'false', with_genres: '28', [extra]: 'false' })
-  })
+  for (
+    const [load, type, extra]
+    of [
+      [
+        browseMovies,
+        'movie',
+        'include_video',
+      ],
+      [
+        browseTvShows,
+        'tv',
+        'include_null_first_air_dates',
+      ],
+    ]
+  ) {
+    it(
+      `discover ${type} sends multiple genres`,
+      async () => {
+        await load({
+          genres: [28, 18],
+          view: 'popular',
+          page: 3,
+        })
+
+        const url = new URL(
+          fetchMock.mock.calls[0]
+            .arguments[0],
+          'http://localhost',
+        )
+
+        assert.equal(
+          url.pathname,
+          `/api/tmdb/discover/${type}`,
+        )
+
+        assert.equal(
+          url.searchParams.get(
+            'with_genres',
+          ),
+          '28,18',
+        )
+
+        assert.equal(
+          url.searchParams.get(
+            'sort_by',
+          ),
+          'popularity.desc',
+        )
+
+        assert.equal(
+          url.searchParams.get(extra),
+          'false',
+        )
+      },
+    )
+  }
+
+  it(
+    'keeps upcoming view when genres are selected',
+    async () => {
+      await browseMovies({
+        view: 'upcoming',
+        genres: [16],
+        page: 1,
+      })
+
+      const url = new URL(
+        fetchMock.mock.calls[0]
+          .arguments[0],
+        'http://localhost',
+      )
+
+      assert.equal(
+        url.pathname,
+        '/api/tmdb/discover/movie',
+      )
+
+      assert.equal(
+        url.searchParams.get(
+          'with_genres',
+        ),
+        '16',
+      )
+
+      assert.equal(
+        url.searchParams.get(
+          'sort_by',
+        ),
+        'primary_release_date.asc',
+      )
+
+      assert.match(
+        url.searchParams.get(
+          'primary_release_date.gte',
+        ),
+        /^\d{4}-\d{2}-\d{2}$/,
+      )
+    },
+  )
+
+  it(
+    'keeps top-rated view with genres',
+    async () => {
+      await browseTvShows({
+        view: 'top-rated',
+        genres: [18, 80],
+      })
+
+      const url = new URL(
+        fetchMock.mock.calls[0]
+          .arguments[0],
+        'http://localhost',
+      )
+
+      assert.equal(
+        url.searchParams.get(
+          'with_genres',
+        ),
+        '18,80',
+      )
+
+      assert.equal(
+        url.searchParams.get(
+          'sort_by',
+        ),
+        'vote_average.desc',
+      )
+    },
+  )
+
   it('normalizes movie with only allowed fields without mutating data', async () => {
     payload.results = [{ id: 1, title: ' Movie ', genre_ids: [28, 28, -1], release_date: '2020-01-01', extra: 'drop' }]
     const original = JSON.stringify(payload)
@@ -56,7 +180,7 @@ describe('Browse services with synthetic fetch responses', () => {
     assert.equal((await browseMovies()).page, 2)
   })
   it('defaults invalid view/page and ignores person genre', async () => {
-    await browsePeople({ view: 'bad', page: -1, genre: 28 })
+    await browsePeople({ view: 'bad', page: -1, genres: [28] })
     assert.equal(fetchMock.mock.calls[0].arguments[0], '/api/tmdb/person/popular?language=en-US&page=1')
   })
   for (const status of [400, 401, 403, 404, 429, 500, 503]) it(`sanitizes HTTP ${status}`, async () => {

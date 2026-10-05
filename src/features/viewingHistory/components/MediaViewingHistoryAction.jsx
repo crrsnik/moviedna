@@ -14,6 +14,27 @@ import {
   validateWatchedDate,
 } from '../validation/viewingHistoryValidation.js'
 
+function isFutureMovie({
+  mediaType,
+  detail,
+}) {
+  if (
+    mediaType !== 'movie'
+    || typeof detail?.releaseDate
+      !== 'string'
+    || !/^\d{4}-\d{2}-\d{2}$/.test(
+      detail.releaseDate,
+    )
+  ) {
+    return false
+  }
+
+  return (
+    detail.releaseDate
+    > localDateString()
+  )
+}
+
 function CheckIcon() {
   return (
     <svg
@@ -181,6 +202,15 @@ export default function MediaViewingHistoryAction({
 }) {
   const { t } = useTranslation()
   const { user } = useAuth()
+
+  if (
+    isFutureMovie({
+      mediaType,
+      detail,
+    })
+  ) {
+    return null
+  }
 
   if (!user) {
     return (

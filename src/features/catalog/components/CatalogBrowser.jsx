@@ -1,8 +1,15 @@
 import { useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import {
+  useSearchParams,
+} from 'react-router-dom'
 
-import { useTranslation } from '../../localization/hooks/useTranslation.js'
-import { useCatalogBrowse } from '../hooks/useCatalogBrowse.js'
+import {
+  useTranslation,
+} from '../../localization/hooks/useTranslation.js'
+
+import {
+  useCatalogBrowse,
+} from '../hooks/useCatalogBrowse.js'
 
 import {
   BROWSE_VIEWS,
@@ -32,9 +39,15 @@ const VIEW_KEYS = {
   trending: 'catalog.views.trending',
 }
 
-export default function CatalogBrowser({ type }) {
+export default function CatalogBrowser({
+  type,
+}) {
   const { t } = useTranslation()
-  const [params, setParams] = useSearchParams()
+
+  const [
+    params,
+    setParams,
+  ] = useSearchParams()
 
   const state = readBrowseParams(
     type,
@@ -43,101 +56,133 @@ export default function CatalogBrowser({ type }) {
 
   const {
     view,
-    genre,
+    genres: selectedGenres,
     page,
   } = state
 
   const {
     catalog,
-    genres,
-  } = useCatalogBrowse(type, state)
+    genres: genreState,
+  } = useCatalogBrowse(
+    type,
+    state,
+  )
 
   const canonical = createBrowseParams(
     type,
     state,
   ).toString()
 
-  const selectedGenre = genres.data?.find(
-    item => item.id === genre,
+  const genreKey = (
+    selectedGenres.join(',')
   )
 
-  const unknownGenre = (
-    genre !== null
-    && genres.data !== null
-    && !selectedGenre
+  const validSelectedGenres = (
+    genreState.data
+      ? selectedGenres.filter(
+          id => genreState.data.some(
+            genre => genre.id === id,
+          ),
+        )
+      : selectedGenres
+  )
+
+  const hasUnknownGenres = (
+    genreState.data !== null
+    && validSelectedGenres.length
+      !== selectedGenres.length
   )
 
   useEffect(() => {
-    const target = unknownGenre
+    const target = hasUnknownGenres
       ? createBrowseParams(
-        type,
-        {},
-      ).toString()
-      : catalog.data
-        && catalog.data.page !== page
-        ? createBrowseParams(
           type,
           {
             view,
-            genre,
-            page: catalog.data.page,
+            genres:
+              validSelectedGenres,
+            page: 1,
           },
         ).toString()
+      : catalog.data
+        && catalog.data.page !== page
+        ? createBrowseParams(
+            type,
+            {
+              view,
+              genres:
+                selectedGenres,
+              page:
+                catalog.data.page,
+            },
+          ).toString()
         : canonical
 
-    if (params.toString() !== target) {
+    if (
+      params.toString() !== target
+    ) {
       setParams(
         target,
-        { replace: true },
+        {
+          replace: true,
+        },
       )
     }
   }, [
-    unknownGenre,
+    hasUnknownGenres,
+    genreState.data,
     catalog.data,
     canonical,
     type,
     view,
-    genre,
+    genreKey,
     page,
     params,
     setParams,
   ])
 
-  const noun = t(NOUN_KEYS[type])
-
-  const translatedViews = Object.fromEntries(
-    Object.keys(BROWSE_VIEWS[type]).map(
-      value => [
-        value,
-        t(VIEW_KEYS[value]),
-      ],
-    ),
+  const noun = t(
+    NOUN_KEYS[type],
   )
 
-  let heading
-
-  if (genre) {
-    heading = selectedGenre
-      ? t(
-        'catalog.browser.genreHeading',
-        {
-          genre: selectedGenre.name,
-          noun,
-        },
-      )
-      : t(
-        'catalog.browser.unknownGenreHeading',
-        { noun },
-      )
-  } else {
-    heading = t(
-      'catalog.browser.viewHeading',
-      {
-        noun,
-        view: t(VIEW_KEYS[view]),
-      },
+  const translatedViews = (
+    Object.fromEntries(
+      Object.keys(
+        BROWSE_VIEWS[type],
+      ).map(value => [
+        value,
+        t(VIEW_KEYS[value]),
+      ]),
     )
-  }
+  )
+
+  const selectedGenreNames = (
+    genreState.data
+      ? selectedGenres
+          .map(id => (
+            genreState.data.find(
+              genre => genre.id === id,
+            )?.name
+          ))
+          .filter(Boolean)
+      : []
+  )
+
+  const viewHeading = t(
+    'catalog.browser.viewHeading',
+    {
+      noun,
+      view: t(
+        VIEW_KEYS[view],
+      ),
+    },
+  )
+
+  const heading = (
+    selectedGenreNames.length
+      ? `${viewHeading} · ${selectedGenreNames.join(' + ')}`
+      : viewHeading
+  )
 
   return (
     <div className="min-w-0 space-y-6">
@@ -149,7 +194,9 @@ export default function CatalogBrowser({ type }) {
             changeBrowse(
               type,
               state,
-              { view: value },
+              {
+                view: value,
+              },
             ),
           )
         )}
@@ -157,14 +204,16 @@ export default function CatalogBrowser({ type }) {
 
       {type !== 'person' && (
         <GenreFilter
-          state={genres}
-          selected={genre}
+          state={genreState}
+          selected={selectedGenres}
           onChange={value => (
             setParams(
               changeBrowse(
                 type,
                 state,
-                { genre: value },
+                {
+                  genres: value,
+                },
               ),
             )
           )}
@@ -175,7 +224,9 @@ export default function CatalogBrowser({ type }) {
         {heading}
       </h2>
 
-      <CatalogGrid state={catalog} />
+      <CatalogGrid
+        state={catalog}
+      />
 
       <CatalogPagination
         page={page}
@@ -186,7 +237,9 @@ export default function CatalogBrowser({ type }) {
             changeBrowse(
               type,
               state,
-              { page: value },
+              {
+                page: value,
+              },
             ),
           )
         )}
