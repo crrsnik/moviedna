@@ -130,6 +130,7 @@ async function browse(
   const {
     view,
     genres,
+    country = null,
     page,
   } = normalizeBrowse(
     type,
@@ -140,7 +141,16 @@ async function browse(
     genres.length > 0
   )
 
-  const path = hasGenres
+  const hasCountry = (
+    typeof country === 'string'
+  )
+
+  const hasFilters = (
+    hasGenres
+    || hasCountry
+  )
+
+  const path = hasFilters
     ? `/discover/${type}`
     : BROWSE_ENDPOINTS[type][view]
 
@@ -148,13 +158,12 @@ async function browse(
     page: String(page),
   }
 
-  if (hasGenres) {
+  if (hasFilters) {
     Object.assign(
       params,
       discoverViewParams(type, view),
       {
         include_adult: 'false',
-        with_genres: genres.join(','),
         [
           type === 'movie'
             ? 'include_video'
@@ -162,6 +171,14 @@ async function browse(
         ]: 'false',
       },
     )
+
+    if (hasGenres) {
+      params.with_genres = genres.join(',')
+    }
+
+    if (hasCountry) {
+      params.with_origin_country = country
+    }
   }
 
   const data = await getTmdb(

@@ -36,6 +36,69 @@ function validPositiveId(value) {
   return /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value))
 }
 
+function validGenres(value) {
+  if (
+    typeof value !== 'string'
+    || !/^[1-9]\d*(?:,[1-9]\d*)*$/.test(value)
+  ) {
+    return false
+  }
+
+  const ids = value.split(',')
+
+  return (
+    ids.length <= 20
+    && new Set(ids).size === ids.length
+    && ids.every(validPositiveId)
+  )
+}
+
+function validCountry(value) {
+  return (
+    typeof value === 'string'
+    && /^[A-Z]{2}$/.test(value)
+  )
+}
+
+function validIsoDate(value) {
+  if (
+    typeof value !== 'string'
+    || !/^\d{4}-\d{2}-\d{2}$/.test(value)
+  ) {
+    return false
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`)
+
+  return (
+    !Number.isNaN(date.getTime())
+    && date.toISOString().slice(0, 10) === value
+  )
+}
+
+function allowedParameters(
+  params,
+  required,
+  optional = [],
+) {
+  const allowed = new Set([
+    ...required,
+    ...optional,
+  ])
+
+  return (
+    required.every(
+      key => params.getAll(key).length === 1,
+    )
+    && [...params.keys()].every(
+      key => (
+        allowed.has(key)
+        && params.getAll(key).length === 1
+      ),
+    )
+  )
+}
+
 function normalizedQuery(value) {
   return typeof value === 'string' ? value.normalize('NFC').trim().replace(/\s+/gu, ' ') : ''
 }
@@ -72,13 +135,95 @@ export function validateTmdbProxyRequest(rawUrl, method = 'GET') {
       || params.get('include_adult') !== 'false') return null
   } else if (GENRE_PATHS.has(path)) {
     if (!exactParameters(params, ['language']) || !validLanguage(params.get('language'))) return null
-  } else if (path === '/discover/movie' || path === '/discover/tv') {
-    const tail = path === '/discover/movie' ? 'include_video' : 'include_null_first_air_dates'
-    const expected = ['language', 'page', 'sort_by', 'include_adult', 'with_genres', tail]
-    if (!exactParameters(params, expected) || !validLanguage(params.get('language'))
-      || !validPage(params.get('page')) || params.get('sort_by') !== 'popularity.desc'
-      || params.get('include_adult') !== 'false' || !validPositiveId(params.get('with_genres'))
-      || params.get(tail) !== 'false') return null
+  } else if (
+    path === '/discover/movie'
+    || path === '/discover/tv'
+  ) {
+    const movie = path === '/discover/movie'
+
+    const tail = movie
+      ? 'include_video'
+      : 'include_null_first_air_dates'
+
+    const required = [
+      'language',
+      'page',
+      'sort_by',
+      'include_adult',
+      tail,
+    ]
+
+    const dateKeys = movie
+      ? [
+          'primary_release_date.gte',
+          'primary_release_date.lte',
+        ]
+      : [
+          'air_date.gte',
+          'air_date.lte',
+        ]
+
+    const optional = [
+      'with_genres',
+      'with_origin_country',
+      ...dateKeys,
+    ]
+
+    const allowedSorts = movie
+      ? new Set([
+          'popularity.desc',
+          'vote_average.desc',
+          'primary_release_date.asc',
+        ])
+      : new Set([
+          'popularity.desc',
+          'vote_average.desc',
+        ])
+
+    if (
+      !allowedParameters(
+        params,
+        required,
+        optional,
+      )
+      || !validLanguage(
+        params.get('language'),
+      )
+      || !validPage(
+        params.get('page'),
+      )
+      || !allowedSorts.has(
+        params.get('sort_by'),
+      )
+      || params.get('include_adult') !== 'false'
+      || params.get(tail) !== 'false'
+      || (
+        !params.has('with_genres')
+        && !params.has('with_origin_country')
+      )
+      || (
+        params.has('with_genres')
+        && !validGenres(
+          params.get('with_genres'),
+        )
+      )
+      || (
+        params.has('with_origin_country')
+        && !validCountry(
+          params.get('with_origin_country'),
+        )
+      )
+      || dateKeys.some(
+        key => (
+          params.has(key)
+          && !validIsoDate(
+            params.get(key),
+          )
+        ),
+      )
+    ) {
+      return null
+    }
   } else {
     const match = path.match(/^\/(movie|tv|person)\/([^/]+)$/)
 

@@ -85,12 +85,27 @@ export function normalizeGenres(value) {
   return normalized
 }
 
+export function normalizeCountry(value) {
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const normalized = value
+    .trim()
+    .toUpperCase()
+
+  return /^[A-Z]{2}$/.test(normalized)
+    ? normalized
+    : null
+}
+
 export function normalizeBrowse(
   type,
   {
     view,
     genres,
     genre,
+    country,
     page,
   } = {},
 ) {
@@ -111,9 +126,20 @@ export function normalizeBrowse(
       )
   )
 
+  const normalizedCountry = (
+    type === 'person'
+      ? null
+      : normalizeCountry(country)
+  )
+
   return {
     view: validView,
     genres: normalizedGenres,
+    ...(normalizedCountry
+      ? {
+          country: normalizedCountry,
+        }
+      : {}),
     page: normalizePage(page),
   }
 }
@@ -126,6 +152,7 @@ export function readBrowseParams(type, params) {
         ? params.get('genres')
         : params.get('genre')
     ),
+    country: params.get('country'),
     page: params.get('page'),
   })
 }
@@ -134,6 +161,7 @@ export function createBrowseParams(type, value) {
   const {
     view,
     genres,
+    country,
     page,
   } = normalizeBrowse(type, value)
 
@@ -142,6 +170,11 @@ export function createBrowseParams(type, value) {
     ...(genres.length
       ? {
           genres: genres.join(','),
+        }
+      : {}),
+    ...(country
+      ? {
+          country,
         }
       : {}),
     page: String(page),
@@ -162,6 +195,7 @@ export function changeBrowse(
     Object.hasOwn(patch, 'view')
     || Object.hasOwn(patch, 'genres')
     || Object.hasOwn(patch, 'genre')
+    || Object.hasOwn(patch, 'country')
   ) {
     next.page = 1
   }
@@ -287,11 +321,10 @@ export function isAllowedBrowseRequest(url) {
     'page',
     'sort_by',
     'include_adult',
-    'with_genres',
     extraKey,
   ]
 
-  const optional = movie
+  const dateKeys = movie
     ? [
         'primary_release_date.gte',
         'primary_release_date.lte',
@@ -301,27 +334,37 @@ export function isAllowedBrowseRequest(url) {
         'air_date.lte',
       ]
 
+  const optional = [
+    'with_genres',
+    'with_origin_country',
+    ...dateKeys,
+  ]
+
   const allowed = new Set([
     ...required,
     ...optional,
   ])
 
   for (const [key] of params) {
-    if (!allowed.has(key)) {
-      return false
-    }
-
     if (
-      params.getAll(key).length !== 1
+      !allowed.has(key)
+      || params.getAll(key).length !== 1
     ) {
       return false
     }
   }
 
   if (
-    !required.every(key => (
-      params.has(key)
-    ))
+    !required.every(
+      key => params.has(key),
+    )
+  ) {
+    return false
+  }
+
+  if (
+    !params.has('with_genres')
+    && !params.has('with_origin_country')
   ) {
     return false
   }
@@ -329,9 +372,24 @@ export function isAllowedBrowseRequest(url) {
   if (
     params.get('include_adult') !== 'false'
     || params.get(extraKey) !== 'false'
-    || !isCanonicalGenreList(
+  ) {
+    return false
+  }
+
+  if (
+    params.has('with_genres')
+    && !isCanonicalGenreList(
       params.get('with_genres'),
     )
+  ) {
+    return false
+  }
+
+  if (
+    params.has('with_origin_country')
+    && normalizeCountry(
+      params.get('with_origin_country'),
+    ) !== params.get('with_origin_country')
   ) {
     return false
   }
@@ -355,7 +413,7 @@ export function isAllowedBrowseRequest(url) {
     return false
   }
 
-  for (const key of optional) {
+  for (const key of dateKeys) {
     if (
       params.has(key)
       && !isIsoDate(params.get(key))

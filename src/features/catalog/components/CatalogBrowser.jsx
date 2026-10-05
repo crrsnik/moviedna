@@ -20,6 +20,8 @@ import {
 
 import CatalogViewTabs from './CatalogViewTabs.jsx'
 import GenreFilter from './GenreFilter.jsx'
+import CountryFilter from './CountryFilter.jsx'
+import { countryLabel } from './countryDisplay.js'
 import CatalogGrid from './CatalogGrid.jsx'
 import CatalogPagination from './CatalogPagination.jsx'
 
@@ -42,7 +44,10 @@ const VIEW_KEYS = {
 export default function CatalogBrowser({
   type,
 }) {
-  const { t } = useTranslation()
+  const {
+    locale,
+    t,
+  } = useTranslation()
 
   const [
     params,
@@ -57,6 +62,7 @@ export default function CatalogBrowser({
   const {
     view,
     genres: selectedGenres,
+    country = null,
     page,
   } = state
 
@@ -100,6 +106,7 @@ export default function CatalogBrowser({
           type,
           {
             view,
+            country,
             genres: validGenreKey
               ? validGenreKey
                   .split(',')
@@ -114,6 +121,7 @@ export default function CatalogBrowser({
             type,
             {
               view,
+              country,
               genres: genreKey
                 ? genreKey
                     .split(',')
@@ -144,6 +152,7 @@ export default function CatalogBrowser({
     view,
     genreKey,
     validGenreKey,
+    country,
     page,
     params,
     setParams,
@@ -186,11 +195,32 @@ export default function CatalogBrowser({
     },
   )
 
-  const heading = (
-    selectedGenreNames.length
-      ? `${viewHeading} · ${selectedGenreNames.join(' + ')}`
-      : viewHeading
+  const selectedCountryName = (
+    country
+      ? countryLabel(
+          country,
+          locale,
+        )
+      : ''
   )
+
+  const headingParts = [
+    viewHeading,
+  ]
+
+  if (selectedGenreNames.length) {
+    headingParts.push(
+      selectedGenreNames.join(' + '),
+    )
+  }
+
+  if (selectedCountryName) {
+    headingParts.push(
+      selectedCountryName,
+    )
+  }
+
+  const heading = headingParts.join(' · ')
 
   return (
     <div className="min-w-0 space-y-6">
@@ -211,7 +241,8 @@ export default function CatalogBrowser({
       />
 
       {type !== 'person' && (
-        <GenreFilter
+        <>
+          <GenreFilter
           state={genreState}
           selected={selectedGenres}
           onChange={value => (
@@ -226,6 +257,22 @@ export default function CatalogBrowser({
             )
           )}
         />
+
+        <CountryFilter
+          selected={country}
+          onChange={value => (
+            setParams(
+              changeBrowse(
+                type,
+                state,
+                {
+                  country: value,
+                },
+              ),
+            )
+          )}
+        />
+        </>
       )}
 
       <h2 className="text-xl font-semibold">
