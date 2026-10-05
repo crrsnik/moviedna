@@ -3533,3 +3533,322 @@ describe(
     )
   },
 )
+
+
+// Stage 15: notification security model.
+// Notifications are trusted-backend output.
+// Owners may read them and may mutate only readAt.
+
+const notificationData = (overrides = {}) => ({
+  schemaVersion: 1,
+  type: 'friend_request',
+  actorUid: 'bob',
+  entityId: 'friendship_alice_bob',
+  metadata: {
+    actorUsername: 'bob_123',
+  },
+  createdAt: Timestamp.fromMillis(1_000),
+  readAt: null,
+  ...overrides,
+})
+
+describe(
+  'Notifications security model',
+  { concurrency: false },
+  () => {
+    before(async () => {
+      testEnv = await initializeTestEnvironment({
+        projectId,
+        firestore: {
+          host: '127.0.0.1',
+          port: 8080,
+          rules: await readFile(
+            new URL(
+              '../firestore.rules',
+              import.meta.url,
+            ),
+            'utf8',
+          ),
+        },
+      })
+    })
+
+    beforeEach(async () => {
+      await testEnv.clearFirestore()
+
+      await testEnv.withSecurityRulesDisabled(
+        async context => {
+          const db = context.firestore()
+
+          await setDoc(
+            doc(
+              db,
+              'users/alice/notifications/notification-1',
+            ),
+            notificationData(),
+          )
+        },
+      )
+    })
+
+    after(async () => {
+      await testEnv?.cleanup()
+    })
+
+    it(
+      'allows owner to read a notification',
+      async () => {
+        const snapshot = await assertSucceeds(
+          getDoc(
+            doc(
+              userDb(),
+              'users/alice/notifications/notification-1',
+            ),
+          ),
+        )
+
+        assert.equal(snapshot.exists(), true)
+        assert.equal(
+          snapshot.data().type,
+          'friend_request',
+        )
+        assert.equal(snapshot.data().readAt, null)
+      },
+    )
+
+    it(
+      'allows owner to list notifications',
+      async () => {
+        const snapshot = await assertSucceeds(
+          getDocs(
+            collection(
+              userDb(),
+              'users/alice/notifications',
+            ),
+          ),
+        )
+
+        assert.equal(snapshot.size, 1)
+      },
+    )
+
+    for (const identity of [
+      'bob',
+      'guest',
+    ]) {
+      it(
+        `denies ${identity} reading another users notification`,
+        async () => {
+          const db = identity === 'guest'
+            ? testEnv
+              .unauthenticatedContext()
+              .firestore()
+            : userDb('bob')
+
+          await assertFails(
+            getDoc(
+              doc(
+                db,
+                'users/alice/notifications/notification-1',
+              ),
+            ),
+          )
+        },
+      )
+
+      it(
+        `denies ${identity} listing another users notifications`,
+        async () => {
+          const db = identity === 'guest'
+            ? testEnv
+              .unauthenticatedContext()
+              .firestore()
+            : userDb('bob')
+
+          await assertFails(
+            getDocs(
+              collection(
+                db,
+                'users/alice/notifications',
+              ),
+            ),
+          )
+        },
+      )
+    }
+
+    it(
+      'denies client notification creation',
+      async () => {
+        await assertFails(
+          setDoc(
+            doc(
+              userDb(),
+              'users/alice/notifications/notification-2',
+            ),
+            notificationData({
+              entityId: 'another-entity',
+            }),
+          ),
+        )
+      },
+    )
+
+    it(
+      'allows owner to mark notification as read',
+      async () => {
+        const db = userDb()
+        const ref = doc(
+          db,
+          'users/alice/notifications/notification-1',
+        )
+
+        await assertSucceeds(
+          updateDoc(
+            ref,
+            {
+              readAt: serverTimestamp(),
+            },
+          ),
+        )
+
+        const snapshot = await getDoc(ref)
+
+        assert.ok(
+          snapshot.data().readAt instanceof Timestamp,
+        )
+      },
+    )
+
+    it(
+      'allows owner to mark notification as unread',
+      async () => {
+        const db = userDb()
+        const ref = doc(
+          db,
+          'users/alice/notifications/notification-1',
+        )
+
+        await assertSucceeds(
+          updateDoc(
+            ref,
+            {
+              readAt: serverTimestamp(),
+            },
+          ),
+        )
+
+        await assertSucceeds(
+          updateDoc(
+            ref,
+            {
+              readAt: null,
+            },
+          ),
+        )
+
+        const snapshot = await getDoc(ref)
+
+        assert.equal(snapshot.data().readAt, null)
+      },
+    )
+
+    it(
+      'denies arbitrary readAt timestamps',
+      async () => {
+        await assertFails(
+          updateDoc(
+            doc(
+              userDb(),
+              'users/alice/notifications/notification-1',
+            ),
+            {
+              readAt: Timestamp.fromMillis(123),
+            },
+          ),
+        )
+      },
+    )
+
+    for (const [field, value] of [
+      ['schemaVersion', 2],
+      ['type', 'friend_accepted'],
+      ['actorUid', 'charlie'],
+      ['entityId', 'different-entity'],
+      ['metadata', { tampered: true }],
+      ['createdAt', Timestamp.fromMillis(999_999)],
+    ]) {
+      it(
+        `denies owner tampering with notification ${field}`,
+        async () => {
+          await assertFails(
+            updateDoc(
+              doc(
+                userDb(),
+                'users/alice/notifications/notification-1',
+              ),
+              {
+                [field]: value,
+              },
+            ),
+          )
+        },
+      )
+    }
+
+    it(
+      'denies changing readAt together with notification content',
+      async () => {
+        await assertFails(
+          updateDoc(
+            doc(
+              userDb(),
+              'users/alice/notifications/notification-1',
+            ),
+            {
+              readAt: serverTimestamp(),
+              type: 'achievement_unlocked',
+            },
+          ),
+        )
+      },
+    )
+
+    it(
+      'denies client notification deletion',
+      async () => {
+        await assertFails(
+          deleteDoc(
+            doc(
+              userDb(),
+              'users/alice/notifications/notification-1',
+            ),
+          ),
+        )
+      },
+    )
+
+    it(
+      'keeps nested notification paths deny-by-default',
+      async () => {
+        const ref = doc(
+          userDb(),
+          'users/alice/notifications/notification-1/private/data',
+        )
+
+        await assertFails(
+          getDoc(ref),
+        )
+
+        await assertFails(
+          setDoc(
+            ref,
+            {
+              hidden: true,
+            },
+          ),
+        )
+      },
+    )
+  },
+)
