@@ -215,6 +215,23 @@ export const fr = {
     },
   },
 
+  notifications: {
+    ariaLabel: 'Notifications. {count} non lues',
+    title: 'Notifications',
+    unreadCount: '{count} non lues',
+    loading: 'Chargement des notifications…',
+    unavailable: 'Impossible de charger les notifications.',
+    empty: 'Aucune nouvelle notification pour le moment.',
+    markAllRead: 'Tout marquer comme lu',
+    markingAllRead: 'Enregistrement…',
+    friendRequest: '{name} souhaite vous ajouter comme ami.',
+    friendAccepted: '{name} est maintenant votre ami.',
+    achievementUnlocked: 'Vous avez débloqué un nouveau succès.',
+    fallback: 'Nouvelle notification MovieDNA.',
+    unknownUser: 'Utilisateur MovieDNA',
+    actionError: 'Impossible de mettre à jour cette notification.',
+  },
+
   social: {
     friends: {
       loading: 'Chargement des amis…',

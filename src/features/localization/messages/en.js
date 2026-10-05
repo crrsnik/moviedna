@@ -215,6 +215,23 @@ export const en = {
     },
   },
 
+  notifications: {
+    ariaLabel: 'Notifications. {count} unread',
+    title: 'Notifications',
+    unreadCount: '{count} unread',
+    loading: 'Loading notifications…',
+    unavailable: "We couldn't load notifications.",
+    empty: 'No new notifications yet.',
+    markAllRead: 'Mark all read',
+    markingAllRead: 'Saving…',
+    friendRequest: '{name} wants to add you as a friend.',
+    friendAccepted: '{name} is now your friend.',
+    achievementUnlocked: 'You unlocked a new achievement.',
+    fallback: 'New MovieDNA notification.',
+    unknownUser: 'MovieDNA user',
+    actionError: "We couldn't update this notification.",
+  },
+
   social: {
     friends: {
       loading: 'Loading friends…',

@@ -215,6 +215,23 @@ export const ru = {
     },
   },
 
+  notifications: {
+    ariaLabel: 'Уведомления. Непрочитанных: {count}',
+    title: 'Уведомления',
+    unreadCount: 'Непрочитанных: {count}',
+    loading: 'Загрузка уведомлений…',
+    unavailable: 'Не удалось загрузить уведомления.',
+    empty: 'Новых уведомлений пока нет.',
+    markAllRead: 'Прочитать все',
+    markingAllRead: 'Сохранение…',
+    friendRequest: '{name} хочет добавить вас в друзья.',
+    friendAccepted: '{name} теперь у вас в друзьях.',
+    achievementUnlocked: 'Вы получили новое достижение.',
+    fallback: 'Новое уведомление MovieDNA.',
+    unknownUser: 'Пользователь MovieDNA',
+    actionError: 'Не удалось обновить уведомление.',
+  },
+
   social: {
     friends: {
       loading: 'Загрузка друзей…',
