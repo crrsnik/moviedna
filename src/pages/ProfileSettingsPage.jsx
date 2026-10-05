@@ -13,14 +13,14 @@ function ProfileSettingsPage() {
           )}
         </h2>
 
-        <p className="mt-2 text-zinc-400">
+        <p className="mt-2 text-secondary">
           {t(
             'profile.settingsPage.description',
           )}
         </p>
       </header>
 
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 sm:p-7">
+      <div className="rounded-xl border border-border bg-surface p-5 sm:p-7">
         <ProfileSettingsForm />
       </div>
     </section>

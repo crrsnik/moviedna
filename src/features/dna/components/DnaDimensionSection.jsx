@@ -6,6 +6,7 @@ import {
 import {
   sortDnaEntriesForDisplay,
 } from '../utils/sortDnaEntriesForDisplay.js'
+import DnaTraitBar from './DnaTraitBar.jsx'
 
 const DEFAULT_VISIBLE = 4
 
@@ -51,7 +52,7 @@ export default function DnaDimensionSection({
   return (
     <section
       aria-labelledby={`${id}-title`}
-      className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5"
+      className="rounded-2xl border border-border bg-surface p-5"
     >
       <h2
         id={`${id}-title`}
@@ -74,14 +75,14 @@ export default function DnaDimensionSection({
               return (
                 <li
                   key={entry.key}
-                  className="rounded-xl bg-zinc-950 p-4"
+                  className="rounded-xl bg-surface-muted p-4"
                 >
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <strong className="break-words">
                       {entry.label}
                     </strong>
 
-                    <span className="text-sm text-zinc-300">
+                    <span className="text-sm text-secondary">
                       {t(
                         compatibilityKey(
                           entry.score,
@@ -93,14 +94,16 @@ export default function DnaDimensionSection({
                     </span>
                   </div>
 
-                  <progress
-                    aria-label={t(
+                  <DnaTraitBar
+                    dimension={id}
+                    traitKey={entry.key}
+                    label={entry.label}
+                    percent={percent}
+                    negative={entry.score < 0}
+                    ariaLabel={t(
                       'dnaUi.compatibility.strength',
                       { label: entry.label },
                     )}
-                    value={percent}
-                    max="100"
-                    className="mt-3 h-2 w-full accent-violet-400"
                   />
                 </li>
               )
@@ -115,7 +118,7 @@ export default function DnaDimensionSection({
               onClick={() => setExpanded(
                 value => !value,
               )}
-              className="mt-4 rounded text-sm font-medium text-violet-300 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4"
+              className="mt-4 rounded-lg border border-border-strong bg-surface px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
               {expanded
                 ? t('dnaUi.showLess')
@@ -130,7 +133,7 @@ export default function DnaDimensionSection({
           )}
         </>
       ) : (
-        <p className="mt-3 text-sm text-zinc-400">
+        <p className="mt-3 text-sm text-secondary">
           {t('dnaUi.notEnoughEvidence')}
         </p>
       )}

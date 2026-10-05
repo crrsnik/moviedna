@@ -289,7 +289,7 @@ export default function NotificationsPage() {
       <div className="w-full self-start">
         <p
           role="status"
-          className="text-zinc-400"
+          className="text-secondary"
         >
           {t('notifications.loading')}
         </p>
@@ -299,7 +299,7 @@ export default function NotificationsPage() {
 
   if (error) {
     return (
-      <section className="w-full self-start rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+      <section className="w-full self-start rounded-2xl border border-border bg-surface p-6">
         <h1 className="text-2xl font-semibold">
           {t(
             'notifications.unavailableTitle',
@@ -308,7 +308,7 @@ export default function NotificationsPage() {
 
         <p
           role="alert"
-          className="mt-2 text-zinc-400"
+          className="mt-2 text-secondary"
         >
           {t(
             'notifications.unavailable',
@@ -332,7 +332,7 @@ export default function NotificationsPage() {
             {t('notifications.title')}
           </h1>
 
-          <p className="max-w-2xl text-sm text-zinc-400">
+          <p className="max-w-2xl text-sm text-secondary">
             {t(
               'notifications.description',
             )}
@@ -344,7 +344,7 @@ export default function NotificationsPage() {
             type="button"
             disabled={markingAll}
             onClick={markAllAsRead}
-            className="cursor-pointer rounded-lg border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-50"
+            className="cursor-pointer rounded-lg border border-border px-3 py-2 text-sm font-medium text-primary transition hover:bg-surface-muted disabled:cursor-wait disabled:opacity-50"
           >
             {markingAll
               ? t(
@@ -368,7 +368,7 @@ export default function NotificationsPage() {
         </p>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
         {notifications.length === 0 ? (
           <div className="px-6 py-14 text-center">
             <div
@@ -378,7 +378,7 @@ export default function NotificationsPage() {
               🔔
             </div>
 
-            <p className="mt-3 text-sm text-zinc-400">
+            <p className="mt-3 text-sm text-secondary">
               {t(
                 'notifications.historyEmpty',
               )}
@@ -405,7 +405,7 @@ export default function NotificationsPage() {
                   <article
                     key={notification.id}
                     className={
-                      'flex items-stretch border-b border-zinc-800 last:border-b-0 '
+                      'flex items-stretch border-b border-border last:border-b-0 '
                       + (
                         unread
                           ? 'bg-violet-500/5'
@@ -420,7 +420,7 @@ export default function NotificationsPage() {
                           notification,
                         )
                       }}
-                      className="relative flex min-w-0 flex-1 cursor-pointer items-center gap-4 px-4 py-4 text-left transition hover:bg-zinc-800/70 sm:px-5"
+                      className="relative flex min-w-0 flex-1 cursor-pointer items-center gap-4 px-4 py-4 text-left transition hover:bg-surface-muted/70 sm:px-5"
                     >
                       {unread && (
                         <span
@@ -429,7 +429,7 @@ export default function NotificationsPage() {
                         />
                       )}
 
-                      <span className="flex size-12 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950">
+                      <span className="flex size-12 shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted">
                         <NotificationIcon
                           notification={
                             notification
@@ -444,8 +444,8 @@ export default function NotificationsPage() {
                             'block text-sm leading-6 sm:text-base '
                             + (
                               unread
-                                ? 'font-medium text-zinc-100'
-                                : 'text-zinc-300'
+                                ? 'font-medium text-primary'
+                                : 'text-secondary'
                             )
                           }
                         >
@@ -456,7 +456,7 @@ export default function NotificationsPage() {
                           )}
                         </span>
 
-                        <span className="mt-1 block text-xs text-zinc-500">
+                        <span className="mt-1 block text-xs text-tertiary">
                           {formatDate(
                             notification.createdAt,
                           )}
@@ -464,7 +464,7 @@ export default function NotificationsPage() {
                       </span>
                     </button>
 
-                    <div className="flex shrink-0 items-center border-l border-zinc-800 px-2 sm:px-3">
+                    <div className="flex shrink-0 items-center border-l border-border px-2 sm:px-3">
                       <button
                         type="button"
                         disabled={busy}
@@ -477,7 +477,7 @@ export default function NotificationsPage() {
                                 notification.id,
                               )
                         )}
-                        className="cursor-pointer rounded-lg px-2 py-2 text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 disabled:cursor-wait disabled:opacity-50 sm:px-3"
+                        className="cursor-pointer rounded-lg px-2 py-2 text-xs font-medium text-secondary hover:bg-surface-muted hover:text-primary disabled:cursor-wait disabled:opacity-50 sm:px-3"
                       >
                         {unread
                           ? t(
@@ -502,7 +502,7 @@ export default function NotificationsPage() {
             type="button"
             disabled={loadingMore}
             onClick={loadMore}
-            className="cursor-pointer rounded-lg border border-zinc-700 px-4 py-2.5 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-50"
+            className="cursor-pointer rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-primary transition hover:bg-surface-muted disabled:cursor-wait disabled:opacity-50"
           >
             {loadingMore
               ? t(

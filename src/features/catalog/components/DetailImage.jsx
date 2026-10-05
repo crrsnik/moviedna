@@ -21,7 +21,7 @@ export default function DetailImage({
 
   return (
     <div
-      className={`flex items-center justify-center overflow-hidden bg-zinc-900 ${className}`}
+      className={`flex items-center justify-center overflow-hidden bg-surface ${className}`}
     >
       {src && failed !== src ? (
         <img
@@ -32,7 +32,7 @@ export default function DetailImage({
           className="h-full w-full object-cover"
         />
       ) : (
-        <span className="px-3 text-center text-sm text-zinc-500">
+        <span className="px-3 text-center text-sm text-tertiary">
           {fallback}
         </span>
       )}

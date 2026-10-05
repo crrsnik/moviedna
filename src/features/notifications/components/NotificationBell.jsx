@@ -286,7 +286,7 @@ export default function NotificationBell() {
           setOpen(value => !value)
           setActionError(false)
         }}
-        className="relative flex size-10 cursor-pointer items-center justify-center rounded-full border border-zinc-700 bg-zinc-950 text-zinc-200 hover:border-zinc-500 hover:bg-zinc-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100"
+        className="relative flex size-10 cursor-pointer items-center justify-center rounded-full border border-border bg-surface-muted text-primary hover:border-border-strong hover:bg-surface-muted hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
         <svg
           aria-hidden="true"
@@ -320,16 +320,16 @@ export default function NotificationBell() {
           aria-label={t(
             'notifications.title',
           )}
-          className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl"
+          className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-surface shadow-2xl"
         >
-          <div className="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3">
+          <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
             <div className="min-w-0">
               <p className="font-semibold text-white">
                 {t('notifications.title')}
               </p>
 
               {unreadCount > 0 && (
-                <p className="mt-0.5 text-xs text-zinc-400">
+                <p className="mt-0.5 text-xs text-secondary">
                   {t(
                     'notifications.unreadCount',
                     {
@@ -345,7 +345,7 @@ export default function NotificationBell() {
                 type="button"
                 disabled={markingAll}
                 onClick={handleMarkAllRead}
-                className="shrink-0 cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-violet-300 hover:bg-zinc-800 hover:text-violet-200 disabled:cursor-wait disabled:opacity-60"
+                className="shrink-0 cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-violet-300 hover:bg-surface-muted hover:text-violet-200 disabled:cursor-wait disabled:opacity-60"
               >
                 {markingAll
                   ? t(
@@ -361,7 +361,7 @@ export default function NotificationBell() {
           {loading ? (
             <p
               role="status"
-              className="px-4 py-8 text-center text-sm text-zinc-400"
+              className="px-4 py-8 text-center text-sm text-secondary"
             >
               {t('notifications.loading')}
             </p>
@@ -381,7 +381,7 @@ export default function NotificationBell() {
                 🔔
               </div>
 
-              <p className="text-sm text-zinc-300">
+              <p className="text-sm text-secondary">
                 {t('notifications.empty')}
               </p>
             </div>
@@ -414,7 +414,7 @@ export default function NotificationBell() {
                         )
                       }}
                       className={
-                        'relative flex w-full cursor-pointer gap-3 border-b border-zinc-800 px-4 py-3 text-left transition last:border-b-0 hover:bg-zinc-800/80 '
+                        'relative flex w-full cursor-pointer gap-3 border-b border-border px-4 py-3 text-left transition last:border-b-0 hover:bg-surface-muted/80 '
                         + (
                           unread
                             ? 'bg-violet-500/5'
@@ -431,7 +431,7 @@ export default function NotificationBell() {
 
                       <span
                         aria-hidden="true"
-                        className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950 text-base"
+                        className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted text-base"
                       >
                         {notification.type
                           === 'achievement_unlocked'
@@ -445,8 +445,8 @@ export default function NotificationBell() {
                             'block text-sm leading-5 '
                             + (
                               unread
-                                ? 'font-medium text-zinc-100'
-                                : 'text-zinc-300'
+                                ? 'font-medium text-primary'
+                                : 'text-secondary'
                             )
                           }
                         >
@@ -458,7 +458,7 @@ export default function NotificationBell() {
                         </span>
 
                         {dateLabel && (
-                          <span className="mt-1 block text-xs text-zinc-500">
+                          <span className="mt-1 block text-xs text-tertiary">
                             {dateLabel}
                           </span>
                         )}
@@ -473,7 +473,7 @@ export default function NotificationBell() {
           {actionError && (
             <p
               role="alert"
-              className="border-t border-zinc-800 px-4 py-2 text-xs text-red-300"
+              className="border-t border-border px-4 py-2 text-xs text-red-300"
             >
               {t(
                 'notifications.actionError',
@@ -481,14 +481,14 @@ export default function NotificationBell() {
             </p>
           )}
 
-          <div className="border-t border-zinc-800 p-2">
+          <div className="border-t border-border p-2">
             <button
               type="button"
               onClick={() => {
                 setOpen(false)
                 navigate('/notifications')
               }}
-              className="w-full cursor-pointer rounded-lg px-3 py-2 text-center text-sm font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white focus-visible:outline-2 focus-visible:outline-zinc-100"
+              className="w-full cursor-pointer rounded-lg px-3 py-2 text-center text-sm font-medium text-secondary hover:bg-surface-muted hover:text-white focus-visible:outline-2 focus-visible:outline-focus"
             >
               {t('notifications.viewAll')}
             </button>

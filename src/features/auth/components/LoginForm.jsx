@@ -67,7 +67,7 @@ function LoginForm() {
           const id = `login-${name}`
           return (
             <div key={name} className="space-y-2">
-              <label htmlFor={id} className="block text-sm font-medium text-zinc-200">{t(labelKey)}</label>
+              <label htmlFor={id} className="block text-sm font-medium text-primary">{t(labelKey)}</label>
               <input
                 {...inputProps}
                 id={id}
@@ -77,7 +77,7 @@ function LoginForm() {
                 required
                 aria-invalid={Boolean(errors[name])}
                 aria-describedby={errors[name] ? `${id}-error` : undefined}
-                className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 aria-invalid:border-red-400"
+                className="w-full rounded-md border border-border bg-surface-muted px-3 py-2 text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus aria-invalid:border-red-400"
               />
               {errors[name] && <p id={`${id}-error`} className="text-sm text-red-300">{translateAuthMessage(t, errors[name])}</p>}
             </div>
@@ -85,15 +85,15 @@ function LoginForm() {
         })}
       </fieldset>
       <p className="text-right text-sm">
-        <Link to="/forgot-password" className="rounded text-zinc-100 underline underline-offset-4 hover:text-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100">{t('auth.login.forgotPassword')}</Link>
+        <Link to="/forgot-password" className="rounded text-primary underline underline-offset-4 hover:text-secondary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus">{t('auth.login.forgotPassword')}</Link>
       </p>
       {serverError && <p role="alert" className="text-sm text-red-300">{translateAuthMessage(t, serverError)}</p>}
-      <button type="submit" disabled={isSubmitting} className="w-full rounded-md bg-zinc-100 px-4 py-3 font-semibold text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100 disabled:cursor-wait disabled:opacity-60">
+      <button type="submit" disabled={isSubmitting} className="w-full rounded-md bg-accent px-4 py-3 font-semibold text-accent-contrast hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus disabled:cursor-wait disabled:opacity-60">
         {isSubmitting ? t('auth.login.submitting') : t('auth.login.submit')}
       </button>
-      <p className="text-center text-sm text-zinc-400">
+      <p className="text-center text-sm text-secondary">
         {t('auth.login.newToMovieDna')}{' '}
-        <Link to="/register" className="rounded text-zinc-100 underline underline-offset-4 hover:text-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100">{t('auth.login.createAccount')}</Link>
+        <Link to="/register" className="rounded text-primary underline underline-offset-4 hover:text-secondary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus">{t('auth.login.createAccount')}</Link>
       </p>
     </form>
   )

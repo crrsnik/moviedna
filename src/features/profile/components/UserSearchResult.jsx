@@ -22,7 +22,7 @@ export default function UserSearchResult({
     : `/users/${profile.username}`
 
   return (
-    <article className="flex flex-col gap-5 rounded-2xl border border-zinc-800 bg-zinc-900 p-5 sm:flex-row sm:items-center">
+    <article className="flex flex-col gap-5 rounded-2xl border border-border bg-surface p-5 sm:flex-row sm:items-center">
       <div
         role="img"
         aria-label={t(
@@ -33,7 +33,7 @@ export default function UserSearchResult({
             ),
           },
         )}
-        className="flex size-20 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950 text-4xl"
+        className="flex size-20 shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted text-4xl"
       >
         {avatar.symbol}
       </div>
@@ -43,11 +43,11 @@ export default function UserSearchResult({
           {profile.displayName}
         </h2>
 
-        <p className="mt-1 break-all text-sm text-zinc-400">
+        <p className="mt-1 break-all text-sm text-secondary">
           @{profile.username}
         </p>
 
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className="mt-2 text-xs text-tertiary">
           {ownProfile
             ? t('social.userSearch.yourProfile')
             : profile.profileVisibility === 'public'
@@ -58,7 +58,7 @@ export default function UserSearchResult({
 
       <Link
         to={destination}
-        className="shrink-0 rounded-lg border border-zinc-700 px-4 py-2 text-center text-sm font-medium text-zinc-200 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
+        className="shrink-0 rounded-lg border border-border px-4 py-2 text-center text-sm font-medium text-primary hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
       >
         {ownProfile
           ? t('social.userSearch.openProfile')

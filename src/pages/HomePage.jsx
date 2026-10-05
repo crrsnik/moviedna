@@ -32,12 +32,12 @@ function HomePage() {
       >
         <h1
           id="home-title"
-          className="text-4xl font-semibold tracking-tight sm:text-6xl"
+          className="text-4xl font-bold tracking-[-0.025em] text-primary sm:text-6xl"
         >
           MovieDNA
         </h1>
 
-        <p className="text-lg text-zinc-400">
+        <p className="text-lg text-secondary">
           {t('catalog.home.tagline')}
         </p>
 
@@ -54,7 +54,7 @@ function HomePage() {
         >
           <h2
             id={id}
-            className="text-xl font-semibold tracking-tight sm:text-2xl"
+            className="text-xl font-semibold tracking-tight text-primary sm:text-2xl"
           >
             {title}
           </h2>

@@ -8,7 +8,7 @@ function BoardCount({ count }) {
   const { t } = useTranslation()
 
   return (
-    <span className="text-sm text-zinc-500">
+    <span className="text-sm text-tertiary">
       {t(
         count === 1
           ? 'library.boards.oneTitle'
@@ -25,7 +25,7 @@ function BoardCover({ board }) {
 
   if (!cover) {
     return (
-      <div className="flex aspect-2/3 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-center text-sm text-zinc-500">
+      <div className="flex aspect-2/3 items-center justify-center rounded-xl border border-border bg-surface-muted px-4 text-center text-sm text-tertiary">
         {t('library.boards.emptyBoard')}
       </div>
     )
@@ -57,14 +57,14 @@ export default function PublicBoards({
 
   if (state.loading) {
     return (
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+      <section className="rounded-2xl border border-border bg-surface p-6">
         <h2 className="text-xl font-semibold">
           {t('library.boards.title')}
         </h2>
 
         <p
           role="status"
-          className="mt-3 text-zinc-400"
+          className="mt-3 text-secondary"
         >
           {t('library.boards.loading')}
         </p>
@@ -74,14 +74,14 @@ export default function PublicBoards({
 
   if (state.error) {
     return (
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+      <section className="rounded-2xl border border-border bg-surface p-6">
         <h2 className="text-xl font-semibold">
           {t('library.boards.title')}
         </h2>
 
         <p
           role="alert"
-          className="mt-3 text-zinc-400"
+          className="mt-3 text-secondary"
         >
           {t('library.boards.error')}
         </p>
@@ -91,12 +91,12 @@ export default function PublicBoards({
 
   if (!state.boards.length) {
     return (
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+      <section className="rounded-2xl border border-border bg-surface p-6">
         <h2 className="text-xl font-semibold">
           {t('library.boards.title')}
         </h2>
 
-        <p className="mt-3 text-sm text-zinc-400">
+        <p className="mt-3 text-sm text-secondary">
           {t('library.boards.empty')}
         </p>
       </section>
@@ -104,13 +104,13 @@ export default function PublicBoards({
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+    <section className="rounded-2xl border border-border bg-surface p-6">
       <div className="space-y-1">
         <h2 className="text-xl font-semibold">
           {t('library.boards.title')}
         </h2>
 
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-secondary">
           {t('library.boards.description')}
         </p>
       </div>
@@ -127,9 +127,9 @@ export default function PublicBoards({
                 : `/users/${encodeURIComponent(
                     username,
                   )}/boards/${board.id}`}
-              className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
+              className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
             >
-              <div className="overflow-hidden rounded-xl bg-zinc-950 transition-transform duration-200 group-hover:-translate-y-0.5">
+              <div className="overflow-hidden rounded-xl bg-surface-muted transition-transform duration-200 group-hover:-translate-y-0.5">
                 <BoardCover board={board} />
               </div>
 

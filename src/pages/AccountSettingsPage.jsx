@@ -159,23 +159,23 @@ export default function AccountSettingsPage() {
           {t('accountSettingsPage.title')}
         </h2>
 
-        <p className="mt-2 text-zinc-400">
+        <p className="mt-2 text-secondary">
           {t(
             'accountSettingsPage.description',
           )}
         </p>
       </header>
 
-      <div className="space-y-8 rounded-xl border border-zinc-800 bg-zinc-900 p-5 sm:p-7">
+      <div className="space-y-8 rounded-xl border border-border bg-surface p-5 sm:p-7">
         <section className="space-y-3">
           <div>
-            <h3 className="text-lg font-semibold text-zinc-100">
+            <h3 className="text-lg font-semibold text-primary">
               {t(
                 'accountSettingsPage.emailTitle',
               )}
             </h3>
 
-            <p className="mt-1 text-sm text-zinc-400">
+            <p className="mt-1 text-sm text-secondary">
               {t(
                 'accountSettingsPage.emailDescription',
               )}
@@ -185,7 +185,7 @@ export default function AccountSettingsPage() {
           <div className="space-y-2">
             <label
               htmlFor="account-email"
-              className="block text-sm font-medium text-zinc-200"
+              className="block text-sm font-medium text-primary"
             >
               {t(
                 'accountSettingsPage.emailAddress',
@@ -198,10 +198,10 @@ export default function AccountSettingsPage() {
               value={email}
               readOnly
               autoComplete="email"
-              className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-300"
+              className="w-full rounded-md border border-border bg-surface-muted px-3 py-2 text-secondary"
             />
 
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-tertiary">
               {t(
                 'accountSettingsPage.emailUnsupported',
               )}
@@ -209,15 +209,15 @@ export default function AccountSettingsPage() {
           </div>
         </section>
 
-        <section className="space-y-4 border-t border-zinc-800 pt-8">
+        <section className="space-y-4 border-t border-border pt-8">
           <div>
-            <h3 className="text-lg font-semibold text-zinc-100">
+            <h3 className="text-lg font-semibold text-primary">
               {t(
                 'accountSettingsPage.passwordTitle',
               )}
             </h3>
 
-            <p className="mt-1 text-sm text-zinc-400">
+            <p className="mt-1 text-sm text-secondary">
               {t(
                 'accountSettingsPage.passwordDescription',
               )}
@@ -228,7 +228,7 @@ export default function AccountSettingsPage() {
             type="button"
             onClick={handlePasswordReset}
             disabled={isSending || !email}
-            className="rounded-md border border-zinc-600 px-4 py-2 font-medium text-zinc-100 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md border border-border-strong px-4 py-2 font-medium text-primary hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSending
               ? t('accountSettingsPage.sending')
@@ -261,7 +261,7 @@ export default function AccountSettingsPage() {
           {success && (
             <p
               role="status"
-              className="text-sm text-zinc-300"
+              className="text-sm text-secondary"
             >
               {t(
                 'accountSettingsPage.resetSuccess',
@@ -278,7 +278,7 @@ export default function AccountSettingsPage() {
               )}
             </h3>
 
-            <p className="mt-1 text-sm text-zinc-400">
+            <p className="mt-1 text-sm text-secondary">
               {t(
                 'accountSettingsPage.deleteDescription',
               )}
@@ -292,7 +292,7 @@ export default function AccountSettingsPage() {
             <div className="space-y-2">
               <label
                 htmlFor="delete-account-password"
-                className="block text-sm font-medium text-zinc-200"
+                className="block text-sm font-medium text-primary"
               >
                 {t(
                   'accountSettingsPage.deletePassword',
@@ -310,11 +310,11 @@ export default function AccountSettingsPage() {
                     event.target.value,
                   )
                 }}
-                className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400 disabled:opacity-50"
+                className="w-full rounded-md border border-border bg-surface-muted px-3 py-2 text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400 disabled:opacity-50"
               />
             </div>
 
-            <label className="flex items-start gap-3 text-sm text-zinc-300">
+            <label className="flex items-start gap-3 text-sm text-secondary">
               <input
                 type="checkbox"
                 checked={deleteConfirmed}

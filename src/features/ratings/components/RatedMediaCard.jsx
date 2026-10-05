@@ -41,7 +41,7 @@ export default function RatedMediaCard({
           {item.title}
         </h3>
 
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-secondary">
           {[
             item.mediaType === 'movie'
               ? t('catalog.media.movie')

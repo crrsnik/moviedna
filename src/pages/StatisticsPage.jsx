@@ -35,8 +35,8 @@ function MetricCard({
   description,
 }) {
   return (
-    <article className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-      <p className="text-sm text-zinc-400">
+    <article className="rounded-xl border border-border bg-surface p-5">
+      <p className="text-sm text-secondary">
         {label}
       </p>
 
@@ -45,7 +45,7 @@ function MetricCard({
       </p>
 
       {description && (
-        <p className="mt-2 text-sm text-zinc-500">
+        <p className="mt-2 text-sm text-tertiary">
           {description}
         </p>
       )}
@@ -59,13 +59,13 @@ function RankedList({
   emptyText,
 }) {
   return (
-    <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+    <section className="rounded-xl border border-border bg-surface p-5">
       <h2 className="text-lg font-semibold">
         {title}
       </h2>
 
       {!items.length ? (
-        <p className="mt-4 text-sm text-zinc-500">
+        <p className="mt-4 text-sm text-tertiary">
           {emptyText}
         </p>
       ) : (
@@ -78,7 +78,7 @@ function RankedList({
               className="flex items-center justify-between gap-4"
             >
               <div className="min-w-0">
-                <span className="mr-3 text-sm text-zinc-500">
+                <span className="mr-3 text-sm text-tertiary">
                   {index + 1}
                 </span>
 
@@ -87,7 +87,7 @@ function RankedList({
                 </span>
               </div>
 
-              <span className="shrink-0 text-sm text-zinc-400">
+              <span className="shrink-0 text-sm text-secondary">
                 {item.count}
               </span>
             </li>
@@ -112,7 +112,7 @@ function MediaTypeBreakdown({
   )
 
   return (
-    <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+    <section className="rounded-xl border border-border bg-surface p-5">
       <h2 className="text-lg font-semibold">
         {t('statisticsUi.mediaTypesTitle')}
       </h2>
@@ -124,7 +124,7 @@ function MediaTypeBreakdown({
               {t('statisticsUi.movies')}
             </span>
 
-            <span className="text-zinc-400">
+            <span className="text-secondary">
               {mediaTypes.movieCount}
               {' · '}
               {moviePercent}%
@@ -132,11 +132,11 @@ function MediaTypeBreakdown({
           </div>
 
           <div
-            className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-800"
+            className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted"
             aria-hidden="true"
           >
             <div
-              className="h-full rounded-full bg-zinc-300"
+              className="h-full rounded-full bg-accent-hover"
               style={{
                 width: `${moviePercent}%`,
               }}
@@ -150,7 +150,7 @@ function MediaTypeBreakdown({
               {t('statisticsUi.tvShows')}
             </span>
 
-            <span className="text-zinc-400">
+            <span className="text-secondary">
               {mediaTypes.tvCount}
               {' · '}
               {tvPercent}%
@@ -158,7 +158,7 @@ function MediaTypeBreakdown({
           </div>
 
           <div
-            className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-800"
+            className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted"
             aria-hidden="true"
           >
             <div
@@ -183,13 +183,13 @@ function ActivityChart({ activity }) {
   )
 
   return (
-    <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+    <section className="rounded-xl border border-border bg-surface p-5">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">
           {t('statisticsUi.activityTitle')}
         </h2>
 
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-tertiary">
           {t(
             'statisticsUi.activityDescription',
           )}
@@ -225,13 +225,13 @@ function ActivityChart({ activity }) {
               key={item.month}
               className="flex min-w-0 flex-1 flex-col items-center gap-2"
             >
-              <span className="text-xs text-zinc-400">
+              <span className="text-xs text-secondary">
                 {item.count}
               </span>
 
               <div className="flex h-32 w-full items-end justify-center">
                 <div
-                  className="w-full max-w-8 rounded-t bg-zinc-300"
+                  className="w-full max-w-8 rounded-t bg-accent-hover"
                   style={{
                     height: `${height}%`,
                   }}
@@ -245,7 +245,7 @@ function ActivityChart({ activity }) {
                 />
               </div>
 
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-tertiary">
                 {label}
               </span>
             </div>
@@ -286,7 +286,7 @@ export default function StatisticsPage() {
           {t('statisticsUi.title')}
         </h1>
 
-        <p className="text-zinc-400">
+        <p className="text-secondary">
           {t('statisticsUi.calculating')}
         </p>
       </main>
@@ -302,7 +302,7 @@ export default function StatisticsPage() {
 
         <p
           role="alert"
-          className="text-zinc-400"
+          className="text-secondary"
         >
           {t('statisticsUi.loadError')}
         </p>
@@ -310,7 +310,7 @@ export default function StatisticsPage() {
         <button
           type="button"
           onClick={retry}
-          className="rounded-lg border border-zinc-600 px-4 py-2 text-sm hover:bg-zinc-800"
+          className="rounded-lg border border-border-strong px-4 py-2 text-sm hover:bg-surface-muted"
         >
           {t('statisticsUi.retry')}
         </button>
@@ -325,7 +325,7 @@ export default function StatisticsPage() {
           {t('statisticsUi.title')}
         </h1>
 
-        <p className="text-zinc-400">
+        <p className="text-secondary">
           {t('statisticsUi.description')}
         </p>
       </header>
@@ -362,12 +362,12 @@ export default function StatisticsPage() {
       </section>
 
       {!stats.totalViewings ? (
-        <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+        <section className="rounded-xl border border-border bg-surface p-6">
           <h2 className="text-xl font-semibold">
             {t('statisticsUi.emptyTitle')}
           </h2>
 
-          <p className="mt-2 text-sm text-zinc-400">
+          <p className="mt-2 text-sm text-secondary">
             {t(
               'statisticsUi.emptyDescription',
             )}

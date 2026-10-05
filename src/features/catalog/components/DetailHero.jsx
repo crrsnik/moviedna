@@ -9,18 +9,19 @@ import {
 
 import DetailImage from './DetailImage.jsx'
 
-const link = 'inline-block rounded-lg border border-zinc-500 bg-zinc-950/70 px-4 py-2 text-sm hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white'
+const link = 'inline-block rounded-lg border border-border-strong bg-black/55 px-4 py-2 text-sm hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white'
 
 export default function DetailHero({
   media: movie,
   metadata,
   backTo,
   backLabel,
+  actions = null,
 }) {
   const { locale, t } = useTranslation()
 
   return (
-    <header className="relative isolate min-h-112 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+    <header className="relative isolate min-h-112 overflow-hidden rounded-2xl border border-border bg-surface">
       <DetailImage
         src={getTmdbBackdropUrl(movie.backdropPath)}
         alt=""
@@ -31,7 +32,7 @@ export default function DetailHero({
 
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-zinc-950/85"
+        className="absolute inset-0 -z-10 bg-black/75"
       />
 
       <div className="grid min-w-0 gap-6 p-5 sm:p-8 md:grid-cols-[15rem_minmax(0,1fr)]">
@@ -52,11 +53,19 @@ export default function DetailHero({
         />
 
         <div className="min-w-0 space-y-4">
-          <h1 className="break-words text-3xl font-semibold sm:text-4xl">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <h1 className="min-w-0 break-words text-3xl font-semibold sm:text-4xl">
             {movie.title}
           </h1>
 
-          <p className="flex flex-wrap gap-3 text-sm text-zinc-300">
+            {actions && (
+              <div className="shrink-0">
+                {actions}
+              </div>
+            )}
+          </div>
+
+          <p className="flex flex-wrap gap-3 text-sm text-secondary">
             {metadata
               .filter(Boolean)
               .map((value, index) => (
@@ -93,7 +102,7 @@ export default function DetailHero({
               {movie.genres.map(genre => (
                 <li
                   key={genre.id}
-                  className="rounded-full bg-zinc-800 px-3 py-1 text-xs"
+                  className="rounded-full bg-surface-muted px-3 py-1 text-xs"
                 >
                   {genre.name}
                 </li>
@@ -102,12 +111,12 @@ export default function DetailHero({
           )}
 
           {movie.tagline && (
-            <p className="break-words italic text-zinc-300">
+            <p className="break-words italic text-secondary">
               {movie.tagline}
             </p>
           )}
 
-          <p className="break-words leading-relaxed text-zinc-200">
+          <p className="break-words leading-relaxed text-primary">
             {movie.overview
               || t('catalog.detail.noOverview')}
           </p>

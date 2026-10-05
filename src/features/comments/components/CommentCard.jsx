@@ -24,15 +24,15 @@ export default function CommentCard({ comment }) {
   ).toISOString()
 
   return (
-    <article className="min-w-0 space-y-3 rounded-xl border border-zinc-700 p-4">
+    <article className="min-w-0 space-y-3 rounded-xl border border-border p-4">
       <p className="break-words font-semibold">
         {comment.authorDisplayName}{' '}
-        <span className="font-normal text-zinc-400">
+        <span className="font-normal text-secondary">
           @{comment.authorUsername}
         </span>
       </p>
 
-      <p className="text-sm text-zinc-400">
+      <p className="text-sm text-secondary">
         <time dateTime={date}>
           {new Date(date).toLocaleDateString(
             locale,

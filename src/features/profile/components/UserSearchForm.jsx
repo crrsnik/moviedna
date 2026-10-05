@@ -44,7 +44,7 @@ export default function UserSearchForm({
     >
       <label
         htmlFor={id}
-        className="text-sm font-medium text-zinc-300"
+        className="text-sm font-medium text-secondary"
       >
         {t('social.userSearch.username')}
       </label>
@@ -65,12 +65,12 @@ export default function UserSearchForm({
           aria-describedby={
             error ? `${id}-error` : `${id}-hint`
           }
-          className="min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm focus-visible:outline-2 focus-visible:outline-zinc-100"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-4 py-3 text-sm focus-visible:outline-2 focus-visible:outline-focus"
         />
 
         <button
           type="submit"
-          className="rounded-lg bg-zinc-100 px-5 py-3 text-sm font-semibold text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
+          className="rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-accent-contrast hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
         >
           {t('social.userSearch.search')}
         </button>
@@ -91,7 +91,7 @@ export default function UserSearchForm({
       ) : (
         <p
           id={`${id}-hint`}
-          className="text-sm text-zinc-500"
+          className="text-sm text-tertiary"
         >
           {t('social.userSearch.hint')}
         </p>

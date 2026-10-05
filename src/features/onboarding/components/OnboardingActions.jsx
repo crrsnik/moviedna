@@ -3,7 +3,7 @@ import { useTranslation } from '../../localization/hooks/useTranslation.js'
 const button = (
   'rounded-lg border px-4 py-3 text-sm font-semibold '
   + 'focus-visible:outline-2 focus-visible:outline-offset-4 '
-  + 'focus-visible:outline-zinc-100 disabled:cursor-not-allowed '
+  + 'focus-visible:outline-focus disabled:cursor-not-allowed '
   + 'disabled:opacity-40'
 )
 
@@ -33,7 +33,7 @@ function OnboardingActions({
         aria-label={t('onboarding.actions.skipAria')}
         disabled={disabled}
         onClick={() => onReact('skip')}
-        className={`${button} border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700`}
+        className={`${button} border-border bg-surface-muted text-primary hover:bg-surface-muted`}
       >
         {t('onboarding.actions.skip')}
       </button>

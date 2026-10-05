@@ -11,7 +11,7 @@ function LoginPage() {
           {t('auth.login.title')}
         </h1>
 
-        <p className="text-zinc-400">
+        <p className="text-secondary">
           {t('auth.login.subtitle')}
         </p>
       </div>

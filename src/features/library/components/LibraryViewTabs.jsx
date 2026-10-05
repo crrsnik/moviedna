@@ -39,10 +39,10 @@ export default function LibraryViewTabs({ view }) {
               ? 'page'
               : undefined
           }
-          className={`rounded-lg border px-4 py-2 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4 ${
+          className={`rounded-lg border px-4 py-2 hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-4 ${
             view === value
-              ? 'border-zinc-100 bg-zinc-800'
-              : 'border-zinc-700'
+              ? 'border-accent bg-accent-soft text-accent'
+              : 'border-border'
           }`}
         >
           {label}

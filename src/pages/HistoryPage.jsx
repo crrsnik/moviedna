@@ -44,7 +44,7 @@ export default function HistoryPage() {
           {t('viewingHistoryUi.title')}
         </h1>
 
-        <p className="text-zinc-400">
+        <p className="text-secondary">
           {t('viewingHistoryUi.loading')}
         </p>
       </main>
@@ -60,7 +60,7 @@ export default function HistoryPage() {
 
         <p
           role="alert"
-          className="text-zinc-400"
+          className="text-secondary"
         >
           {t('viewingHistoryUi.loadError')}
         </p>
@@ -68,7 +68,7 @@ export default function HistoryPage() {
         <button
           type="button"
           onClick={retry}
-          className="rounded-lg border border-zinc-600 px-4 py-2 text-sm hover:bg-zinc-800"
+          className="rounded-lg border border-border-strong px-4 py-2 text-sm hover:bg-surface-muted"
         >
           {t('viewingHistoryUi.retry')}
         </button>
@@ -87,7 +87,7 @@ export default function HistoryPage() {
           {t('viewingHistoryUi.title')}
         </h1>
 
-        <p className="text-zinc-400">
+        <p className="text-secondary">
           {data.length === 1
             ? t('viewingHistoryUi.countOne')
             : t(
@@ -98,14 +98,14 @@ export default function HistoryPage() {
       </header>
 
       {!data.length ? (
-        <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+        <section className="rounded-xl border border-border bg-surface p-6">
           <h2 className="text-xl font-semibold">
             {t(
               'viewingHistoryUi.emptyTitle',
             )}
           </h2>
 
-          <p className="mt-2 text-sm text-zinc-400">
+          <p className="mt-2 text-sm text-secondary">
             {t(
               'viewingHistoryUi.emptyDescription',
             )}
@@ -132,7 +132,7 @@ export default function HistoryPage() {
                   )}
                 </h2>
 
-                <span className="text-sm text-zinc-500">
+                <span className="text-sm text-tertiary">
                   {group.events.length}
                 </span>
               </div>

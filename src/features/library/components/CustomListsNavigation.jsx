@@ -39,7 +39,7 @@ export default function CustomListsNavigation({
             }
             className={`${libraryButton} max-w-full gap-2 break-words ${
               selection.listId === list.id
-                ? 'bg-zinc-700'
+                ? 'bg-accent-soft text-accent'
                 : ''
             }`}
           >

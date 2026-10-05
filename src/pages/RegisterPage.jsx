@@ -11,7 +11,7 @@ function RegisterPage() {
           {t('auth.register.title')}
         </h1>
 
-        <p className="text-zinc-400">
+        <p className="text-secondary">
           {t('auth.register.subtitle')}
         </p>
       </div>

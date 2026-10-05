@@ -35,7 +35,7 @@ export default function PersonDetailHero({
   ].filter(([, value]) => value)
 
   return (
-    <header className="grid min-w-0 gap-6 rounded-2xl border border-zinc-800 bg-zinc-900 p-5 sm:p-8 md:grid-cols-[15rem_minmax(0,1fr)]">
+    <header className="grid min-w-0 gap-6 rounded-2xl border border-border bg-surface p-5 sm:p-8 md:grid-cols-[15rem_minmax(0,1fr)]">
       <DetailImage
         src={getTmdbProfileUrl(
           person.profilePath,
@@ -60,7 +60,7 @@ export default function PersonDetailHero({
               key={label}
               className="min-w-0"
             >
-              <dt className="text-sm text-zinc-400">
+              <dt className="text-sm text-secondary">
                 {label}
               </dt>
 
@@ -71,13 +71,13 @@ export default function PersonDetailHero({
           ))}
         </dl>
 
-        <p className="whitespace-pre-line break-words leading-relaxed text-zinc-200">
+        <p className="whitespace-pre-line break-words leading-relaxed text-primary">
           {person.biography
             || t('catalog.detail.noBiography')}
         </p>
 
         {!!person.alsoKnownAs.length && (
-          <p className="break-words text-sm text-zinc-400">
+          <p className="break-words text-sm text-secondary">
             {t(
               'catalog.detail.alsoKnownAs',
               {
@@ -95,7 +95,7 @@ export default function PersonDetailHero({
 
         <Link
           to="/actors"
-          className="inline-block rounded-lg border border-zinc-600 px-4 py-2 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4"
+          className="inline-block rounded-lg border border-border-strong px-4 py-2 hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-4"
         >
           {t('catalog.detail.backActors')}
         </Link>

@@ -19,7 +19,7 @@ function MessagePanel({
   role,
 }) {
   return (
-    <section className="mx-auto w-full max-w-2xl rounded-2xl border border-zinc-800 bg-zinc-900 p-6 text-center sm:p-8">
+    <section className="mx-auto w-full max-w-2xl rounded-2xl border border-border bg-surface p-6 text-center sm:p-8">
       <h1 className="text-2xl font-semibold tracking-tight">
         {title}
       </h1>
@@ -27,7 +27,7 @@ function MessagePanel({
       {children && (
         <p
           role={role}
-          className="mt-3 text-zinc-400"
+          className="mt-3 text-secondary"
         >
           {children}
         </p>
@@ -41,7 +41,7 @@ function BoardItems({ items }) {
 
   if (!items.length) {
     return (
-      <p className="text-sm text-zinc-400">
+      <p className="text-sm text-secondary">
         {t('library.boards.emptyBoard')}
       </p>
     )
@@ -56,7 +56,7 @@ function BoardItems({ items }) {
         >
           <Link
             to={savedMediaRoute(item)}
-            className="group block rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
+            className="group block rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
           >
             <DetailImage
               src={getTmdbPosterUrl(
@@ -76,7 +76,7 @@ function BoardItems({ items }) {
               {item.title}
             </h2>
 
-            <p className="mt-1 text-sm text-zinc-400">
+            <p className="mt-1 text-sm text-secondary">
               {[
                 item.mediaType === 'movie'
                   ? t('catalog.media.movie')
@@ -277,7 +277,7 @@ export default function PublicBoardPage() {
     <div className="w-full min-w-0 max-w-6xl self-start">
       <Link
         to={profileRoute}
-        className="inline-flex text-sm font-medium text-zinc-400 hover:text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
+        className="inline-flex text-sm font-medium text-secondary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
       >
         ← {t('library.boards.backToProfile')}
       </Link>
@@ -288,12 +288,12 @@ export default function PublicBoardPage() {
         </h1>
 
         {board.description && (
-          <p className="mt-2 max-w-3xl whitespace-pre-wrap break-words text-zinc-400">
+          <p className="mt-2 max-w-3xl whitespace-pre-wrap break-words text-secondary">
             {board.description}
           </p>
         )}
 
-        <p className="mt-2 text-sm text-zinc-500">
+        <p className="mt-2 text-sm text-tertiary">
           {t(
             board.items.length === 1
               ? 'library.boards.oneTitle'

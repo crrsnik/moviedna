@@ -3,7 +3,10 @@ import { useTranslation } from '../../localization/hooks/useTranslation.js'
 import DetailHero from './DetailHero.jsx'
 import { formatRuntime } from '../services/detailHelpers.js'
 
-export default function TvShowDetailHero({ series }) {
+export default function TvShowDetailHero({
+  series,
+  actions = null,
+}) {
   const { t } = useTranslation()
 
   return (
@@ -19,6 +22,7 @@ export default function TvShowDetailHero({ series }) {
       ]}
       backTo="/tv"
       backLabel={t('catalog.detail.backTv')}
+      actions={actions}
     />
   )
 }

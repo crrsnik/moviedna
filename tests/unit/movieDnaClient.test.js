@@ -123,7 +123,7 @@ describe('local safety and accessible UI contract', () => {
     assert.match(dimension, /dnaUi\.showAll/)
     assert.match(dimension, /dnaUi\.showLess/)
     assert.match(dimension, /aria-expanded=/)
-    assert.match(dimension, /<progress/)
+    assert.match(dimension, /<DnaTraitBar/)
     assert.doesNotMatch(dimension, /Evidence from/)
     assert.doesNotMatch(dimension, /confidence/)
     assert.doesNotMatch(page, /DnaOverview/)

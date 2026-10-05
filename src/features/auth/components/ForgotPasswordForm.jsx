@@ -49,13 +49,13 @@ function ForgotPasswordForm() {
   return (
     <div className="space-y-5">
       {isSuccess ? (
-        <p role="status" aria-live="polite" className="rounded-md border border-zinc-700 bg-zinc-900 p-4 text-zinc-200">
+        <p role="status" aria-live="polite" className="rounded-md border border-border bg-surface p-4 text-primary">
           {translateAuthMessage(t, PASSWORD_RESET_SUCCESS_MESSAGE)}
         </p>
       ) : (
         <form onSubmit={handleSubmit} noValidate aria-busy={isSubmitting} className="space-y-5">
           <div className="space-y-2">
-            <label htmlFor="password-reset-email" className="block text-sm font-medium text-zinc-200">{t('auth.fields.email')}</label>
+            <label htmlFor="password-reset-email" className="block text-sm font-medium text-primary">{t('auth.fields.email')}</label>
             <input
               ref={emailRef}
               id="password-reset-email"
@@ -68,18 +68,18 @@ function ForgotPasswordForm() {
               disabled={isSubmitting}
               aria-invalid={Boolean(emailError)}
               aria-describedby={emailError ? 'password-reset-email-error' : undefined}
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 disabled:opacity-70 aria-invalid:border-red-400"
+              className="w-full rounded-md border border-border bg-surface-muted px-3 py-2 text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-70 aria-invalid:border-red-400"
             />
             {emailError && <p id="password-reset-email-error" className="text-sm text-red-300">{translateAuthMessage(t, emailError)}</p>}
           </div>
           {serverError && <p role="alert" className="text-sm text-red-300">{translateAuthMessage(t, serverError)}</p>}
-          <button type="submit" disabled={isSubmitting} className="w-full rounded-md bg-zinc-100 px-4 py-3 font-semibold text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100 disabled:cursor-wait disabled:opacity-60">
+          <button type="submit" disabled={isSubmitting} className="w-full rounded-md bg-accent px-4 py-3 font-semibold text-accent-contrast hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus disabled:cursor-wait disabled:opacity-60">
             {isSubmitting ? t('auth.passwordReset.submitting') : t('auth.passwordReset.submit')}
           </button>
         </form>
       )}
       <p className="text-center text-sm">
-        <Link to="/login" className="rounded text-zinc-100 underline underline-offset-4 hover:text-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100">{t('auth.passwordReset.backToLogin')}</Link>
+        <Link to="/login" className="rounded text-primary underline underline-offset-4 hover:text-secondary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus">{t('auth.passwordReset.backToLogin')}</Link>
       </p>
     </div>
   )

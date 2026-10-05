@@ -16,8 +16,8 @@ import {
 } from '../validation/viewingHistoryValidation.js'
 
 const button = (
-  'rounded-lg border border-zinc-600 px-3 py-2 '
-  + 'text-sm hover:bg-zinc-800 focus-visible:outline-2 '
+  'rounded-lg border border-border-strong px-3 py-2 '
+  + 'text-sm hover:bg-surface-muted focus-visible:outline-2 '
   + 'focus-visible:outline-offset-4 disabled:cursor-wait '
   + 'disabled:opacity-50'
 )
@@ -112,13 +112,13 @@ export default function ViewingHistoryCard({
   }
 
   return (
-    <article className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+    <article className="rounded-xl border border-border bg-surface p-4">
       <div className="flex gap-4">
         <Link
           to={href}
           className="shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4"
         >
-          <div className="flex h-30 w-20 items-center justify-center overflow-hidden rounded-lg bg-zinc-800">
+          <div className="flex h-30 w-20 items-center justify-center overflow-hidden rounded-lg bg-surface-muted">
             {posterUrl ? (
               <img
                 src={posterUrl}
@@ -132,7 +132,7 @@ export default function ViewingHistoryCard({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <span className="px-2 text-center text-xs text-zinc-500">
+              <span className="px-2 text-center text-xs text-tertiary">
                 {t(
                   'viewingHistoryUi.noPoster',
                 )}
@@ -143,7 +143,7 @@ export default function ViewingHistoryCard({
 
         <div className="min-w-0 flex-1 space-y-3">
           <div>
-            <p className="text-xs uppercase tracking-wide text-zinc-500">
+            <p className="text-xs uppercase tracking-wide text-tertiary">
               {event.mediaType === 'movie'
                 ? t(
                   'viewingHistoryUi.movie',
@@ -159,13 +159,13 @@ export default function ViewingHistoryCard({
 
             <Link
               to={href}
-              className="mt-1 inline-block rounded font-medium text-zinc-100 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
+              className="mt-1 inline-block rounded font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
             >
               {event.title}
             </Link>
 
             {!!event.genres.length && (
-              <p className="mt-1 text-sm text-zinc-400">
+              <p className="mt-1 text-sm text-secondary">
                 {event.genres
                   .slice(0, 3)
                   .map(genre => genre.name)
@@ -176,7 +176,7 @@ export default function ViewingHistoryCard({
 
           <div className="flex flex-wrap items-end gap-2">
             <label className="space-y-1 text-sm">
-              <span className="block text-zinc-500">
+              <span className="block text-tertiary">
                 {t(
                   'viewingHistoryUi.watchedOn',
                 )}
@@ -194,7 +194,7 @@ export default function ViewingHistoryCard({
                   setMessage(null)
                   setError(null)
                 }}
-                className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-4"
+                className="rounded-lg border border-border bg-surface-muted px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-4"
               />
             </label>
 
@@ -221,7 +221,7 @@ export default function ViewingHistoryCard({
           {!confirmDelete ? (
             <button
               type="button"
-              className="rounded text-sm text-zinc-400 underline underline-offset-4 hover:text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-4"
+              className="rounded text-sm text-secondary underline underline-offset-4 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4"
               disabled={Boolean(pending)}
               onClick={() => {
                 setConfirmDelete(true)
@@ -234,7 +234,7 @@ export default function ViewingHistoryCard({
             </button>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-zinc-400">
+              <span className="text-sm text-secondary">
                 {t(
                   'viewingHistoryUi.deleteQuestion',
                 )}
@@ -274,7 +274,7 @@ export default function ViewingHistoryCard({
             <p
               role="status"
               aria-live="polite"
-              className="text-sm text-zinc-400"
+              className="text-sm text-secondary"
             >
               {t(message)}
             </p>
@@ -283,7 +283,7 @@ export default function ViewingHistoryCard({
           {error && (
             <p
               role="alert"
-              className="text-sm text-zinc-400"
+              className="text-sm text-secondary"
             >
               {t(error)}
             </p>

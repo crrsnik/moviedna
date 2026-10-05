@@ -47,7 +47,7 @@ export default function SavedMediaCard({
           {item.title}
         </h2>
 
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-secondary">
           {[
             item.mediaType === 'movie'
               ? t('catalog.media.movie')
@@ -79,7 +79,7 @@ export default function SavedMediaCard({
                 })
           ))
         )}
-        className="rounded border border-zinc-700 px-3 py-2 text-sm hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4 disabled:opacity-50"
+        className="rounded border border-border px-3 py-2 text-sm hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-4 disabled:opacity-50"
       >
         {action.pending
           ? t('library.items.saving')

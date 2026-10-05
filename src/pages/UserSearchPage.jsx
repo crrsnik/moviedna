@@ -12,7 +12,7 @@ import {
   normalizeUserSearchQuery,
 } from '../features/profile/validation/userSearchValidation.js'
 
-const button = 'rounded-lg border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100'
+const button = 'rounded-lg border border-border px-4 py-2 text-sm hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus'
 
 export default function UserSearchPage() {
   const { t } = useTranslation()
@@ -53,7 +53,7 @@ export default function UserSearchPage() {
           {t('social.userSearch.title')}
         </h1>
 
-        <p className="max-w-2xl text-sm text-zinc-400">
+        <p className="max-w-2xl text-sm text-secondary">
           {t('social.userSearch.description')}
         </p>
       </div>
@@ -64,7 +64,7 @@ export default function UserSearchPage() {
       />
 
       {validation ? (
-        <p className="text-zinc-400">
+        <p className="text-secondary">
           {t(
             query
               ? 'social.userSearch.validationFormat'
@@ -75,7 +75,7 @@ export default function UserSearchPage() {
         <p
           role="status"
           aria-live="polite"
-          className="text-zinc-400"
+          className="text-secondary"
         >
           {t('social.userSearch.searching')}
         </p>
@@ -94,7 +94,7 @@ export default function UserSearchPage() {
           </button>
         </div>
       ) : result?.kind === 'not-found' ? (
-        <p className="break-words text-zinc-400">
+        <p className="break-words text-secondary">
           {t(
             'social.userSearch.notFound',
             { username: query },
@@ -108,8 +108,8 @@ export default function UserSearchPage() {
           />
         </div>
       ) : hasQuery ? null : (
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-          <p className="text-sm text-zinc-400">
+        <div className="rounded-2xl border border-border bg-surface p-6">
+          <p className="text-sm text-secondary">
             {t('social.userSearch.emptyPrompt')}
           </p>
         </div>
