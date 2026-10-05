@@ -17,10 +17,10 @@ const PRIMARY_BUTTON = (
 )
 
 const SECONDARY_BUTTON = (
-  'rounded-lg border border-zinc-700 '
+  'rounded-lg border border-border '
   + 'px-3 py-2 text-sm font-medium '
-  + 'text-zinc-200 transition '
-  + 'hover:bg-zinc-800 '
+  + 'text-primary transition '
+  + 'hover:bg-surface-muted '
   + 'disabled:cursor-not-allowed '
   + 'disabled:opacity-50'
 )
@@ -43,7 +43,7 @@ function SocialUserCard({
   ) ?? PROFILE_AVATARS[0]
 
   return (
-    <article className="flex flex-col gap-4 rounded-xl border border-zinc-800 bg-zinc-950 p-4 sm:flex-row sm:items-center">
+    <article className="flex flex-col gap-4 rounded-xl border border-border bg-surface-muted p-4 sm:flex-row sm:items-center">
       <div
         role="img"
         aria-label={t(
@@ -54,7 +54,7 @@ function SocialUserCard({
             ),
           },
         )}
-        className="flex size-16 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-3xl"
+        className="flex size-16 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-3xl"
       >
         {avatar.symbol}
       </div>
@@ -67,7 +67,7 @@ function SocialUserCard({
           {profile.displayName}
         </Link>
 
-        <p className="mt-1 break-all text-sm text-zinc-400">
+        <p className="mt-1 break-all text-sm text-secondary">
           @{profile.username}
         </p>
       </div>
@@ -123,13 +123,13 @@ function SocialSection({
   ...actions
 }) {
   return (
-    <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6">
+    <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
       <div>
         <h2 className="text-xl font-semibold">
           {title}
         </h2>
 
-        <p className="mt-1 text-sm text-zinc-400">
+        <p className="mt-1 text-sm text-secondary">
           {description}
         </p>
       </div>
@@ -150,7 +150,7 @@ function SocialSection({
           ))}
         </div>
       ) : (
-        <p className="mt-5 text-sm text-zinc-500">
+        <p className="mt-5 text-sm text-tertiary">
           {emptyMessage}
         </p>
       )}
@@ -176,7 +176,7 @@ export default function FriendsPage() {
   if (loading) {
     return (
       <div className="w-full self-start">
-        <p role="status" className="text-zinc-400">
+        <p role="status" className="text-secondary">
           {t('social.friends.loading')}
         </p>
       </div>
@@ -185,12 +185,12 @@ export default function FriendsPage() {
 
   if (error) {
     return (
-      <section className="w-full self-start rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+      <section className="w-full self-start rounded-2xl border border-border bg-surface p-6">
         <h1 className="text-2xl font-semibold">
           {t('social.friends.unavailableTitle')}
         </h1>
 
-        <p role="alert" className="mt-2 text-zinc-400">
+        <p role="alert" className="mt-2 text-secondary">
           {t('social.friends.unavailableDescription')}
         </p>
       </section>
@@ -210,7 +210,7 @@ export default function FriendsPage() {
           {t('social.friends.title')}
         </h1>
 
-        <p className="max-w-2xl text-sm text-zinc-400">
+        <p className="max-w-2xl text-sm text-secondary">
           {t('social.friends.description')}
         </p>
       </div>

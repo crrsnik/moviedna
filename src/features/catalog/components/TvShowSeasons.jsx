@@ -54,7 +54,7 @@ export default function TvShowSeasons({
                 {season.name}
               </h3>
 
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-secondary">
                 {[
                   season.airDate?.slice(0, 4),
                   season.episodeCount
@@ -72,7 +72,7 @@ export default function TvShowSeasons({
               </p>
 
               {season.overview && (
-                <p className="line-clamp-3 break-words text-xs text-zinc-400">
+                <p className="line-clamp-3 break-words text-xs text-secondary">
                   {season.overview}
                 </p>
               )}

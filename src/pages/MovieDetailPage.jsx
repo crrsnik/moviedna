@@ -45,11 +45,14 @@ export default function MovieDetailPage() {
 
   return (
     <div className="w-full min-w-0 self-start space-y-10">
-      <MovieDetailHero movie={data} />
-
-      <MediaLibraryActions
-        mediaType="movie"
-        detail={data}
+      <MovieDetailHero
+        movie={data}
+        actions={
+          <MediaLibraryActions
+            mediaType="movie"
+            detail={data}
+          />
+        }
       />
 
       <MediaViewingHistoryAction

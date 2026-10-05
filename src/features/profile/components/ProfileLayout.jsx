@@ -12,10 +12,10 @@ import { useUserProfile } from '../hooks/useUserProfile.js'
 
 const tabClasses = ({ isActive }) => [
   'shrink-0 rounded-md px-3 py-2 text-sm font-medium transition',
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100',
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
   isActive
-    ? 'bg-zinc-100 text-zinc-950'
-    : 'text-zinc-300 hover:bg-zinc-800 hover:text-white',
+    ? 'bg-accent text-accent-contrast'
+    : 'text-secondary hover:bg-surface-muted hover:text-white',
 ].join(' ')
 
 function ProfileLayout() {
@@ -32,7 +32,7 @@ function ProfileLayout() {
       <div className="w-full self-start">
         <p
           role="status"
-          className="text-zinc-400"
+          className="text-secondary"
         >
           {t('profile.loading')}
         </p>
@@ -59,10 +59,10 @@ function ProfileLayout() {
 
   return (
     <div className="w-full min-w-0 self-start space-y-8">
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 sm:p-7">
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-7">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           <div
-            className="flex size-24 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950 text-5xl"
+            className="flex size-24 shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted text-5xl"
             aria-label={t(
               'profile.avatar',
               {
@@ -82,20 +82,20 @@ function ProfileLayout() {
                 {profile.displayName}
               </h1>
 
-              <span className="rounded-full border border-zinc-700 px-2.5 py-1 text-xs font-medium text-zinc-300">
+              <span className="rounded-full border border-border px-2.5 py-1 text-xs font-medium text-secondary">
                 {profile.profileVisibility === 'public'
                   ? t('profile.publicProfile')
                   : t('profile.privateProfile')}
               </span>
             </div>
 
-            <p className="mt-1 break-all text-zinc-400">
+            <p className="mt-1 break-all text-secondary">
               @{profile.username}
             </p>
 
             <Link
               to="/profile/settings"
-              className="mt-4 inline-flex rounded-md border border-zinc-600 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100"
+              className="mt-4 inline-flex rounded-md border border-border-strong px-3 py-2 text-sm font-medium text-primary hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
               {t('profile.editProfile')}
             </Link>
@@ -105,7 +105,7 @@ function ProfileLayout() {
 
       <nav
         aria-label={t('profile.navigation')}
-        className="flex gap-1 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900 p-2"
+        className="flex gap-1 overflow-x-auto rounded-xl border border-border bg-surface p-2"
       >
         <NavLink
           end

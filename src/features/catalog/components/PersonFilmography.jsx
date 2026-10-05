@@ -45,9 +45,9 @@ export default function PersonFilmography({
           >
             <Link
               to={getMediaDetailPath(credit)}
-              className="grid min-w-0 gap-1 rounded py-3 hover:bg-zinc-900 focus-visible:outline-2 focus-visible:outline-offset-2 sm:grid-cols-[4rem_minmax(0,1fr)]"
+              className="grid min-w-0 gap-1 rounded py-3 hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 sm:grid-cols-[4rem_minmax(0,1fr)]"
             >
-              <span className="text-sm text-zinc-400">
+              <span className="text-sm text-secondary">
                 {credit.releaseYear
                   || t(
                     'catalog.detail.undated',
@@ -59,14 +59,14 @@ export default function PersonFilmography({
                   {credit.title}
                 </span>
 
-                <span className="ml-2 text-xs text-zinc-500">
+                <span className="ml-2 text-xs text-tertiary">
                   {credit.mediaType === 'movie'
                     ? t('catalog.media.movie')
                     : t('catalog.media.tv')}
                 </span>
 
                 {credit.roleLabel && (
-                  <span className="mt-1 block break-words text-sm text-zinc-400">
+                  <span className="mt-1 block break-words text-sm text-secondary">
                     {credit.roleLabel}
                   </span>
                 )}
@@ -84,7 +84,7 @@ export default function PersonFilmography({
           onClick={() => (
             setExpanded(value => !value)
           )}
-          className="rounded-lg border border-zinc-700 px-4 py-2 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4"
+          className="rounded-lg border border-border px-4 py-2 hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-4"
         >
           {expanded
             ? t('catalog.detail.showLess')

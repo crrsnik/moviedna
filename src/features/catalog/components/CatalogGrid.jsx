@@ -11,7 +11,7 @@ export default function CatalogGrid({ state }) {
       <p
         role="status"
         aria-live="polite"
-        className="py-12 text-zinc-400"
+        className="py-12 text-secondary"
       >
         {t('catalog.states.loadingCatalog')}
       </p>
@@ -28,7 +28,7 @@ export default function CatalogGrid({ state }) {
         <button
           type="button"
           onClick={state.retry}
-          className="rounded-lg border border-zinc-700 px-4 py-2 hover:bg-zinc-800 focus-visible:outline-2"
+          className="rounded-lg border border-border px-4 py-2 hover:bg-surface-muted focus-visible:outline-2"
         >
           {t('catalog.states.retryCatalog')}
         </button>
@@ -40,7 +40,7 @@ export default function CatalogGrid({ state }) {
     return (
       <p
         role="status"
-        className="py-12 text-zinc-400"
+        className="py-12 text-secondary"
       >
         {t('catalog.states.noCatalogResults')}
       </p>

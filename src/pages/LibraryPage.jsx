@@ -98,7 +98,7 @@ function Library({ uid }) {
         <>
           <Link
             to={boardsHref}
-            className="inline-flex text-sm font-medium text-zinc-400 hover:text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-4"
+            className="inline-flex text-sm font-medium text-secondary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4"
           >
             ← {t('library.boards.backToBoards')}
           </Link>
@@ -113,7 +113,7 @@ function Library({ uid }) {
                         {selected.name}
                       </h2>
 
-                      <span className="rounded-full border border-zinc-700 px-2 py-1 text-xs text-zinc-300">
+                      <span className="rounded-full border border-border px-2 py-1 text-xs text-secondary">
                         {selected.visibility === 'public'
                           ? t(
                               'library.lists.publicBoard',
@@ -125,7 +125,7 @@ function Library({ uid }) {
                     </div>
 
                     {selected.description && (
-                      <p className="mt-2 whitespace-pre-wrap break-words text-zinc-300">
+                      <p className="mt-2 whitespace-pre-wrap break-words text-secondary">
                         {selected.description}
                       </p>
                     )}

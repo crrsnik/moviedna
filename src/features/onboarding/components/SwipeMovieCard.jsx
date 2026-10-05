@@ -128,15 +128,15 @@ function SwipeMovieCard({
       onPointerUp={handlePointerUp}
       onPointerCancel={resetDrag}
       onLostPointerCapture={resetDrag}
-      className={`relative mx-auto w-full max-w-sm touch-pan-y select-none overflow-hidden rounded-2xl border bg-zinc-900 shadow-xl transition-transform motion-reduce:transform-none motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100 ${
+      className={`relative mx-auto w-full max-w-sm touch-pan-y select-none overflow-hidden rounded-2xl border bg-surface shadow-xl transition-transform motion-reduce:transform-none motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus ${
         direction === 'like'
           ? 'rotate-2 border-emerald-400'
           : direction === 'dislike'
             ? '-rotate-2 border-rose-400'
-            : 'border-zinc-700'
+            : 'border-border'
       } ${disabled ? 'opacity-70' : ''}`}
     >
-      <div className="flex aspect-4/3 items-center justify-center overflow-hidden bg-zinc-800">
+      <div className="flex aspect-4/3 items-center justify-center overflow-hidden bg-surface-muted">
         {poster && failedUrl !== poster ? (
           <img
             src={poster}
@@ -151,7 +151,7 @@ function SwipeMovieCard({
             className="h-full w-full object-contain"
           />
         ) : (
-          <span className="text-sm text-zinc-400">
+          <span className="text-sm text-secondary">
             {t('onboarding.card.noPoster')}
           </span>
         )}
@@ -160,7 +160,7 @@ function SwipeMovieCard({
       {direction && (
         <span
           aria-hidden="true"
-          className="absolute left-4 top-4 rounded-md bg-zinc-950 px-4 py-2 font-bold uppercase"
+          className="absolute left-4 top-4 rounded-md bg-surface-muted px-4 py-2 font-bold uppercase"
         >
           {t(`onboarding.actions.${direction}`)}
         </span>
@@ -171,7 +171,7 @@ function SwipeMovieCard({
           {movie.title}
         </h2>
 
-        <p className="flex flex-wrap gap-4 text-sm text-zinc-400">
+        <p className="flex flex-wrap gap-4 text-sm text-secondary">
           {movie.releaseDate && (
             <span>
               {movie.releaseDate.slice(0, 4)}
@@ -186,7 +186,7 @@ function SwipeMovieCard({
           )}
         </p>
 
-        <p className="line-clamp-4 text-sm leading-relaxed text-zinc-300">
+        <p className="line-clamp-4 text-sm leading-relaxed text-secondary">
           {movie.overview
             || t('onboarding.card.noOverview')}
         </p>

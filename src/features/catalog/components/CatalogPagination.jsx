@@ -24,7 +24,7 @@ export default function CatalogPagination({
     }
   }
 
-  const button = 'rounded-lg border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 aria-disabled:cursor-not-allowed aria-disabled:opacity-40'
+  const button = 'rounded-lg border border-border px-4 py-2 text-sm hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus aria-disabled:cursor-not-allowed aria-disabled:opacity-40'
 
   return (
     <nav
@@ -46,7 +46,7 @@ export default function CatalogPagination({
 
       <span
         role="status"
-        className="text-sm text-zinc-400"
+        className="text-sm text-secondary"
       >
         {loading
           ? t('catalog.pagination.loading')

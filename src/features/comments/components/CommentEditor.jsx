@@ -108,12 +108,12 @@ export default function CommentEditor({
               }`
             }
             aria-invalid={Boolean(validation)}
-            className="w-full min-w-0 rounded-lg border border-zinc-600 bg-zinc-900 p-3 focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="w-full min-w-0 rounded-lg border border-border-strong bg-surface p-3 focus-visible:outline-2 focus-visible:outline-offset-2"
           />
 
           <p
             id={`${id}-count`}
-            className="text-sm text-zinc-400"
+            className="text-sm text-secondary"
           >
             {t(
               'comments.characterCount',

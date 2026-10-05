@@ -23,10 +23,10 @@ export default function CatalogViewTabs({
                 : undefined
             }
             onClick={() => onChange(view)}
-            className={`rounded-lg border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 ${
+            className={`rounded-lg border border-border px-4 py-2 text-sm hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
               selected === view
-                ? 'bg-zinc-700 text-white'
-                : 'text-zinc-400'
+                ? 'border-accent bg-accent-soft text-accent'
+                : 'text-secondary'
             }`}
           >
             {label}

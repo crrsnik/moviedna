@@ -54,7 +54,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={value}>
       {isAuthLoading ? <AuthLoadingScreen /> : authError ? (
-        <main className="flex min-h-svh items-center justify-center bg-zinc-950 p-6 text-center text-zinc-100">
+        <main className="flex min-h-svh items-center justify-center bg-app p-6 text-center text-primary">
           <p role="alert">{t('auth.sessionRestoreError')}</p>
         </main>
       ) : children}

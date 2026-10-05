@@ -4,7 +4,7 @@ function AuthLoadingScreen() {
   const { t } = useTranslation()
 
   return (
-    <main className="flex min-h-svh items-center justify-center bg-zinc-950 p-6 text-zinc-100">
+    <main className="flex min-h-svh items-center justify-center bg-app p-6 text-primary">
       <div
         role="status"
         aria-live="polite"
@@ -12,7 +12,7 @@ function AuthLoadingScreen() {
       >
         <span
           aria-hidden="true"
-          className="size-5 rounded-full border-2 border-zinc-700 border-t-zinc-100 motion-safe:animate-spin"
+          className="size-5 rounded-full border-2 border-border border-t-accent motion-safe:animate-spin"
         />
 
         <span>

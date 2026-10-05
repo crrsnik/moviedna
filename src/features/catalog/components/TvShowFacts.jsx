@@ -81,7 +81,7 @@ export default function TvShowFacts({ series }) {
             key={label}
             className="min-w-0"
           >
-            <dt className="text-sm text-zinc-400">
+            <dt className="text-sm text-secondary">
               {label}
             </dt>
 

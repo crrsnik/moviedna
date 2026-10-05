@@ -43,7 +43,7 @@ export default function DetailStatus({
         <div
           role="status"
           aria-live="polite"
-          className="min-h-112 animate-pulse rounded-2xl border border-zinc-800 bg-zinc-900 p-8 motion-reduce:animate-none"
+          className="min-h-112 animate-pulse rounded-2xl border border-border bg-surface p-8 motion-reduce:animate-none"
         >
           {t(text.loading)}
         </div>
@@ -66,7 +66,7 @@ export default function DetailStatus({
               <button
                 type="button"
                 onClick={retry}
-                className="rounded-lg border border-zinc-700 px-4 py-2 hover:bg-zinc-800 focus-visible:outline-2"
+                className="rounded-lg border border-border px-4 py-2 hover:bg-surface-muted focus-visible:outline-2"
               >
                 {t('common.retry')}
               </button>

@@ -23,7 +23,7 @@ function OnboardingRoute({
       <p
         role="status"
         aria-live="polite"
-        className="text-zinc-400"
+        className="text-secondary"
       >
         {t('onboarding.route.loading')}
       </p>
@@ -35,7 +35,7 @@ function OnboardingRoute({
       <div className="max-w-md space-y-5 text-center">
         <p
           role="alert"
-          className="text-zinc-300"
+          className="text-secondary"
         >
           {t('onboarding.route.error')}
         </p>
@@ -43,7 +43,7 @@ function OnboardingRoute({
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="rounded-md bg-zinc-100 px-4 py-2 font-medium text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
+          className="rounded-md bg-accent px-4 py-2 font-medium text-accent-contrast hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
         >
           {t('onboarding.route.refresh')}
         </button>

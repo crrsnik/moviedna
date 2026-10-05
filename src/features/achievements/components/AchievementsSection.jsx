@@ -65,8 +65,8 @@ function Medal({
           className={[
             'mt-2 line-clamp-2 text-xs font-medium sm:text-sm',
             achievement.unlocked
-              ? 'text-zinc-100'
-              : 'text-zinc-500',
+              ? 'text-primary'
+              : 'text-tertiary',
           ].join(' ')}
         >
           {title}
@@ -133,13 +133,13 @@ function AchievementDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="achievement-dialog-title"
-        className="w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl"
+        className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-2xl"
       >
         <div className="flex justify-center">
           <div
             aria-hidden="true"
             className={[
-              'flex size-28 items-center justify-center rounded-full border-4 border-zinc-700 text-3xl font-black shadow-xl',
+              'flex size-28 items-center justify-center rounded-full border-4 border-border text-3xl font-black shadow-xl',
               definition.tone,
               achievement.unlocked
                 ? ''
@@ -156,7 +156,7 @@ function AchievementDialog({
               'text-xs font-semibold uppercase tracking-wider',
               achievement.unlocked
                 ? 'text-violet-300'
-                : 'text-zinc-500',
+                : 'text-tertiary',
             ].join(' ')}
           >
             {achievement.unlocked
@@ -171,14 +171,14 @@ function AchievementDialog({
             {title}
           </h3>
 
-          <p className="mt-3 text-sm leading-6 text-zinc-400">
+          <p className="mt-3 text-sm leading-6 text-secondary">
             {t(definition.descriptionKey)}
           </p>
         </div>
 
-        <div className="mt-6 rounded-xl bg-zinc-950 p-4">
+        <div className="mt-6 rounded-xl bg-surface-muted p-4">
           <div className="flex items-center justify-between gap-4 text-sm">
-            <span className="text-zinc-400">
+            <span className="text-secondary">
               {t('achievementsUi.progress')}
             </span>
 
@@ -200,7 +200,7 @@ function AchievementDialog({
           />
 
           {unlockedDate && (
-            <p className="mt-3 text-xs text-zinc-500">
+            <p className="mt-3 text-xs text-tertiary">
               {t(
                 'achievementsUi.obtained',
                 {
@@ -214,7 +214,7 @@ function AchievementDialog({
         <button
           type="button"
           onClick={onClose}
-          className="mt-6 w-full rounded-lg bg-zinc-800 px-4 py-2.5 text-sm font-medium hover:bg-zinc-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"
+          className="mt-6 w-full rounded-lg bg-surface-muted px-4 py-2.5 text-sm font-medium hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"
         >
           {t('achievementsUi.close')}
         </button>
@@ -234,14 +234,14 @@ export default function AchievementsSection({
 
   if (state.loading) {
     return (
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6">
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
         <h2 className="text-2xl font-semibold">
           {t('achievementsUi.title')}
         </h2>
 
         <p
           role="status"
-          className="mt-4 text-sm text-zinc-400"
+          className="mt-4 text-sm text-secondary"
         >
           {t('achievementsUi.loading')}
         </p>
@@ -251,14 +251,14 @@ export default function AchievementsSection({
 
   if (state.error) {
     return (
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6">
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
         <h2 className="text-2xl font-semibold">
           {t('achievementsUi.title')}
         </h2>
 
         <p
           role="alert"
-          className="mt-4 text-sm text-zinc-400"
+          className="mt-4 text-sm text-secondary"
         >
           {t('achievementsUi.error')}
         </p>
@@ -268,12 +268,12 @@ export default function AchievementsSection({
 
   if (!state.data) {
     return (
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6">
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
         <h2 className="text-2xl font-semibold">
           {t('achievementsUi.title')}
         </h2>
 
-        <p className="mt-4 text-sm text-zinc-400">
+        <p className="mt-4 text-sm text-secondary">
           {t('achievementsUi.preparing')}
         </p>
       </section>
@@ -301,7 +301,7 @@ export default function AchievementsSection({
     <>
       <section
         aria-labelledby="achievements-title"
-        className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6"
+        className="rounded-2xl border border-border bg-surface p-5 sm:p-6"
       >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -312,7 +312,7 @@ export default function AchievementsSection({
               {t('achievementsUi.title')}
             </h2>
 
-            <p className="mt-1 text-sm text-zinc-400">
+            <p className="mt-1 text-sm text-secondary">
               {t(
                 publicView
                   ? 'achievementsUi.publicDescription'
@@ -321,7 +321,7 @@ export default function AchievementsSection({
             </p>
           </div>
 
-          <div className="rounded-full border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm font-semibold text-zinc-200">
+          <div className="rounded-full border border-border bg-surface-muted px-3 py-1.5 text-sm font-semibold text-primary">
             {t(
               'achievementsUi.summary',
               {
@@ -362,7 +362,7 @@ export default function AchievementsSection({
             onClick={() => setExpanded(
               value => !value,
             )}
-            className="mt-5 rounded text-sm font-medium text-violet-300 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4"
+            className="mt-5 inline-flex rounded-lg border border-border-strong bg-surface px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
             {expanded
               ? t('achievementsUi.showLess')

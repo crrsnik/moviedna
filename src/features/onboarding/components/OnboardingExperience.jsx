@@ -46,7 +46,7 @@ function OnboardingExperience() {
           {t('onboarding.title')}
         </h1>
 
-        <p className="text-sm leading-relaxed text-zinc-400">
+        <p className="text-sm leading-relaxed text-secondary">
           {t('onboarding.description')}
         </p>
       </div>
@@ -59,7 +59,7 @@ function OnboardingExperience() {
             { replace: true },
           )}
           disabled={busy}
-          className="rounded px-4 py-2 text-sm text-zinc-400 underline underline-offset-4 hover:text-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100 disabled:opacity-40"
+          className="rounded px-4 py-2 text-sm text-secondary underline underline-offset-4 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus disabled:opacity-40"
         >
           {t('onboarding.skipForNow')}
         </button>
@@ -68,13 +68,13 @@ function OnboardingExperience() {
       {isLoading ? (
         <p
           role="status"
-          className="py-12 text-center text-zinc-400"
+          className="py-12 text-center text-secondary"
         >
           {t('onboarding.loading')}
         </p>
       ) : (
         <>
-          <div className="space-y-2 text-center text-sm text-zinc-300">
+          <div className="space-y-2 text-center text-sm text-secondary">
             <p>
               {t(
                 'onboarding.progressSummary',
@@ -87,7 +87,7 @@ function OnboardingExperience() {
               )}
             </p>
 
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-tertiary">
               {t('onboarding.requirements')}
             </p>
           </div>
@@ -105,7 +105,7 @@ function OnboardingExperience() {
                 type="button"
                 onClick={retry}
                 disabled={busy}
-                className="rounded px-4 py-2 text-sm underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-zinc-100 disabled:opacity-40"
+                className="rounded px-4 py-2 text-sm underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-40"
               >
                 {t('onboarding.retry')}
               </button>
@@ -127,7 +127,7 @@ function OnboardingExperience() {
                   type="button"
                   onClick={retry}
                   disabled={busy}
-                  className="rounded px-4 py-2 underline focus-visible:outline-2 focus-visible:outline-zinc-100 disabled:opacity-40"
+                  className="rounded px-4 py-2 underline focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-40"
                 >
                   {t('onboarding.retry')}
                 </button>
@@ -150,7 +150,7 @@ function OnboardingExperience() {
 
               <p
                 id="onboarding-controls-help"
-                className="text-center text-xs text-zinc-500"
+                className="text-center text-xs text-tertiary"
               >
                 {t('onboarding.controlsHelp')}
               </p>
@@ -160,7 +160,7 @@ function OnboardingExperience() {
           <p
             role="status"
             aria-live="polite"
-            className="min-h-5 text-center text-sm text-zinc-400"
+            className="min-h-5 text-center text-sm text-secondary"
           >
             {isSaving
               ? t('onboarding.savingReaction')
@@ -178,7 +178,7 @@ function OnboardingExperience() {
             </p>
           )}
 
-          <div className="space-y-3 border-t border-zinc-800 pt-6 text-center">
+          <div className="space-y-3 border-t border-border pt-6 text-center">
             <button
               type="button"
               onClick={complete}
@@ -187,7 +187,7 @@ function OnboardingExperience() {
                 || !progress.canFinish
               }
               aria-describedby="finish-requirements"
-              className="rounded-lg bg-zinc-100 px-6 py-3 text-sm font-semibold text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-contrast hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isCompleting
                 ? t('onboarding.finishing')
@@ -196,7 +196,7 @@ function OnboardingExperience() {
 
             <p
               id="finish-requirements"
-              className="text-xs text-zinc-400"
+              className="text-xs text-secondary"
             >
               {progress.canFinish ? (
                 t('onboarding.progressSaved')

@@ -25,7 +25,7 @@ function RecommendationCard({
       />
 
       <div className="space-y-2">
-        <p className="text-sm font-semibold text-zinc-100">
+        <p className="text-sm font-semibold text-accent">
           <span
             aria-label={t(
               'recommendationCard.matchAria',
@@ -39,7 +39,7 @@ function RecommendationCard({
           </span>
         </p>
 
-        <ul className="space-y-1 text-xs leading-relaxed text-zinc-400">
+        <ul className="space-y-1 text-xs leading-relaxed text-secondary">
           {reasons.map(reason => (
             <li key={reason}>
               {reason}

@@ -14,13 +14,13 @@ import PublicBoards from '../features/profile/components/PublicBoards.jsx'
 
 function MessagePanel({ title, children }) {
   return (
-    <section className="mx-auto w-full max-w-2xl rounded-2xl border border-zinc-800 bg-zinc-900 p-6 text-center sm:p-8">
+    <section className="mx-auto w-full max-w-2xl rounded-2xl border border-border bg-surface p-6 text-center sm:p-8">
       <h1 className="text-2xl font-semibold tracking-tight">
         {title}
       </h1>
 
       {children && (
-        <p className="mt-3 text-zinc-400">
+        <p className="mt-3 text-secondary">
           {children}
         </p>
       )}
@@ -36,7 +36,7 @@ function ProfileIdentity({ profile }) {
   ) ?? PROFILE_AVATARS[0]
 
   return (
-    <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 sm:p-8">
+    <section className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
       <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
         <div
           role="img"
@@ -48,7 +48,7 @@ function ProfileIdentity({ profile }) {
             ),
           },
         )}
-          className="flex size-28 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950 text-6xl"
+          className="flex size-28 shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted text-6xl"
         >
           {avatar.symbol}
         </div>
@@ -58,7 +58,7 @@ function ProfileIdentity({ profile }) {
             {profile.displayName}
           </h1>
 
-          <p className="mt-2 break-all text-zinc-400">
+          <p className="mt-2 break-all text-secondary">
             @{profile.username}
           </p>
         </div>
@@ -72,7 +72,7 @@ function GenrePreview({ genres }) {
 
   if (!genres.length) {
     return (
-      <p className="text-sm text-zinc-400">
+      <p className="text-sm text-secondary">
         {t('profile.public.dnaEmpty')}
       </p>
     )
@@ -86,14 +86,14 @@ function GenrePreview({ genres }) {
         return (
           <article
             key={genre.label}
-            className="rounded-xl border border-zinc-800 bg-zinc-950 p-4"
+            className="rounded-xl border border-border bg-surface-muted p-4"
           >
             <div className="flex items-baseline justify-between gap-3">
               <strong className="break-words">
                 {genre.label}
               </strong>
 
-              <span className="text-sm text-zinc-300">
+              <span className="text-sm text-secondary">
                 +{percentage}%
               </span>
             </div>
@@ -118,8 +118,8 @@ function GenrePreview({ genres }) {
 
 function Stat({ label, value }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
-      <p className="text-sm text-zinc-400">
+    <div className="rounded-xl border border-border bg-surface-muted p-4">
+      <p className="text-sm text-secondary">
         {label}
       </p>
 
@@ -139,7 +139,7 @@ function PublicPreview({
 
   if (state.loading) {
     return (
-      <p role="status" className="text-zinc-400">
+      <p role="status" className="text-secondary">
         {t('profile.public.previewLoading')}
       </p>
     )
@@ -147,7 +147,7 @@ function PublicPreview({
 
   if (state.error) {
     return (
-      <p role="alert" className="text-zinc-400">
+      <p role="alert" className="text-secondary">
         {t('profile.public.previewError')}
       </p>
     )
@@ -155,7 +155,7 @@ function PublicPreview({
 
   if (!state.preview) {
     return (
-      <p className="text-zinc-400">
+      <p className="text-secondary">
         {t('profile.public.previewMissing')}
       </p>
     )
@@ -169,11 +169,11 @@ function PublicPreview({
 
   return (
     <>
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+      <section className="rounded-2xl border border-border bg-surface p-6">
         <div className="space-y-1">
           <h2 className="text-xl font-semibold">{t('profile.public.dnaTitle')}</h2>
 
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-secondary">
             {t('profile.public.dnaDescription')}
           </p>
         </div>
@@ -192,11 +192,11 @@ function PublicPreview({
         }}
       />
 
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+      <section className="rounded-2xl border border-border bg-surface p-6">
         <div className="space-y-1">
           <h2 className="text-xl font-semibold">{t('profile.public.statisticsTitle')}</h2>
 
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-secondary">
             {t('profile.public.statisticsDescription')}
           </p>
         </div>
@@ -273,7 +273,7 @@ export default function PublicProfilePage() {
   if (loading) {
     return (
       <div className="w-full self-start">
-        <p role="status" className="text-zinc-400">
+        <p role="status" className="text-secondary">
           {t('profile.public.loading')}
         </p>
       </div>
@@ -335,7 +335,7 @@ export default function PublicProfilePage() {
     <div className="w-full min-w-0 max-w-4xl self-start space-y-6">
       <ProfileIdentity profile={profile} />
 
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+      <section className="rounded-2xl border border-border bg-surface p-6">
         <FriendshipControls
           targetUserId={profile.userId}
           friendshipState={friendshipState}
@@ -344,14 +344,14 @@ export default function PublicProfilePage() {
 
       {result.kind === 'private'
         && friendshipState.loading ? (
-        <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">
-          <p role="status" className="text-zinc-400">
+        <section className="rounded-2xl border border-border bg-surface p-8 text-center">
+          <p role="status" className="text-secondary">
             {t('profile.public.checkingAccess')}
           </p>
         </section>
       ) : result.kind === 'private'
         && friendshipState.status !== 'friends' ? (
-        <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">
+        <section className="rounded-2xl border border-border bg-surface p-8 text-center">
           <div
             aria-hidden="true"
             className="text-3xl"
@@ -361,7 +361,7 @@ export default function PublicProfilePage() {
 
           <h2 className="mt-3 text-xl font-semibold">{t('profile.public.privateTitle')}</h2>
 
-          <p className="mx-auto mt-2 max-w-lg text-sm text-zinc-400">
+          <p className="mx-auto mt-2 max-w-lg text-sm text-secondary">
             {t('profile.public.privateDescription')}
           </p>
         </section>

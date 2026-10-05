@@ -9,10 +9,10 @@ const PRIMARY_BUTTON = (
 )
 
 const SECONDARY_BUTTON = (
-  'rounded-lg border border-zinc-700 '
-  + 'bg-zinc-950 px-4 py-2 text-sm '
-  + 'font-medium text-zinc-200 transition '
-  + 'hover:border-zinc-600 hover:bg-zinc-800 '
+  'rounded-lg border border-border '
+  + 'bg-surface-muted px-4 py-2 text-sm '
+  + 'font-medium text-primary transition '
+  + 'hover:border-border-strong hover:bg-surface-muted '
   + 'disabled:cursor-not-allowed '
   + 'disabled:opacity-50'
 )
@@ -41,7 +41,7 @@ export default function FriendshipControls({
     return (
       <p
         role="status"
-        className="text-sm text-zinc-400"
+        className="text-sm text-secondary"
       >
         {t('social.friendship.loading')}
       </p>
@@ -64,7 +64,7 @@ export default function FriendshipControls({
   } else if (status === 'outgoing-pending') {
     controls = (
       <>
-        <span className="text-sm font-medium text-zinc-300">
+        <span className="text-sm font-medium text-secondary">
           {t('social.friendship.requestSent')}
         </span>
 
@@ -81,7 +81,7 @@ export default function FriendshipControls({
   } else if (status === 'incoming-pending') {
     controls = (
       <>
-        <span className="text-sm font-medium text-zinc-300">
+        <span className="text-sm font-medium text-secondary">
           {t('social.friendship.requestReceived')}
         </span>
 

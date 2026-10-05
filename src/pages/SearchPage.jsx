@@ -25,7 +25,7 @@ import {
   useTranslation,
 } from '../features/localization/hooks/useTranslation.js'
 
-const button = 'rounded-lg border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100 disabled:cursor-not-allowed disabled:opacity-40'
+const button = 'rounded-lg border border-border px-4 py-2 text-sm hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-40'
 
 export default function SearchPage() {
   const { t } = useTranslation()
@@ -124,8 +124,8 @@ export default function SearchPage() {
             }
             className={`${button} ${
               type === value
-                ? 'bg-zinc-700 text-white'
-                : 'text-zinc-400'
+                ? 'bg-surface-muted text-white'
+                : 'text-secondary'
             }`}
             onClick={() => (
               setParams(
@@ -142,7 +142,7 @@ export default function SearchPage() {
       </nav>
 
       {queryError ? (
-        <p className="text-zinc-400">
+        <p className="text-secondary">
           {translateCatalogValidation(
             t,
             queryError,
@@ -173,7 +173,7 @@ export default function SearchPage() {
         <>
           <p
             role="status"
-            className="text-sm text-zinc-400"
+            className="text-sm text-secondary"
           >
             {t(
               'catalog.search.resultsCount',

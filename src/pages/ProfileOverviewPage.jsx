@@ -6,6 +6,7 @@ import AchievementsSection from '../features/achievements/components/Achievement
 import { useAchievements } from '../features/achievements/hooks/useAchievements.js'
 import { useMovieDna } from '../features/dna/hooks/useMovieDna.js'
 import { selectDnaPreviewTraits } from '../features/dna/utils/selectDnaPreviewTraits.js'
+import DnaTraitBar from '../features/dna/components/DnaTraitBar.jsx'
 import { useTranslation } from '../features/localization/hooks/useTranslation.js'
 import PublicBoards from '../features/profile/components/PublicBoards.jsx'
 import { usePublicBoards } from '../features/profile/hooks/usePublicBoards.js'
@@ -33,7 +34,7 @@ function DnaPreview({ state }) {
 
   if (!state.current) {
     return (
-      <p className="text-sm text-zinc-400">
+      <p className="text-sm text-secondary">
         {state.kind === 'failed'
           ? t(
             'profile.overviewPage.dnaFailed',
@@ -51,7 +52,7 @@ function DnaPreview({ state }) {
 
   if (!traits.length) {
     return (
-      <p className="text-sm text-zinc-400">
+      <p className="text-sm text-secondary">
         {t(
           'profile.overviewPage.dnaEmpty',
         )}
@@ -69,9 +70,9 @@ function DnaPreview({ state }) {
         return (
           <article
             key={`${trait.dimension}:${trait.key}`}
-            className="rounded-xl border border-zinc-800 bg-zinc-950 p-4"
+            className="rounded-xl border border-border bg-surface-muted p-4"
           >
-            <p className="text-xs font-medium text-zinc-500">
+            <p className="text-xs font-medium text-tertiary">
               {t(
                 CATEGORY_KEYS[
                   trait.dimension
@@ -84,21 +85,22 @@ function DnaPreview({ state }) {
                 {trait.label}
               </h3>
 
-              <span className="text-sm font-medium text-zinc-300">
+              <span className="text-sm font-medium text-secondary">
                 +{percent}%
               </span>
             </div>
 
-            <progress
-              aria-label={t(
+            <DnaTraitBar
+              dimension={trait.dimension}
+              traitKey={trait.key}
+              label={trait.label}
+              percent={percent}
+              ariaLabel={t(
                 'profile.overviewPage.dnaCompatibility',
                 {
                   label: trait.label,
                 },
               )}
-              value={percent}
-              max="100"
-              className="mt-3 h-2 w-full accent-violet-400"
             />
           </article>
         )
@@ -109,8 +111,8 @@ function DnaPreview({ state }) {
 
 function Stat({ label, value }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
-      <p className="text-sm text-zinc-400">
+    <div className="rounded-xl border border-border bg-surface-muted p-4">
+      <p className="text-sm text-secondary">
         {label}
       </p>
 
@@ -142,7 +144,7 @@ export default function ProfileOverviewPage() {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6">
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold">
@@ -151,7 +153,7 @@ export default function ProfileOverviewPage() {
               )}
             </h2>
 
-            <p className="mt-1 text-sm text-zinc-400">
+            <p className="mt-1 text-sm text-secondary">
               {t(
                 'profile.overviewPage.dnaDescription',
               )}
@@ -160,7 +162,7 @@ export default function ProfileOverviewPage() {
 
           <Link
             to="/profile/dna"
-            className="rounded-md text-sm font-medium text-zinc-200 underline underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
             {t(
               'profile.overviewPage.viewDna',
@@ -175,7 +177,7 @@ export default function ProfileOverviewPage() {
 
       <AchievementsSection state={achievementsState} />
 
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6">
+      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold">
@@ -184,7 +186,7 @@ export default function ProfileOverviewPage() {
               )}
             </h2>
 
-            <p className="mt-1 text-sm text-zinc-400">
+            <p className="mt-1 text-sm text-secondary">
               {t(
                 'profile.overviewPage.activityDescription',
               )}
@@ -193,7 +195,7 @@ export default function ProfileOverviewPage() {
 
           <Link
             to="/profile/stats"
-            className="rounded-md text-sm font-medium text-zinc-200 underline underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
             {t(
               'profile.overviewPage.viewStatistics',
@@ -204,7 +206,7 @@ export default function ProfileOverviewPage() {
         {history.loading ? (
           <p
             role="status"
-            className="mt-5 text-sm text-zinc-400"
+            className="mt-5 text-sm text-secondary"
           >
             {t(
               'profile.overviewPage.activityLoading',
@@ -213,7 +215,7 @@ export default function ProfileOverviewPage() {
         ) : history.error ? (
           <p
             role="alert"
-            className="mt-5 text-sm text-zinc-400"
+            className="mt-5 text-sm text-secondary"
           >
             {t(
               'profile.overviewPage.activityError',

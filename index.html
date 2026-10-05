@@ -4,6 +4,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MovieDNA</title>
+      <script data-moviedna-theme-bootstrap>
+      (() => {
+        const storageKey = 'moviedna-theme'
+        const validThemes = new Set(['light', 'dark', 'system'])
+
+        let preference = 'system'
+
+        try {
+          const stored = localStorage.getItem(storageKey)
+          if (validThemes.has(stored)) preference = stored
+        } catch {
+          // Use system preference when storage is unavailable.
+        }
+
+        const resolved =
+          preference === 'system'
+            ? window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light'
+            : preference
+
+        document.documentElement.dataset.theme = resolved
+        document.documentElement.style.colorScheme = resolved
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

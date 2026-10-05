@@ -60,7 +60,7 @@ function Comments({ media }) {
         {t('comments.title')}
       </h2>
 
-      <p className="text-sm text-zinc-400">
+      <p className="text-sm text-secondary">
         {t('comments.description')}
       </p>
 

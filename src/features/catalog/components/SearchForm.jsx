@@ -96,12 +96,12 @@ export default function SearchForm({
               ? `${id}-error`
               : undefined
           }
-          className="min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm focus-visible:outline-2 focus-visible:outline-zinc-100"
+          className="min-w-0 flex-1 rounded-xl border border-border bg-surface px-4 py-3 text-sm text-primary shadow-[var(--app-shadow-sm)] outline-none transition placeholder:text-tertiary hover:border-border-strong focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         />
 
         <button
           type="submit"
-          className="rounded-lg bg-zinc-100 px-5 py-3 text-sm font-semibold text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
+          className="cursor-pointer rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-accent-contrast shadow-[var(--app-shadow-sm)] transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
           {t('catalog.search.button')}
         </button>
@@ -111,7 +111,7 @@ export default function SearchForm({
         <p
           id={`${id}-error`}
           role="alert"
-          className="text-sm text-rose-200"
+          className="text-sm text-rose-600 dark:text-rose-300"
         >
           {translateCatalogValidation(t, error)}
         </p>

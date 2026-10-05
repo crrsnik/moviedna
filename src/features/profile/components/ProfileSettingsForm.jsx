@@ -44,7 +44,7 @@ function ProfileSettingsForm() {
   ])
 
   if (isProfileLoading) {
-    return <p role="status" className="text-zinc-400">{t('profile.settings.loading')}</p>
+    return <p role="status" className="text-secondary">{t('profile.settings.loading')}</p>
   }
 
   if (profileError || !profile) {
@@ -142,8 +142,8 @@ function ProfileSettingsForm() {
 
         <section className="space-y-3">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-100">{t('profile.settings.identityTitle')}</h2>
-            <p className="mt-1 text-sm text-zinc-400">
+            <h2 className="text-lg font-semibold text-primary">{t('profile.settings.identityTitle')}</h2>
+            <p className="mt-1 text-sm text-secondary">
               {t('profile.settings.identityDescription')}
             </p>
           </div>
@@ -151,7 +151,7 @@ function ProfileSettingsForm() {
           <div className="space-y-2">
             <label
               htmlFor="profile-username"
-              className="block text-sm font-medium text-zinc-200"
+              className="block text-sm font-medium text-primary"
             >{t('profile.settings.username')}</label>
 
             <input
@@ -159,10 +159,10 @@ function ProfileSettingsForm() {
               type="text"
               value={profile.username}
               disabled
-              className="w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-zinc-500 disabled:cursor-not-allowed"
+              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-tertiary disabled:cursor-not-allowed"
             />
 
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-tertiary">
               {t('profile.settings.usernameHelp')}
             </p>
           </div>
@@ -170,7 +170,7 @@ function ProfileSettingsForm() {
           <div className="space-y-2">
             <label
               htmlFor="profile-display-name"
-              className="block text-sm font-medium text-zinc-200"
+              className="block text-sm font-medium text-primary"
             >{t('profile.settings.displayName')}</label>
 
             <input
@@ -184,7 +184,7 @@ function ProfileSettingsForm() {
               onChange={handleDisplayNameChange}
               aria-invalid={Boolean(displayNameError)}
               aria-describedby={displayNameError ? 'profile-display-name-error' : undefined}
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 aria-invalid:border-red-400"
+              className="w-full rounded-md border border-border bg-surface-muted px-3 py-2 text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus aria-invalid:border-red-400"
             />
 
             {displayNameError && (
@@ -201,8 +201,8 @@ function ProfileSettingsForm() {
 
         <section className="space-y-4">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-100">{t('profile.settings.avatarTitle')}</h2>
-            <p className="mt-1 text-sm text-zinc-400">
+            <h2 className="text-lg font-semibold text-primary">{t('profile.settings.avatarTitle')}</h2>
+            <p className="mt-1 text-sm text-secondary">
               {t('profile.settings.avatarDescription')}
             </p>
           </div>
@@ -220,10 +220,10 @@ function ProfileSettingsForm() {
                   key={avatar.id}
                   className={[
                     'cursor-pointer rounded-xl border p-2 text-center transition',
-                    'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-zinc-100',
+                    'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
                     selected
-                      ? 'border-zinc-100 bg-zinc-800'
-                      : 'border-zinc-700 bg-zinc-950 hover:border-zinc-500',
+                      ? 'border-accent bg-surface-muted'
+                      : 'border-border bg-surface-muted hover:border-border-strong',
                   ].join(' ')}
                 >
                   <input
@@ -242,7 +242,7 @@ function ProfileSettingsForm() {
                     {avatar.symbol}
                   </span>
 
-                  <span className="mt-1 block truncate text-xs text-zinc-300">
+                  <span className="mt-1 block truncate text-xs text-secondary">
                     {t(`profile.avatars.${avatar.id}`)}
                   </span>
                 </label>
@@ -253,8 +253,8 @@ function ProfileSettingsForm() {
 
         <section className="space-y-4">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-100">{t('profile.settings.privacyTitle')}</h2>
-            <p className="mt-1 text-sm text-zinc-400">
+            <h2 className="text-lg font-semibold text-primary">{t('profile.settings.privacyTitle')}</h2>
+            <p className="mt-1 text-sm text-secondary">
               {t('profile.settings.privacyDescription')}
             </p>
           </div>
@@ -264,8 +264,8 @@ function ProfileSettingsForm() {
               className={[
                 'cursor-pointer rounded-lg border p-4',
                 values.profileVisibility === 'public'
-                  ? 'border-zinc-100 bg-zinc-800'
-                  : 'border-zinc-700 bg-zinc-950 hover:border-zinc-500',
+                  ? 'border-accent bg-surface-muted'
+                  : 'border-border bg-surface-muted hover:border-border-strong',
               ].join(' ')}
             >
               <input
@@ -277,8 +277,8 @@ function ProfileSettingsForm() {
                 className="sr-only"
               />
 
-              <span className="block font-medium text-zinc-100">{t('profile.settings.public')}</span>
-              <span className="mt-1 block text-sm text-zinc-400">
+              <span className="block font-medium text-primary">{t('profile.settings.public')}</span>
+              <span className="mt-1 block text-sm text-secondary">
                 {t('profile.settings.publicDescription')}
               </span>
             </label>
@@ -287,8 +287,8 @@ function ProfileSettingsForm() {
               className={[
                 'cursor-pointer rounded-lg border p-4',
                 values.profileVisibility === 'private'
-                  ? 'border-zinc-100 bg-zinc-800'
-                  : 'border-zinc-700 bg-zinc-950 hover:border-zinc-500',
+                  ? 'border-accent bg-surface-muted'
+                  : 'border-border bg-surface-muted hover:border-border-strong',
               ].join(' ')}
             >
               <input
@@ -300,8 +300,8 @@ function ProfileSettingsForm() {
                 className="sr-only"
               />
 
-              <span className="block font-medium text-zinc-100">{t('profile.settings.private')}</span>
-              <span className="mt-1 block text-sm text-zinc-400">
+              <span className="block font-medium text-primary">{t('profile.settings.private')}</span>
+              <span className="mt-1 block text-sm text-secondary">
                 {t('profile.settings.privateDescription')}
               </span>
             </label>
@@ -316,7 +316,7 @@ function ProfileSettingsForm() {
       )}
 
       {successMessage && (
-        <p role="status" className="text-sm text-zinc-300">
+        <p role="status" className="text-sm text-secondary">
           {t(successMessage)}
         </p>
       )}
@@ -325,7 +325,7 @@ function ProfileSettingsForm() {
         <button
           type="submit"
           disabled={isSaving || !isDirty}
-          className="rounded-md bg-zinc-100 px-5 py-3 font-semibold text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-md bg-accent px-5 py-3 font-semibold text-accent-contrast hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSaving ? t('profile.settings.saving') : t('profile.settings.saveChanges')}
         </button>

@@ -52,7 +52,7 @@ function BoardCover({
 
   if (loading) {
     return (
-      <div className="flex aspect-2/3 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 text-sm text-zinc-500">
+      <div className="flex aspect-2/3 items-center justify-center rounded-xl border border-border bg-surface-muted text-sm text-tertiary">
         …
       </div>
     )
@@ -60,7 +60,7 @@ function BoardCover({
 
   if (!item) {
     return (
-      <div className="flex aspect-2/3 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-center text-sm text-zinc-500">
+      <div className="flex aspect-2/3 items-center justify-center rounded-xl border border-border bg-surface-muted px-4 text-center text-sm text-tertiary">
         {t('library.boards.emptyBoard')}
       </div>
     )
@@ -92,7 +92,7 @@ function BoardMeta({
 
   if (loading) {
     return (
-      <span className="text-sm text-zinc-500">
+      <span className="text-sm text-tertiary">
         …
       </span>
     )
@@ -100,14 +100,14 @@ function BoardMeta({
 
   if (error) {
     return (
-      <span className="text-sm text-zinc-500">
+      <span className="text-sm text-tertiary">
         {t('library.boards.error')}
       </span>
     )
   }
 
   return (
-    <span className="text-sm text-zinc-500">
+    <span className="text-sm text-tertiary">
       {t(
         count === 1
           ? 'library.boards.oneTitle'
@@ -134,9 +134,9 @@ function SystemBoardCard({
         to={`?${librarySelectionParams({
           view,
         })}`}
-        className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
+        className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
       >
-        <div className="overflow-hidden rounded-xl bg-zinc-950 transition-transform duration-200 group-hover:-translate-y-0.5">
+        <div className="overflow-hidden rounded-xl bg-surface-muted transition-transform duration-200 group-hover:-translate-y-0.5">
           <BoardCover
             item={cover}
             loading={state.loading}
@@ -149,7 +149,7 @@ function SystemBoardCard({
               {title}
             </h3>
 
-            <span className="shrink-0 rounded-full border border-zinc-700 px-2 py-0.5 text-[11px] text-zinc-400">
+            <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[11px] text-secondary">
               {t('library.boards.pinned')}
             </span>
           </div>
@@ -204,9 +204,9 @@ function CustomBoardCard({
       <div className="relative">
         <Link
           to={boardHref}
-          className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
+          className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
         >
-          <div className="overflow-hidden rounded-xl bg-zinc-950 transition-transform duration-200 group-hover:-translate-y-0.5">
+          <div className="overflow-hidden rounded-xl bg-surface-muted transition-transform duration-200 group-hover:-translate-y-0.5">
             <BoardCover
               item={cover}
               loading={state.loading}
@@ -230,10 +230,10 @@ function CustomBoardCard({
               ? 'library.boards.unpin'
               : 'library.boards.pin',
           )}
-          className={`absolute right-2 top-2 flex size-9 items-center justify-center rounded-full border bg-zinc-950/90 text-base shadow-sm backdrop-blur transition hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 ${
+          className={`absolute right-2 top-2 flex size-9 items-center justify-center rounded-full border bg-black/70 text-base shadow-sm backdrop-blur transition hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 ${
             list.pinned
-              ? 'border-zinc-100 text-zinc-100'
-              : 'border-zinc-700 text-zinc-400'
+              ? 'border-accent text-primary'
+              : 'border-border text-secondary'
           }`}
         >
           <span aria-hidden="true">
@@ -256,7 +256,7 @@ function CustomBoardCard({
           <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] ${
             list.visibility === 'public'
               ? 'border-violet-800 text-violet-300'
-              : 'border-zinc-700 text-zinc-400'
+              : 'border-border text-secondary'
           }`}
           >
             {list.visibility === 'public'
@@ -276,7 +276,7 @@ function CustomBoardCard({
         {action.error && (
           <p
             role="alert"
-            className="mt-1 text-xs text-zinc-400"
+            className="mt-1 text-xs text-secondary"
           >
             {t('library.boards.pinError')}
           </p>
@@ -294,12 +294,12 @@ function CreateBoardCard({ onCreate }) {
       <button
         type="button"
         onClick={onCreate}
-        className="group block w-full text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
+        className="group block w-full text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
       >
-        <div className="flex aspect-2/3 items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-950 transition-colors group-hover:border-zinc-500 group-hover:bg-zinc-900">
+        <div className="flex aspect-2/3 items-center justify-center rounded-xl border border-dashed border-border bg-surface-muted transition-colors group-hover:border-border-strong group-hover:bg-surface">
           <span
             aria-hidden="true"
-            className="text-4xl font-light text-zinc-500"
+            className="text-4xl font-light text-tertiary"
           >
             +
           </span>
@@ -363,7 +363,7 @@ export default function LibraryBoardsHome({
             {t('library.boards.yourBoards')}
           </h2>
 
-          <p className="mt-1 text-sm text-zinc-400">
+          <p className="mt-1 text-sm text-secondary">
             {t('library.boards.yourBoardsDescription')}
           </p>
         </div>
@@ -371,7 +371,7 @@ export default function LibraryBoardsHome({
         {lists.loading && (
           <p
             role="status"
-            className="mt-5 text-zinc-400"
+            className="mt-5 text-secondary"
           >
             {t('library.lists.loading')}
           </p>
@@ -379,14 +379,14 @@ export default function LibraryBoardsHome({
 
         {lists.error && (
           <div className="mt-5 space-y-3">
-            <p role="alert" className="text-zinc-400">
+            <p role="alert" className="text-secondary">
               {t('library.errors.load')}
             </p>
 
             <button
               type="button"
               onClick={lists.retry}
-              className="rounded-lg border border-zinc-700 px-4 py-2 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-4"
+              className="rounded-lg border border-border px-4 py-2 hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-4"
             >
               {t('library.lists.retry')}
             </button>

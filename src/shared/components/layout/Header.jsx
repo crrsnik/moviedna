@@ -16,14 +16,14 @@ import NotificationBell from '../../../features/notifications/components/Notific
 import { useTranslation } from '../../../features/localization/hooks/useTranslation.js'
 import { PROFILE_AVATARS } from '../../../features/profile/constants/profileSettings.js'
 import { useUserProfile } from '../../../features/profile/hooks/useUserProfile.js'
+import ThemeToggle from '../../../features/theme/components/ThemeToggle.jsx'
 
 const linkClasses = (
-  'rounded-md py-2 font-medium text-zinc-300 '
-  + 'hover:bg-zinc-800 hover:text-white '
+  'rounded-lg py-2 font-medium text-secondary '
+  + 'transition-colors hover:bg-surface-muted hover:text-primary '
   + 'focus-visible:outline-2 focus-visible:outline-offset-2 '
-  + 'focus-visible:outline-zinc-100 '
-  + '[&.active]:bg-zinc-800 [&.active]:text-white '
-  + '[&.active]:underline [&.active]:underline-offset-4'
+  + 'focus-visible:outline-focus '
+  + '[&.active]:bg-accent-soft [&.active]:text-accent'
 )
 
 const navigationLinkClasses = (
@@ -36,9 +36,9 @@ const accountActionClasses = (
 
 const menuItemClasses = (
   'flex w-full items-center justify-between gap-3 '
-  + 'rounded-lg px-3 py-2 text-left text-sm text-zinc-200 '
-  + 'hover:bg-zinc-800 hover:text-white '
-  + 'focus-visible:outline-2 focus-visible:outline-zinc-100'
+  + 'rounded-lg px-3 py-2 text-left text-sm text-secondary '
+  + 'transition-colors hover:bg-surface-muted hover:text-primary '
+  + 'focus-visible:outline-2 focus-visible:outline-focus'
 )
 
 function Header() {
@@ -143,10 +143,10 @@ function Header() {
   }
 
   return (
-    <header className="border-b border-zinc-800 bg-zinc-900">
+    <header className="border-b border-border bg-surface">
       <div className="mx-auto grid max-w-6xl grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1 px-4 py-2 sm:px-6 md:flex md:gap-x-6 md:gap-y-0 md:py-4">
         <NavLink
-          className="rounded-md text-xl font-bold tracking-tight hover:text-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100"
+          className="rounded-md text-xl font-bold tracking-tight text-primary transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
           to="/"
           end
         >
@@ -185,6 +185,8 @@ function Header() {
         >
           <LanguageSwitcher />
 
+          <ThemeToggle />
+
           {isAuthenticated && (
             <NotificationBell />
           )}
@@ -192,7 +194,7 @@ function Header() {
           {registrationStatus === 'pending' ? (
             <span
               role="status"
-              className="text-sm text-zinc-400"
+              className="text-sm text-secondary"
             >
               {t('nav.creatingAccount')}
             </span>
@@ -210,7 +212,7 @@ function Header() {
                   setMenuOpen(open => !open)
                   setLogoutError(null)
                 }}
-                className="relative flex size-10 cursor-pointer items-center justify-center rounded-full border border-zinc-700 bg-zinc-950 text-xl hover:border-zinc-500 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100"
+                className="relative flex size-10 cursor-pointer items-center justify-center rounded-full border border-border bg-surface-muted text-xl text-primary transition-colors hover:border-border-strong hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
               >
                 {avatar ? (
                   <span aria-hidden="true">
@@ -237,7 +239,7 @@ function Header() {
                 {incomingFriendRequestCount > 0 && (
                   <span
                     aria-hidden="true"
-                    className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-violet-500 px-1 text-[10px] font-bold leading-5 text-white"
+                    className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-5 text-accent-contrast"
                   >
                     {incomingFriendRequestCount > 99
                       ? '99+'
@@ -249,7 +251,7 @@ function Header() {
               {menuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 z-50 mt-2 w-56 rounded-xl border border-zinc-700 bg-zinc-900 p-2 shadow-xl"
+                  className="absolute right-0 z-50 mt-2 w-56 rounded-xl border border-border bg-surface p-2 text-primary shadow-[var(--app-shadow-md)]"
                 >
                   <NavLink
                     role="menuitem"
@@ -277,7 +279,7 @@ function Header() {
                               incomingFriendRequestCount,
                           },
                         )}
-                        className="inline-flex min-w-5 items-center justify-center rounded-full bg-violet-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+                        className="inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-bold leading-none text-accent-contrast"
                       >
                         {incomingFriendRequestCount > 99
                           ? '99+'
@@ -295,7 +297,7 @@ function Header() {
                     {t('profile.accountSettings')}
                   </NavLink>
 
-                  <div className="my-2 border-t border-zinc-800" />
+                  <div className="my-2 border-t border-border" />
 
                   <button
                     role="menuitem"
@@ -330,7 +332,7 @@ function Header() {
               </NavLink>
 
               <NavLink
-                className="rounded-md bg-zinc-100 px-3 py-2 text-sm font-semibold text-zinc-950 hover:bg-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-100 [&.active]:underline [&.active]:underline-offset-4 [&.active]:ring-2 [&.active]:ring-zinc-400 [&.active]:ring-offset-2 [&.active]:ring-offset-zinc-900"
+                className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-accent-contrast transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                 to="/register"
               >
                 {t('nav.register')}

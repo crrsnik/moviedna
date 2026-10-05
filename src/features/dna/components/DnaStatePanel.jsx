@@ -44,7 +44,7 @@ export default function DnaStatePanel({
   return (
     <section
       aria-labelledby="dna-state-title"
-      className="w-full max-w-xl rounded-2xl border border-zinc-800 bg-zinc-900 p-6 text-center"
+      className="w-full max-w-xl rounded-2xl border border-border bg-surface p-6 text-center"
     >
       <h1
         id="dna-state-title"
@@ -56,7 +56,7 @@ export default function DnaStatePanel({
       <p
         role="status"
         aria-live="polite"
-        className="mt-3 text-zinc-300"
+        className="mt-3 text-secondary"
       >
         {t(detailKey)}
       </p>

@@ -43,7 +43,7 @@ export default function DnaPage() {
           {t('dnaUi.title')}
         </h1>
 
-        <p className="text-zinc-300">
+        <p className="text-secondary">
           {t('dnaUi.description')}
         </p>
       </header>

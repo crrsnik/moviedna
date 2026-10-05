@@ -123,12 +123,12 @@ export default function CustomListForm({
             aria-describedby={
               `${id}-name-help`
             }
-            className="mt-1 w-full rounded border border-zinc-600 bg-zinc-950 p-2 focus-visible:outline-2"
+            className="mt-1 w-full rounded border border-border-strong bg-surface-muted p-2 focus-visible:outline-2"
           />
 
           <p
             id={`${id}-name-help`}
-            className="text-sm text-zinc-400"
+            className="text-sm text-secondary"
           >
             {t(
               'library.form.nameHelp',
@@ -162,12 +162,12 @@ export default function CustomListForm({
             aria-describedby={
               `${id}-description-help`
             }
-            className="mt-1 w-full rounded border border-zinc-600 bg-zinc-950 p-2 focus-visible:outline-2"
+            className="mt-1 w-full rounded border border-border-strong bg-surface-muted p-2 focus-visible:outline-2"
           />
 
           <p
             id={`${id}-description-help`}
-            className="text-sm text-zinc-400"
+            className="text-sm text-secondary"
           >
             {t(
               'library.form.descriptionHelp',
@@ -189,7 +189,7 @@ export default function CustomListForm({
             )}
           </legend>
 
-          <label className="flex items-start gap-3 rounded-lg border border-zinc-700 p-3">
+          <label className="flex items-start gap-3 rounded-lg border border-border p-3">
             <input
               type="radio"
               name={`${id}-visibility`}
@@ -210,7 +210,7 @@ export default function CustomListForm({
                 )}
               </strong>
 
-              <span className="text-sm text-zinc-400">
+              <span className="text-sm text-secondary">
                 {t(
                   'library.form.privateDescription',
                 )}
@@ -218,7 +218,7 @@ export default function CustomListForm({
             </span>
           </label>
 
-          <label className="flex items-start gap-3 rounded-lg border border-zinc-700 p-3">
+          <label className="flex items-start gap-3 rounded-lg border border-border p-3">
             <input
               type="radio"
               name={`${id}-visibility`}
@@ -239,7 +239,7 @@ export default function CustomListForm({
                 )}
               </strong>
 
-              <span className="text-sm text-zinc-400">
+              <span className="text-sm text-secondary">
                 {t(
                   'library.form.publicDescription',
                 )}

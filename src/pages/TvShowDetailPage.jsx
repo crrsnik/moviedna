@@ -49,11 +49,14 @@ export default function TvShowDetailPage() {
 
   return (
     <div className="w-full min-w-0 self-start space-y-10">
-      <TvShowDetailHero series={data} />
-
-      <MediaLibraryActions
-        mediaType="tv"
-        detail={data}
+      <TvShowDetailHero
+        series={data}
+        actions={
+          <MediaLibraryActions
+            mediaType="tv"
+            detail={data}
+          />
+        }
       />
 
       <MediaViewingHistoryAction

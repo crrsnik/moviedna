@@ -83,7 +83,7 @@ export default function MovieFacts({ movie }) {
             key={label}
             className="min-w-0"
           >
-            <dt className="text-sm text-zinc-400">
+            <dt className="text-sm text-secondary">
               {label}
             </dt>
 

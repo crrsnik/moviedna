@@ -50,13 +50,13 @@ export default function DetailCredits({
               </p>
 
               {person.character && (
-                <p className="break-words text-xs text-zinc-400">
+                <p className="break-words text-xs text-secondary">
                   {person.character}
                 </p>
               )}
 
               {person.episodeCount > 0 && (
-                <p className="text-xs text-zinc-400">
+                <p className="text-xs text-secondary">
                   {t(
                     'catalog.detail.episodesCount',
                     {

@@ -11,7 +11,7 @@ function ForgotPasswordPage() {
           {t('auth.passwordReset.title')}
         </h1>
 
-        <p className="text-zinc-400">
+        <p className="text-secondary">
           {t('auth.passwordReset.subtitle')}
         </p>
       </div>

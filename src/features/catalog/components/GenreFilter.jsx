@@ -23,7 +23,7 @@ export default function GenreFilter({
       {state.loading && (
         <p
           role="status"
-          className="text-sm text-zinc-400"
+          className="text-sm text-secondary"
         >
           {t('catalog.genres.loading')}
         </p>
@@ -58,10 +58,10 @@ export default function GenreFilter({
             type="button"
             aria-pressed={selected === genre.id}
             onClick={() => onChange(genre.id)}
-            className={`shrink-0 rounded-full border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 ${
+            className={`shrink-0 rounded-full border border-border px-4 py-2 text-sm hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
               selected === genre.id
-                ? 'bg-zinc-200 text-zinc-950 hover:bg-zinc-300'
-                : 'text-zinc-300'
+                ? 'bg-accent text-accent-contrast hover:bg-accent-hover'
+                : 'text-secondary'
             }`}
           >
             {genre.name}
