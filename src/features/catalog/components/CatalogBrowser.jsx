@@ -77,20 +77,21 @@ export default function CatalogBrowser({
     selectedGenres.join(',')
   )
 
-  const validSelectedGenres = (
+  const validGenreKey = (
     genreState.data
-      ? selectedGenres.filter(
-          id => genreState.data.some(
-            genre => genre.id === id,
-          ),
-        )
-      : selectedGenres
+      ? selectedGenres
+          .filter(
+            id => genreState.data.some(
+              genre => genre.id === id,
+            ),
+          )
+          .join(',')
+      : genreKey
   )
 
   const hasUnknownGenres = (
     genreState.data !== null
-    && validSelectedGenres.length
-      !== selectedGenres.length
+    && validGenreKey !== genreKey
   )
 
   useEffect(() => {
@@ -99,8 +100,11 @@ export default function CatalogBrowser({
           type,
           {
             view,
-            genres:
-              validSelectedGenres,
+            genres: validGenreKey
+              ? validGenreKey
+                  .split(',')
+                  .map(Number)
+              : [],
             page: 1,
           },
         ).toString()
@@ -110,8 +114,11 @@ export default function CatalogBrowser({
             type,
             {
               view,
-              genres:
-                selectedGenres,
+              genres: genreKey
+                ? genreKey
+                    .split(',')
+                    .map(Number)
+                : [],
               page:
                 catalog.data.page,
             },
@@ -136,6 +143,7 @@ export default function CatalogBrowser({
     type,
     view,
     genreKey,
+    validGenreKey,
     page,
     params,
     setParams,
