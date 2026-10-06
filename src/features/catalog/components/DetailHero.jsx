@@ -21,7 +21,7 @@ export default function DetailHero({
   const { locale, t } = useTranslation()
 
   return (
-    <header className="relative isolate min-h-112 overflow-hidden rounded-2xl border border-border bg-surface">
+    <header className="relative isolate min-h-112 overflow-hidden rounded-2xl border border-border bg-surface text-white">
       <DetailImage
         src={getTmdbBackdropUrl(movie.backdropPath)}
         alt=""
@@ -102,7 +102,7 @@ export default function DetailHero({
               {movie.genres.map(genre => (
                 <li
                   key={genre.id}
-                  className="rounded-full bg-surface-muted px-3 py-1 text-xs"
+                  className="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-xs text-white"
                 >
                   {genre.name}
                 </li>
@@ -116,7 +116,7 @@ export default function DetailHero({
             </p>
           )}
 
-          <p className="break-words leading-relaxed text-primary">
+          <p className="break-words leading-relaxed text-zinc-100">
             {movie.overview
               || t('catalog.detail.noOverview')}
           </p>

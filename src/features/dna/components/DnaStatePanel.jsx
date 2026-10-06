@@ -44,7 +44,7 @@ export default function DnaStatePanel({
   return (
     <section
       aria-labelledby="dna-state-title"
-      className="w-full max-w-xl rounded-2xl border border-border bg-surface p-6 text-center"
+      className="mx-auto w-full max-w-xl rounded-2xl border border-border bg-surface p-6 text-center"
     >
       <h1
         id="dna-state-title"

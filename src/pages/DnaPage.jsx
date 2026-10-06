@@ -53,7 +53,7 @@ export default function DnaPage() {
 
   return (
     <div className="w-full min-w-0 self-start space-y-6">
-      <header className="max-w-3xl space-y-2">
+      <header className="w-full space-y-2">
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           {t('dnaUi.title')}
         </h1>
@@ -66,7 +66,7 @@ export default function DnaPage() {
       {!refinement.isLoading
         && !refinement.error
         && !refinement.isComplete && (
-        <section className="max-w-3xl rounded-2xl border border-border bg-surface-muted/50 p-5">
+        <section className="w-full rounded-2xl border border-border bg-surface-muted/50 p-5">
           <h2 className="text-lg font-semibold text-primary">
             {t('dnaUi.refinement.ctaTitle')}
           </h2>

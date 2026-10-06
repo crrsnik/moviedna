@@ -36,7 +36,7 @@ export default function DnaRefinementExperience() {
 
   return (
     <section
-      className="w-full min-w-0 max-w-2xl space-y-6"
+      className="mx-auto w-full min-w-0 max-w-2xl space-y-6"
       aria-labelledby="dna-refinement-title"
     >
       <header className="space-y-3 text-center">
