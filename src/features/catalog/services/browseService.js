@@ -3,6 +3,15 @@ import { getTmdb } from './tmdbClient.js'
 import { normalizeCatalog } from './normalizeCatalog.js'
 import { rankTopRatedResults } from './topRatedRanking.js'
 import { rankPopularResults } from './popularRanking.js'
+import {
+  balanceReadablePeople,
+  rankPeopleResults,
+} from './peopleRanking.js'
+
+import {
+  loadRecognitionPeoplePool,
+  mergePeopleCandidatePools,
+} from './peopleCandidatePool.js'
 import { TmdbError } from './tmdbErrors.js'
 
 import {
@@ -29,10 +38,18 @@ const TOP_RATED_PAGE_SIZE = 20
 const POPULAR_POOL_PAGES = 5
 const POPULAR_PAGE_SIZE = 20
 
+const PEOPLE_POOL_PAGES = Object.freeze({
+  popular: 10,
+  trending: 10,
+})
+
+const PEOPLE_PAGE_SIZE = 20
+
 // Top Rated changes slowly, so keep the ranked candidate pool
 // for the current browser session. The key includes locale and
 // active filters, so unrelated catalog views never share data.
 const topRatedPoolCache = new Map()
+const peoplePoolCache = new Map()
 
 
 async function getGenres(
@@ -547,6 +564,262 @@ async function browse(
   )
 }
 
+async function browseRankedPeople(
+  {
+    language = TMDB_DEFAULT_LANGUAGE,
+    signal,
+    ...options
+  } = {},
+) {
+  const {
+    view,
+    page,
+  } = normalizeBrowse(
+    'person',
+    options,
+  )
+
+  const poolLimit = (
+    PEOPLE_POOL_PAGES[view]
+    ?? 1
+  )
+
+  if (page > poolLimit) {
+    return browse(
+      'person',
+      {
+        language,
+        signal,
+        view,
+        page,
+      },
+    )
+  }
+
+  const cacheKey = JSON.stringify([
+    language,
+    view,
+    poolLimit,
+  ])
+
+  let cached = (
+    typeof window !== 'undefined'
+      ? peoplePoolCache.get(
+          cacheKey,
+        )
+      : null
+  )
+
+  if (!cached) {
+    const path =
+      BROWSE_ENDPOINTS.person[view]
+
+    async function loadRawPage(
+      sourcePage,
+    ) {
+      const data = await getTmdb(
+        path,
+        {
+          language,
+          signal,
+          browse: {
+            page: String(
+              sourcePage,
+            ),
+          },
+        },
+      )
+
+      if (
+        !data
+        || !Array.isArray(data.results)
+      ) {
+        throw new TmdbError(
+          'invalid',
+        )
+      }
+
+      return data
+    }
+
+    // Keep the requested page as the first
+    // request so retries and existing tests
+    // remain predictable.
+    const requestedRaw =
+      await loadRawPage(page)
+
+    const requested =
+      normalizeCatalog(
+        requestedRaw,
+        'person',
+        page,
+      )
+
+    const sourcePageCount =
+      Math.min(
+        poolLimit,
+        Math.max(
+          1,
+          requested.totalPages,
+        ),
+      )
+
+    const pages = new Map([
+      [page, requestedRaw],
+    ])
+
+    const otherPages =
+      Array.from(
+        {
+          length: sourcePageCount,
+        },
+        (_, index) => index + 1,
+      ).filter(
+        sourcePage => (
+          sourcePage !== page
+        ),
+      )
+
+    const [
+      loadedPages,
+      recognition,
+    ] = await Promise.all([
+      Promise.all(
+        otherPages.map(
+          async sourcePage => [
+            sourcePage,
+            await loadRawPage(
+              sourcePage,
+            ),
+          ],
+        ),
+      ),
+      loadRecognitionPeoplePool({
+        language,
+        signal,
+      }).catch(error => {
+        if (signal?.aborted) {
+          throw error
+        }
+
+        // Recognition is enrichment.
+        // A temporary failure must not
+        // break the People catalog.
+        return []
+      }),
+    ])
+
+    for (
+      const [
+        sourcePage,
+        raw,
+      ]
+      of loadedPages
+    ) {
+      pages.set(
+        sourcePage,
+        raw,
+      )
+    }
+
+    const sourceCandidates = [
+      ...pages.entries(),
+    ]
+      .sort(
+        ([left], [right]) => (
+          left - right
+        ),
+      )
+      .flatMap(
+        ([, raw]) => raw.results,
+      )
+
+    const candidates =
+      mergePeopleCandidatePools(
+        sourceCandidates,
+        recognition,
+        {
+          // Popular gets evergreen people
+          // injected into the candidate pool.
+          // Trending stays genuinely trending
+          // and only gets recognition evidence
+          // for people already in its source.
+          includeRecognition:
+            view === 'popular',
+        },
+      )
+
+    const ranked =
+      rankPeopleResults(
+        candidates,
+        { view },
+      )
+
+    const balanced =
+      balanceReadablePeople(
+        ranked,
+        {
+          pageSize:
+            PEOPLE_PAGE_SIZE,
+          minReadable:
+            view === 'trending'
+              ? 14
+              : 16,
+        },
+      )
+
+    const normalized =
+      normalizeCatalog(
+        {
+          page: 1,
+          total_pages: 1,
+          total_results:
+            balanced.length,
+          results: balanced,
+        },
+        'person',
+        1,
+      ).results
+
+    cached = {
+      totalPages:
+        requested.totalPages,
+      totalResults:
+        requested.totalResults,
+      results: normalized,
+    }
+
+    // Browser-session cache prevents
+    // rebuilding the same 10-page pool
+    // every time the user changes page.
+    if (
+      typeof window !== 'undefined'
+    ) {
+      peoplePoolCache.set(
+        cacheKey,
+        cached,
+      )
+    }
+  }
+
+  const offset = (
+    (page - 1)
+    * PEOPLE_PAGE_SIZE
+  )
+
+  return {
+    page,
+    totalPages:
+      cached.totalPages,
+    totalResults:
+      cached.totalResults,
+    results: cached.results.slice(
+      offset,
+      offset + PEOPLE_PAGE_SIZE,
+    ),
+  }
+}
+
 export const getMovieGenres = options => (
   getGenres('movie', options)
 )
@@ -564,5 +837,5 @@ export const browseTvShows = options => (
 )
 
 export const browsePeople = options => (
-  browse('person', options)
+  browseRankedPeople(options)
 )
