@@ -2,8 +2,13 @@ import { MAX_TMDB_CONCURRENCY, MEDIA_CACHE_TTL_MS } from '../config.js'
 import { MovieDnaServerError, SERVER_ERROR_CODES } from '../errors.js'
 
 function validIdentity(entry, item) {
-  return entry?.schemaVersion === 1 && entry.tmdbId === item.tmdbId
+  return entry?.schemaVersion === 1
+    && entry.tmdbId === item.tmdbId
     && entry.mediaType === item.mediaType
+    && Object.prototype.hasOwnProperty.call(
+      entry,
+      'collectionId',
+    )
 }
 
 function toCoreMetadata(entry) {
@@ -21,6 +26,10 @@ function toCoreMetadata(entry) {
     directors: entry.directors ?? [],
     creators: entry.creators ?? [],
     actors: entry.actors ?? [],
+    ...(Number.isSafeInteger(entry.collectionId)
+      && entry.collectionId > 0
+      ? { collectionId: entry.collectionId }
+      : {}),
     completeness: entry.metadataCompleteness ?? {
       genres: false, releaseYear: false, originalLanguage: false, countries: false, people: false,
     },
@@ -52,7 +61,13 @@ export function createMetadataResolver({ cache, tmdbClient, now = () => Date.now
     const fetched = await tmdbClient.getMetadata(item.mediaType, item.tmdbId)
     const normalized = fetched ?? missingEntry(item)
     const writtenAt = now()
-    const stored = { ...normalized, fetchedAt: writtenAt, expiresAt: writtenAt + ttlMs }
+    const stored = {
+      ...normalized,
+      collectionId:
+        normalized.collectionId ?? null,
+      fetchedAt: writtenAt,
+      expiresAt: writtenAt + ttlMs,
+    }
     await cache.set(item.mediaKey, stored)
     return toCoreMetadata(stored)
   }

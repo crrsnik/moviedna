@@ -201,7 +201,7 @@ function createRecommendationRuntimeHandler() {
   const pipeline = createRecommendationPipeline({
     sourceClient,
     metadataResolver,
-    maxPerMediaType: 40,
+    maxPerMediaType: 70,
   })
 
   return createRecommendationHandler({

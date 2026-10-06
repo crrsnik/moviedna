@@ -295,12 +295,12 @@ describe('recommendation pipeline', () => {
       ),
       [
         'movie_1',
-        'movie_2',
-        'movie_4',
-        'movie_3',
         'tv_1',
+        'movie_2',
         'tv_3',
+        'movie_4',
         'tv_2',
+        'movie_3',
       ],
     )
 

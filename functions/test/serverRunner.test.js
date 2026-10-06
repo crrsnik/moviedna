@@ -41,7 +41,8 @@ function cached(id, mediaType = 'movie') {
     schemaVersion: 1,
     tmdbId: id,
     mediaType,
-    genreIds: [28],
+    
+    collectionId: null,genreIds: [28],
     releaseYear: 2020,
     originalLanguage: 'en',
     countryCodes: ['US'],

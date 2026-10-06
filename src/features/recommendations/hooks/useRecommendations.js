@@ -218,10 +218,11 @@ export function useRecommendations() {
           recommendation,
         )
 
-        // Force a backend refresh so the shared
-        // recommendation cache also receives the version
-        // with this title permanently excluded.
-        retry()
+        // Keep the visible list stable. The optimistic
+        // removal already pulls the next reserved result
+        // into view. Clearing the cache ensures that the
+        // next fresh load also excludes hidden titles.
+        recommendationCache.clear(uid)
 
         return true
       } catch {

@@ -12,6 +12,9 @@ import {
   rankRecommendations,
 } from './core/rankRecommendations.js'
 import {
+  rerankRecommendationResults,
+} from './core/rerankRecommendationResults.js'
+import {
   RECOMMENDATION_ERROR_CODES,
   throwRecommendationError,
 } from './core/recommendationErrors.js'
@@ -140,7 +143,7 @@ export function createRecommendationPipeline({
   sourceClient,
   metadataResolver,
   sourceConcurrency = DEFAULT_SOURCE_CONCURRENCY,
-  maxPerMediaType = 120,
+  maxPerMediaType = 70,
   maxGenres = 3,
 } = {}) {
   if (
@@ -185,14 +188,33 @@ export function createRecommendationPipeline({
 
     const pool = buildRecommendationCandidatePool({
       sources: collected.sources,
-      maxPerMediaType,
+      maxPerMediaType: 500,
     })
 
-    const eligible = excludeKnownMedia(
+    const knownEligible = excludeKnownMedia(
       pool.candidates,
       {
         rated: [...rated, ...watched],
         hidden,
+      },
+    )
+
+    const eligibleCounts = {
+      movie: 0,
+      tv: 0,
+    }
+
+    const eligible = knownEligible.filter(
+      candidate => {
+        if (
+          eligibleCounts[candidate.mediaType]
+          >= maxPerMediaType
+        ) {
+          return false
+        }
+
+        eligibleCounts[candidate.mediaType] += 1
+        return true
       },
     )
 
@@ -226,6 +248,12 @@ export function createRecommendationPipeline({
       candidates: prepared,
     })
 
+    const rerankedResults =
+      rerankRecommendationResults({
+        rankedResults: ranked.results,
+        candidates: resolved,
+      })
+
     const displayByMediaKey = new Map(
       prepared.map(candidate => [
         candidate.mediaKey,
@@ -234,7 +262,7 @@ export function createRecommendationPipeline({
     )
 
     const results = Object.freeze(
-      ranked.results.map(result => {
+      rerankedResults.map(result => {
         const display = displayByMediaKey.get(
           result.mediaKey,
         )
@@ -267,10 +295,12 @@ export function createRecommendationPipeline({
         duplicateCount:
           pool.duplicateCount,
         trimmedCount:
-          pool.trimmedCount,
+          pool.trimmedCount
+          + knownEligible.length
+          - eligible.length,
         knownExcludedCount:
           pool.candidates.length
-          - eligible.length,
+          - knownEligible.length,
         metadataResolvedCount:
           resolved.length,
         preparationRejectedCount,
