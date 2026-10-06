@@ -75,12 +75,26 @@ describe('achievement metrics', () => {
           distinctDecades: 0,
           distinctCountries: 0,
           byGenre: {},
+          maxDirectorTitles: 0,
+          maxActorTitles: 0,
+          pre1970: 0,
+          maxGenreDecades: 0,
+          genresWith10: 0,
+          decadesWith10: 0,
+          worldCinemaScholar: 0,
+          directorJourney: 0,
+          actorEras: 0,
+          maxCollectionTitles: 0,
+          globalNomad: 0,
         },
         favorites: {
           total: 0,
         },
         friends: {
           accepted: 0,
+        },
+        milestones: {
+          longRoad: 0,
         },
       },
     )

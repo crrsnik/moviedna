@@ -35,7 +35,18 @@ function Medal({
 }) {
   const { t } = useTranslation()
 
-  const title = t(definition.titleKey)
+  const concealed = (
+    definition.secret
+    && !achievement.unlocked
+  )
+
+  const title = concealed
+    ? t('achievementsUi.secretTitle')
+    : t(definition.titleKey)
+
+  const image = concealed
+    ? '/achievements/secret.svg'
+    : definition.image
 
   return (
     <li className="min-w-0">
@@ -49,7 +60,7 @@ function Medal({
         className="group flex w-full flex-col items-center rounded-xl p-2 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"
       >
         <img
-          src={definition.image}
+          src={image}
           alt=""
           aria-hidden="true"
           className={[
@@ -83,7 +94,9 @@ function AchievementDialog({
   const { t } = useTranslation()
 
   const definition = achievement
-    ? ACHIEVEMENT_CATALOG_BY_ID[achievement.id]
+    ? ACHIEVEMENT_CATALOG_BY_ID[
+      achievement.id
+    ]
     : null
 
   useEffect(() => {
@@ -95,7 +108,10 @@ function AchievementDialog({
       }
     }
 
-    window.addEventListener('keydown', listener)
+    window.addEventListener(
+      'keydown',
+      listener,
+    )
 
     return () => {
       window.removeEventListener(
@@ -109,7 +125,22 @@ function AchievementDialog({
     return null
   }
 
-  const title = t(definition.titleKey)
+  const concealed = (
+    definition.secret
+    && !achievement.unlocked
+  )
+
+  const title = concealed
+    ? t('achievementsUi.secretTitle')
+    : t(definition.titleKey)
+
+  const image = concealed
+    ? '/achievements/secret.svg'
+    : definition.image
+
+  const description = concealed
+    ? t('achievementsUi.secretDescription')
+    : t(definition.descriptionKey)
 
   const unlockedDate = (
     achievement.unlocked
@@ -123,7 +154,10 @@ function AchievementDialog({
     <div
       role="presentation"
       onMouseDown={event => {
-        if (event.target === event.currentTarget) {
+        if (
+          event.target
+          === event.currentTarget
+        ) {
           onClose()
         }
       }}
@@ -136,18 +170,17 @@ function AchievementDialog({
         className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-2xl"
       >
         <div className="flex justify-center">
-          <div
+          <img
+            src={image}
+            alt=""
             aria-hidden="true"
             className={[
-              'flex size-28 items-center justify-center rounded-full border-4 border-border text-3xl font-black shadow-xl',
-              definition.tone,
+              'size-28 object-contain drop-shadow-xl',
               achievement.unlocked
                 ? ''
                 : 'grayscale opacity-35',
             ].join(' ')}
-          >
-            {definition.symbol}
-          </div>
+          />
         </div>
 
         <div className="mt-5 text-center">
@@ -172,44 +205,46 @@ function AchievementDialog({
           </h3>
 
           <p className="mt-3 text-sm leading-6 text-secondary">
-            {t(definition.descriptionKey)}
+            {description}
           </p>
         </div>
 
-        <div className="mt-6 rounded-xl bg-surface-muted p-4">
-          <div className="flex items-center justify-between gap-4 text-sm">
-            <span className="text-secondary">
-              {t('achievementsUi.progress')}
-            </span>
+        {!concealed && (
+          <div className="mt-6 rounded-xl bg-surface-muted p-4">
+            <div className="flex items-center justify-between gap-4 text-sm">
+              <span className="text-secondary">
+                {t('achievementsUi.progress')}
+              </span>
 
-            <strong>
-              {achievement.current}
-              {' / '}
-              {achievement.target}
-            </strong>
-          </div>
+              <strong>
+                {achievement.current}
+                {' / '}
+                {achievement.target}
+              </strong>
+            </div>
 
-          <progress
-            value={achievement.current}
-            max={achievement.target}
-            aria-label={t(
-              'achievementsUi.progressLabel',
-              { title },
-            )}
-            className="mt-3 h-2 w-full accent-violet-400"
-          />
-
-          {unlockedDate && (
-            <p className="mt-3 text-xs text-tertiary">
-              {t(
-                'achievementsUi.obtained',
-                {
-                  date: unlockedDate,
-                },
+            <progress
+              value={achievement.current}
+              max={achievement.target}
+              aria-label={t(
+                'achievementsUi.progressLabel',
+                { title },
               )}
-            </p>
-          )}
-        </div>
+              className="mt-3 h-2 w-full accent-violet-400"
+            />
+
+            {unlockedDate && (
+              <p className="mt-3 text-xs text-tertiary">
+                {t(
+                  'achievementsUi.obtained',
+                  {
+                    date: unlockedDate,
+                  },
+                )}
+              </p>
+            )}
+          </div>
+        )}
 
         <button
           type="button"

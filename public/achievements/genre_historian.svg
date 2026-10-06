@@ -1,0 +1,64 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 256 256"
+>
+  
+        <path d="M128 27 L229 128 L128 229 L27 128 Z"
+          fill="#18181b"
+          stroke="#10b981"
+          stroke-width="7"
+          stroke-linejoin="round"/>
+        
+
+  <path
+    d="M52 57L204 199"
+    stroke="#10b981"
+    stroke-width="3"
+    stroke-opacity=".12"
+  />
+
+  <path
+    d="M52 199L204 57"
+    stroke="#10b981"
+    stroke-width="3"
+    stroke-opacity=".07"
+  />
+
+  
+        <circle cx="102" cy="103" r="31"
+          fill="#10b981"/>
+        <circle cx="154" cy="103" r="31"
+          fill="#f4f4f5"/>
+        <circle cx="102" cy="153" r="31"
+          fill="#f4f4f5"/>
+        <circle cx="154" cy="153" r="31"
+          fill="#10b981"/>
+        
+
+  <rect x="93.5" y="200" width="12" height="5" rx="2.5" fill="#10b981"/>
+<rect x="112.5" y="200" width="12" height="5" rx="2.5" fill="#10b981"/>
+<rect x="131.5" y="200" width="12" height="5" rx="2.5" fill="#10b981"/>
+<rect x="150.5" y="200" width="12" height="5" rx="2.5" fill="#10b981"/>
+
+  <g aria-hidden="true">
+    <rect
+      x="150"
+      y="198"
+      width="94"
+      height="42"
+      rx="21"
+      fill="#18181b"
+      stroke="#fafafa"
+      stroke-width="4"
+    />
+    <text
+      x="197"
+      y="226"
+      text-anchor="middle"
+      font-family="Arial, Helvetica, sans-serif"
+      font-size="21"
+      font-weight="700"
+      fill="#fafafa"
+    >HIST</text>
+  </g>
+</svg>

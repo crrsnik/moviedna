@@ -1,7 +1,6 @@
 export const ACHIEVEMENT_SCHEMA_VERSION = 1
 
 const definitions = [
-  // Foundation
   {
     id: 'onboarding_complete',
     category: 'foundation',
@@ -16,8 +15,6 @@ const definitions = [
     metric: 'dna.ready',
     target: 1,
   },
-
-  // Ratings
   {
     id: 'rating_1',
     category: 'ratings',
@@ -53,8 +50,20 @@ const definitions = [
     metric: 'ratings.total',
     target: 100,
   },
-
-  // Watched
+  {
+    id: 'rating_250',
+    category: 'ratings',
+    displayOrder: 150,
+    metric: 'ratings.total',
+    target: 250,
+  },
+  {
+    id: 'rating_500',
+    category: 'ratings',
+    displayOrder: 160,
+    metric: 'ratings.total',
+    target: 500,
+  },
   {
     id: 'watched_1',
     category: 'watched',
@@ -90,8 +99,20 @@ const definitions = [
     metric: 'watched.total',
     target: 100,
   },
-
-  // Movies / TV
+  {
+    id: 'watched_250',
+    category: 'watched',
+    displayOrder: 250,
+    metric: 'watched.total',
+    target: 250,
+  },
+  {
+    id: 'watched_500',
+    category: 'watched',
+    displayOrder: 260,
+    metric: 'watched.total',
+    target: 500,
+  },
   {
     id: 'movies_10',
     category: 'watched',
@@ -107,6 +128,20 @@ const definitions = [
     target: 50,
   },
   {
+    id: 'movies_100',
+    category: 'watched',
+    displayOrder: 312,
+    metric: 'watched.movies',
+    target: 100,
+  },
+  {
+    id: 'movies_250',
+    category: 'watched',
+    displayOrder: 314,
+    metric: 'watched.movies',
+    target: 250,
+  },
+  {
     id: 'tv_10',
     category: 'watched',
     displayOrder: 320,
@@ -120,8 +155,20 @@ const definitions = [
     metric: 'watched.tv',
     target: 50,
   },
-
-  // Favorites
+  {
+    id: 'tv_100',
+    category: 'watched',
+    displayOrder: 340,
+    metric: 'watched.tv',
+    target: 100,
+  },
+  {
+    id: 'tv_250',
+    category: 'watched',
+    displayOrder: 350,
+    metric: 'watched.tv',
+    target: 250,
+  },
   {
     id: 'favorite_1',
     category: 'favorites',
@@ -143,8 +190,20 @@ const definitions = [
     metric: 'favorites.total',
     target: 25,
   },
-
-  // Variety
+  {
+    id: 'favorite_50',
+    category: 'favorites',
+    displayOrder: 430,
+    metric: 'favorites.total',
+    target: 50,
+  },
+  {
+    id: 'favorite_100',
+    category: 'favorites',
+    displayOrder: 440,
+    metric: 'favorites.total',
+    target: 100,
+  },
   {
     id: 'genres_5',
     category: 'variety',
@@ -158,6 +217,13 @@ const definitions = [
     displayOrder: 510,
     metric: 'watched.distinctGenres',
     target: 10,
+  },
+  {
+    id: 'genres_15',
+    category: 'variety',
+    displayOrder: 515,
+    metric: 'watched.distinctGenres',
+    target: 15,
   },
   {
     id: 'decades_3',
@@ -174,6 +240,13 @@ const definitions = [
     target: 5,
   },
   {
+    id: 'decades_7',
+    category: 'variety',
+    displayOrder: 535,
+    metric: 'watched.distinctDecades',
+    target: 7,
+  },
+  {
     id: 'countries_3',
     category: 'variety',
     displayOrder: 540,
@@ -187,14 +260,40 @@ const definitions = [
     metric: 'watched.distinctCountries',
     target: 5,
   },
-
-  // Genre specialists
+  {
+    id: 'countries_10',
+    category: 'variety',
+    displayOrder: 560,
+    metric: 'watched.distinctCountries',
+    target: 10,
+  },
+  {
+    id: 'countries_20',
+    category: 'variety',
+    displayOrder: 570,
+    metric: 'watched.distinctCountries',
+    target: 20,
+  },
   {
     id: 'horror_10',
     category: 'genres',
     displayOrder: 600,
     metric: 'watched.byGenre.27',
     target: 10,
+  },
+  {
+    id: 'horror_25',
+    category: 'genres',
+    displayOrder: 601,
+    metric: 'watched.byGenre.27',
+    target: 25,
+  },
+  {
+    id: 'horror_50',
+    category: 'genres',
+    displayOrder: 602,
+    metric: 'watched.byGenre.27',
+    target: 50,
   },
   {
     id: 'comedy_10',
@@ -204,11 +303,39 @@ const definitions = [
     target: 10,
   },
   {
+    id: 'comedy_25',
+    category: 'genres',
+    displayOrder: 611,
+    metric: 'watched.byGenre.35',
+    target: 25,
+  },
+  {
+    id: 'comedy_50',
+    category: 'genres',
+    displayOrder: 612,
+    metric: 'watched.byGenre.35',
+    target: 50,
+  },
+  {
     id: 'scifi_10',
     category: 'genres',
     displayOrder: 620,
     metric: 'watched.byGenre.878',
     target: 10,
+  },
+  {
+    id: 'scifi_25',
+    category: 'genres',
+    displayOrder: 621,
+    metric: 'watched.byGenre.878',
+    target: 25,
+  },
+  {
+    id: 'scifi_50',
+    category: 'genres',
+    displayOrder: 622,
+    metric: 'watched.byGenre.878',
+    target: 50,
   },
   {
     id: 'romance_10',
@@ -217,8 +344,20 @@ const definitions = [
     metric: 'watched.byGenre.10749',
     target: 10,
   },
-
-  // Social
+  {
+    id: 'romance_25',
+    category: 'genres',
+    displayOrder: 631,
+    metric: 'watched.byGenre.10749',
+    target: 25,
+  },
+  {
+    id: 'romance_50',
+    category: 'genres',
+    displayOrder: 632,
+    metric: 'watched.byGenre.10749',
+    target: 50,
+  },
   {
     id: 'friend_1',
     category: 'social',
@@ -240,17 +379,142 @@ const definitions = [
     metric: 'friends.accepted',
     target: 10,
   },
+  {
+    id: 'friends_25',
+    category: 'social',
+    displayOrder: 730,
+    metric: 'friends.accepted',
+    target: 25,
+  },
+  {
+    id: 'friends_50',
+    category: 'social',
+    displayOrder: 740,
+    metric: 'friends.accepted',
+    target: 50,
+  },
+  {
+    id: 'auteur_devotee',
+    category: 'legendary',
+    displayOrder: 800,
+    metric: 'watched.maxDirectorTitles',
+    target: 15,
+  },
+  {
+    id: 'familiar_face',
+    category: 'legendary',
+    displayOrder: 810,
+    metric: 'watched.maxActorTitles',
+    target: 25,
+  },
+  {
+    id: 'film_archaeologist',
+    category: 'legendary',
+    displayOrder: 820,
+    metric: 'watched.pre1970',
+    target: 25,
+  },
+  {
+    id: 'genre_historian',
+    category: 'legendary',
+    displayOrder: 830,
+    metric: 'watched.maxGenreDecades',
+    target: 5,
+  },
+  {
+    id: 'world_cinema_scholar',
+    category: 'legendary',
+    displayOrder: 840,
+    metric: 'watched.worldCinemaScholar',
+    target: 1,
+  },
+  {
+    id: 'genre_omnivore',
+    category: 'legendary',
+    displayOrder: 850,
+    metric: 'watched.genresWith10',
+    target: 10,
+  },
+  {
+    id: 'generations_of_cinema',
+    category: 'legendary',
+    displayOrder: 860,
+    metric: 'watched.decadesWith10',
+    target: 6,
+  },
+  {
+    id: 'long_road',
+    category: 'legendary',
+    displayOrder: 870,
+    metric: 'milestones.longRoad',
+    target: 1,
+  },
+  {
+    id: 'secret_director_journey',
+    category: 'secret',
+    displayOrder: 900,
+    metric: 'watched.directorJourney',
+    target: 1,
+    secret: true,
+  },
+  {
+    id: 'secret_actor_eras',
+    category: 'secret',
+    displayOrder: 910,
+    metric: 'watched.actorEras',
+    target: 1,
+    secret: true,
+  },
+  {
+    id: 'secret_franchise_marathon',
+    category: 'secret',
+    displayOrder: 920,
+    metric: 'watched.maxCollectionTitles',
+    target: 5,
+    secret: true,
+  },
+  {
+    id: 'secret_century_club',
+    category: 'secret',
+    displayOrder: 930,
+    metric: 'watched.distinctDecades',
+    target: 10,
+    secret: true,
+  },
+  {
+    id: 'secret_global_nomad',
+    category: 'secret',
+    displayOrder: 940,
+    metric: 'watched.globalNomad',
+    target: 1,
+    secret: true,
+  },
+  {
+    id: 'secret_genre_timecapsule',
+    category: 'secret',
+    displayOrder: 950,
+    metric: 'watched.maxGenreDecades',
+    target: 7,
+    secret: true,
+  },
 ]
 
 export const ACHIEVEMENT_DEFINITIONS = Object.freeze(
-  definitions.map((definition) => Object.freeze({ ...definition })),
-)
-
-export const ACHIEVEMENT_DEFINITION_BY_ID = Object.freeze(
-  Object.fromEntries(
-    ACHIEVEMENT_DEFINITIONS.map((definition) => [
-      definition.id,
-      definition,
-    ]),
+  definitions.map(
+    definition => Object.freeze({
+      ...definition,
+    }),
   ),
 )
+
+export const ACHIEVEMENT_DEFINITION_BY_ID =
+  Object.freeze(
+    Object.fromEntries(
+      ACHIEVEMENT_DEFINITIONS.map(
+        definition => [
+          definition.id,
+          definition,
+        ],
+      ),
+    ),
+  )

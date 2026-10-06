@@ -12,8 +12,8 @@ import {
 } from '../src/achievements/achievementEngine.js'
 
 describe('achievement definitions', () => {
-  it('contains a substantial initial achievement catalog', () => {
-    assert.equal(ACHIEVEMENT_DEFINITIONS.length, 32)
+  it('contains a substantial expanded achievement catalog', () => {
+    assert.equal(ACHIEVEMENT_DEFINITIONS.length, 70)
   })
 
   it('uses unique ids and display orders', () => {
@@ -72,7 +72,7 @@ describe('achievement engine', () => {
     const state = achievementStateById(result.achievements)
 
     assert.equal(result.completedCount, 0)
-    assert.equal(result.totalCount, 32)
+    assert.equal(result.totalCount, 70)
 
     assert.deepEqual(
       {
@@ -221,7 +221,7 @@ describe('achievement engine', () => {
     })
 
     assert.equal(result.completedCount, 0)
-    assert.equal(result.totalCount, 32)
+    assert.equal(result.totalCount, 70)
   })
 
   it('preserves catalog display order', () => {

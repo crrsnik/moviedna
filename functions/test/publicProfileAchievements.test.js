@@ -116,5 +116,51 @@ describe(
         )
       },
     )
+
+    it(
+      'never publishes secret achievement identity',
+      () => {
+        const result =
+          buildPublicAchievementsPreview({
+            achievements: {
+              rating_1: achievement({
+                target: 1,
+                current: 1,
+                unlocked: true,
+                unlockedAt: stamp(
+                  '2026-10-03T12:00:00Z',
+                ),
+              }),
+
+              secret_director_journey:
+                achievement({
+                  category: 'secret',
+                  displayOrder: 900,
+                  target: 1,
+                  current: 1,
+                  unlocked: true,
+                  unlockedAt: stamp(
+                    '2026-10-03T13:00:00Z',
+                  ),
+                }),
+            },
+          })
+
+        assert.deepEqual(
+          result.achievements.map(
+            item => item.id,
+          ),
+          ['rating_1'],
+        )
+
+        assert.equal(
+          JSON.stringify(result).includes(
+            'secret_director_journey',
+          ),
+          false,
+        )
+      },
+    )
+
   },
 )
