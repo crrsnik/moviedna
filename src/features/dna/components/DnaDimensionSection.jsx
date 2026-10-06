@@ -6,6 +6,10 @@ import {
 import {
   sortDnaEntriesForDisplay,
 } from '../utils/sortDnaEntriesForDisplay.js'
+
+import {
+  resolveDimensionLabel,
+} from '../services/dimensionLabels.js'
 import DnaTraitBar from './DnaTraitBar.jsx'
 
 const DEFAULT_VISIBLE = 4
@@ -31,7 +35,7 @@ export default function DnaDimensionSection({
   title,
   entries = [],
 }) {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const [expanded, setExpanded] = useState(false)
 
   const orderedEntries = (
@@ -72,6 +76,13 @@ export default function DnaDimensionSection({
                 Math.abs(entry.score) * 100,
               )
 
+              const label =
+                resolveDimensionLabel(
+                  id,
+                  entry,
+                  locale,
+                )
+
               return (
                 <li
                   key={entry.key}
@@ -79,7 +90,7 @@ export default function DnaDimensionSection({
                 >
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <strong className="break-words">
-                      {entry.label}
+                      {label}
                     </strong>
 
                     <span className="text-sm text-secondary">
@@ -97,12 +108,12 @@ export default function DnaDimensionSection({
                   <DnaTraitBar
                     dimension={id}
                     traitKey={entry.key}
-                    label={entry.label}
+                    label={label}
                     percent={percent}
                     negative={entry.score < 0}
                     ariaLabel={t(
                       'dnaUi.compatibility.strength',
-                      { label: entry.label },
+                      { label },
                     )}
                   />
                 </li>

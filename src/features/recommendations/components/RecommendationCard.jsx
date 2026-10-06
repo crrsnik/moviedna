@@ -43,11 +43,21 @@ function RecommendationCard({
           title={t(
             'recommendationCard.hide',
           )}
-          className="absolute right-2 top-2 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/65 text-xl font-light leading-none text-white opacity-70 shadow-sm backdrop-blur-sm transition hover:scale-105 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          className="absolute right-2 top-2 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/65 text-white opacity-70 shadow-sm backdrop-blur-sm transition hover:scale-105 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
-          <span aria-hidden="true">
-            ×
-          </span>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 20 20"
+            className="h-4 w-4"
+          >
+            <path
+              d="M5 5l10 10M15 5L5 15"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
         </button>
       </div>
 
