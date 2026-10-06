@@ -9,9 +9,7 @@ beforeEach(() => {
 })
 afterEach(() => mock.restoreAll())
 const mappings = [
-  [browseMovies, 'popular', '/movie/popular'],
   [browseMovies, 'now-playing', '/movie/now_playing'], [browseMovies, 'upcoming', '/movie/upcoming'],
-  [browseTvShows, 'popular', '/tv/popular'],
   [browseTvShows, 'airing-today', '/tv/airing_today'], [browseTvShows, 'on-the-air', '/tv/on_the_air'],
   [browsePeople, 'popular', '/person/popular'], [browsePeople, 'trending', '/trending/person/week'],
 ]
@@ -158,26 +156,26 @@ describe('Browse services with synthetic fetch responses', () => {
   it('normalizes movie with only allowed fields without mutating data', async () => {
     payload.results = [{ id: 1, title: ' Movie ', genre_ids: [28, 28, -1], release_date: '2020-01-01', extra: 'drop' }]
     const original = JSON.stringify(payload)
-    assert.deepEqual((await browseMovies()).results[0], { id: 1, mediaType: 'movie', title: 'Movie', overview: '', posterPath: null, backdropPath: null, releaseDate: '2020-01-01', voteAverage: null, voteCount: 0, genreIds: [28], popularity: 0 })
+    assert.deepEqual((await browseMovies({ view: 'now-playing' })).results[0], { id: 1, mediaType: 'movie', title: 'Movie', overview: '', posterPath: null, backdropPath: null, releaseDate: '2020-01-01', voteAverage: null, voteCount: 0, genreIds: [28], popularity: 0 })
     assert.equal(JSON.stringify(payload), original)
   })
   it('normalizes TV and person using the existing shared shapes', async () => {
     payload.results = [{ id: 2, name: 'Series', first_air_date: '2021-01-02' }]
-    const tv = (await browseTvShows()).results[0]
+    const tv = (await browseTvShows({ view: 'airing-today' })).results[0]
     assert.equal(tv.title, 'Series'); assert.equal(tv.releaseDate, '2021-01-02'); assert.equal(tv.mediaType, 'tv')
     payload.results = [{ id: 3, name: 'Person', known_for: [{ id: 2, name: 'Series', media_type: 'tv' }] }]
     assert.deepEqual((await browsePeople()).results[0], { id: 3, mediaType: 'person', name: 'Person', profilePath: null, knownForDepartment: '', popularity: 0, knownFor: [{ id: 2, mediaType: 'tv', title: 'Series', releaseDate: null }] })
   })
   it('drops malformed, adult and mismatched media results', async () => {
     payload.results = [null, {}, { id: 1, title: 'Adult', adult: true }, { id: 2, media_type: 'person', name: 'Wrong' }]
-    assert.deepEqual((await browseMovies()).results, [])
+    assert.deepEqual((await browseMovies({ view: 'now-playing' })).results, [])
   })
   it('shares bounded pagination normalization', async () => {
     Object.assign(payload, { page: 999, total_pages: 1000, total_results: -1 })
-    const data = await browseMovies()
+    const data = await browseMovies({ view: 'now-playing' })
     assert.deepEqual(data, { page: 1, totalPages: 500, totalResults: 0, results: [] })
     Object.assign(payload, { page: 9, total_pages: 2 })
-    assert.equal((await browseMovies()).page, 2)
+    assert.equal((await browseMovies({ view: 'now-playing' })).page, 2)
   })
   it('defaults invalid view/page and ignores person genre', async () => {
     await browsePeople({ view: 'bad', page: -1, genres: [28] })
@@ -185,17 +183,17 @@ describe('Browse services with synthetic fetch responses', () => {
   })
   for (const status of [400, 401, 403, 404, 429, 500, 503]) it(`sanitizes HTTP ${status}`, async () => {
     fetchMock.mock.mockImplementation(async () => new Response('RAW_SECRET', { status }))
-    await assert.rejects(browseMovies(), (error) => !getTmdbErrorMessage(error).includes('RAW') && !error.stack.includes('RAW'))
+    await assert.rejects(browseMovies({ view: 'now-playing' }), (error) => !getTmdbErrorMessage(error).includes('RAW') && !error.stack.includes('RAW'))
   })
-  it('sanitizes network error', async () => { fetchMock.mock.mockImplementation(async () => { throw Error('RAW_SECRET') }); await assert.rejects(browseMovies(), { code: 'network' }) })
-  it('rejects invalid JSON', async () => { fetchMock.mock.mockImplementation(async () => new Response('invalid')); await assert.rejects(browseTvShows(), { code: 'invalid' }) })
+  it('sanitizes network error', async () => { fetchMock.mock.mockImplementation(async () => { throw Error('RAW_SECRET') }); await assert.rejects(browseMovies({ view: 'now-playing' }), { code: 'network' }) })
+  it('rejects invalid JSON', async () => { fetchMock.mock.mockImplementation(async () => new Response('invalid')); await assert.rejects(browseTvShows({ view: 'airing-today' }), { code: 'invalid' }) })
   it('rejects malformed envelopes', async () => { payload = {}; await assert.rejects(browsePeople(), { code: 'invalid' }) })
-  it('rejects unsupported language before dispatch', async () => { await assert.rejects(browseMovies({ language: 'de-DE' }), { code: 'request' }); assert.equal(fetchMock.mock.callCount(), 0) })
-  it('aborts before fetch', async () => { const c = new AbortController(); c.abort(); await assert.rejects(browseMovies({ signal: c.signal }), { name: 'AbortError' }); assert.equal(fetchMock.mock.callCount(), 0) })
+  it('rejects unsupported language before dispatch', async () => { await assert.rejects(browseMovies({ view: 'now-playing', language: 'de-DE' }), { code: 'request' }); assert.equal(fetchMock.mock.callCount(), 0) })
+  it('aborts before fetch', async () => { const c = new AbortController(); c.abort(); await assert.rejects(browseMovies({ view: 'now-playing', signal: c.signal }), { name: 'AbortError' }); assert.equal(fetchMock.mock.callCount(), 0) })
   it('discards a response cancelled during parsing', async () => {
     const c = new AbortController()
     fetchMock.mock.mockImplementation(async () => ({ ok: true, json: async () => { c.abort(); return payload } }))
-    await assert.rejects(browseTvShows({ signal: c.signal }), { name: 'AbortError' })
+    await assert.rejects(browseTvShows({ view: 'airing-today', signal: c.signal }), { name: 'AbortError' })
   })
 })
 describe('Genres', () => {

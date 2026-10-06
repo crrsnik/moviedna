@@ -9,7 +9,12 @@ import { isTmdbAbort, TmdbError } from './tmdbErrors.js'
 import { tmdbTransport } from './tmdbTransport.js'
 
 const searchEndpoints = new Set(['/search/multi', '/search/movie', '/search/tv', '/search/person'])
-const endpoints = new Set(['/trending/movie/day', '/trending/tv/day'])
+const endpoints = new Set([
+  '/trending/movie/day',
+  '/trending/tv/day',
+  '/trending/movie/week',
+  '/trending/tv/week',
+])
 
 export async function getTmdb(path, {
   language = TMDB_DEFAULT_LANGUAGE,

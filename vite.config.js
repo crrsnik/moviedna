@@ -43,7 +43,7 @@ export default defineConfig(({ command, mode, isPreview }) => {
         rewrite: (path) => path.replace(/^\/api\/tmdb/, '/3'),
         bypass(req, res) {
           const url = new URL(req.url, 'http://localhost')
-          const allowedPath = /^\/api\/tmdb\/trending\/(movie|tv)\/day$/.test(url.pathname)
+          const allowedPath = /^\/api\/tmdb\/trending\/(movie|tv)\/(day|week)$/.test(url.pathname)
           const allowedQuery = [...url.searchParams].length === 1
             && url.searchParams.getAll('language').length === 1
             && isTmdbLanguage(url.searchParams.get('language'))

@@ -2,6 +2,7 @@ import { normalizeNamedItems } from './normalizeNamedItems.js'
 import { getTmdb } from './tmdbClient.js'
 import { normalizeCatalog } from './normalizeCatalog.js'
 import { rankTopRatedResults } from './topRatedRanking.js'
+import { rankPopularResults } from './popularRanking.js'
 import { TmdbError } from './tmdbErrors.js'
 
 import {
@@ -24,6 +25,9 @@ const TOP_RATED_MOST_VOTED_PAGES =
   })
 
 const TOP_RATED_PAGE_SIZE = 20
+
+const POPULAR_POOL_PAGES = 5
+const POPULAR_PAGE_SIZE = 20
 
 // Top Rated changes slowly, so keep the ranked candidate pool
 // for the current browser session. The key includes locale and
@@ -269,6 +273,22 @@ async function browse(
   }
 
 
+  async function loadTrendingWeek() {
+    const data = await getTmdb(
+      `/trending/${type}/week`,
+      {
+        language,
+        signal,
+      },
+    )
+
+    return normalizeCatalog(
+      data,
+      type,
+      1,
+    )
+  }
+
   async function loadRange(
     load,
     first,
@@ -304,6 +324,84 @@ async function browse(
     }
 
     return output
+  }
+
+  if (
+    view === 'popular'
+    && ['movie', 'tv'].includes(type)
+    && !hasFilters
+  ) {
+    const [
+      firstPage,
+      trendingPage,
+    ] = await Promise.all([
+      loadPage(1),
+      loadTrendingWeek(),
+    ])
+
+    const sourcePageCount = Math.max(
+      1,
+      Math.min(
+        POPULAR_POOL_PAGES,
+        firstPage.totalPages,
+      ),
+    )
+
+    const remainingPages =
+      await loadRange(
+        loadPage,
+        2,
+        sourcePageCount,
+      )
+
+    const merged = [
+      firstPage,
+      ...remainingPages,
+      trendingPage,
+    ].flatMap(result => result.results)
+
+    const trendingIds =
+      trendingPage.results.map(
+        item => item.id,
+      )
+
+    const rankedPool = rankPopularResults(
+      merged,
+      type,
+      {
+        trendingIds,
+      },
+    )
+
+    const totalResults =
+      rankedPool.length
+
+    const totalPages = Math.max(
+      1,
+      Math.ceil(
+        totalResults
+          / POPULAR_PAGE_SIZE,
+      ),
+    )
+
+    const safePage = Math.min(
+      page,
+      totalPages,
+    )
+
+    const offset = (
+      safePage - 1
+    ) * POPULAR_PAGE_SIZE
+
+    return {
+      page: safePage,
+      totalPages,
+      totalResults,
+      results: rankedPool.slice(
+        offset,
+        offset + POPULAR_PAGE_SIZE,
+      ),
+    }
   }
 
   if (

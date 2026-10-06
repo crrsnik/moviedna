@@ -1,6 +1,7 @@
 const SEARCH_PATHS = new Set(['/search/multi', '/search/movie', '/search/tv', '/search/person'])
 const LIST_PATHS = new Set([
   '/trending/movie/day', '/trending/tv/day',
+  '/trending/movie/week', '/trending/tv/week',
   '/movie/popular', '/movie/top_rated', '/movie/now_playing', '/movie/upcoming',
   '/tv/popular', '/tv/top_rated', '/tv/airing_today', '/tv/on_the_air',
   '/person/popular', '/trending/person/week',
