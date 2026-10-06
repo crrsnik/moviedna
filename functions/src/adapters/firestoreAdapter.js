@@ -105,12 +105,25 @@ export function createFirestoreAdapter(db, { now = () => Date.now() } = {}) {
       addWatched(item)
     }
 
+    const seedSignals = []
+
     for (const item of [
       ...documents(onboardingResponses),
       ...documents(refinementResponses),
     ]) {
-      if (item.reaction === 'like' || item.reaction === 'dislike') {
+      if (
+        item.reaction === 'like'
+        || item.reaction === 'dislike'
+      ) {
         addWatched(item)
+      }
+
+      if (item.reaction === 'like') {
+        seedSignals.push({
+          tmdbId: item.tmdbId,
+          mediaType: item.mediaType,
+          reaction: 'like',
+        })
       }
     }
 
@@ -119,7 +132,9 @@ export function createFirestoreAdapter(db, { now = () => Date.now() } = {}) {
       rated: documents(ratings).map((rating) => ({
         tmdbId: rating.tmdbId,
         mediaType: rating.mediaType,
+        rating: rating.score ?? null,
       })),
+      seedSignals,
       watched: [...watchedByKey.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([, value]) => value),

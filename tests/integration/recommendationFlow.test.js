@@ -254,6 +254,20 @@ describe(
           return source(mediaType)
         },
 
+        async getRecommendations(
+          mediaType,
+          tmdbId,
+          page = 1,
+        ) {
+          const value = source(mediaType)
+
+          return {
+            ...value,
+            source:
+              `seed:${mediaType}_${tmdbId}:${page}`,
+          }
+        },
+
         async discoverByGenre(mediaType) {
           return source(mediaType)
         },
@@ -303,6 +317,7 @@ describe(
         [{
           tmdbId: 101,
           mediaType: 'movie',
+          rating: 10,
         }],
       )
 

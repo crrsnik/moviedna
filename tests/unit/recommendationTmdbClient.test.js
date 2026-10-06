@@ -195,6 +195,83 @@ describe('recommendation TMDB source client', () => {
     )
   })
 
+  it('loads recommendations from a specific rated title', async () => {
+    const { fetchImpl, calls } = createFetch([
+      response({
+        results: [
+          {
+            id: 94997,
+            name: 'House of the Dragon',
+            popularity: 100,
+          },
+        ],
+      }),
+    ])
+
+    const client = createRecommendationTmdbClient({
+      token: 'token',
+      fetchImpl,
+    })
+
+    const result = await client.getRecommendations(
+      'tv',
+      1399,
+      1,
+    )
+
+    assert.deepEqual(result, {
+      mediaType: 'tv',
+      source: 'seed:tv_1399:1',
+      results: [
+        {
+          id: 94997,
+          name: 'House of the Dragon',
+          popularity: 100,
+        },
+      ],
+    })
+
+    assert.equal(
+      calls[0][0].toString(),
+      'https://api.themoviedb.org/3/tv/1399/recommendations?language=en-US&page=1',
+    )
+  })
+
+  it('rejects malformed recommendation seed identities before network access', async () => {
+    const { fetchImpl, calls } = createFetch([
+      response({
+        results: [],
+      }),
+    ])
+
+    const client = createRecommendationTmdbClient({
+      token: 'token',
+      fetchImpl,
+    })
+
+    await assert.rejects(
+      client.getRecommendations(
+        'tv',
+        0,
+      ),
+      expectCode(
+        SERVER_ERROR_CODES.INVALID_SOURCE,
+      ),
+    )
+
+    await assert.rejects(
+      client.getRecommendations(
+        'person',
+        1399,
+      ),
+      expectCode(
+        SERVER_ERROR_CODES.INVALID_SOURCE,
+      ),
+    )
+
+    assert.equal(calls.length, 0)
+  })
+
   it('rejects invalid media types, genres and pages before network access', async () => {
     const { fetchImpl, calls } = createFetch([
       response({ results: [] }),

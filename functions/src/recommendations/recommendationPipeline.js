@@ -5,6 +5,9 @@ import {
   buildRecommendationCandidatePool,
 } from './core/buildRecommendationCandidatePool.js'
 import {
+  selectRecommendationCandidateWindow,
+} from './core/selectRecommendationCandidateWindow.js'
+import {
   prepareRecommendationCandidate,
 } from './core/prepareRecommendationCandidates.js'
 import {
@@ -14,6 +17,12 @@ import {
 import {
   rerankRecommendationResults,
 } from './core/rerankRecommendationResults.js'
+import {
+  selectRecommendationSeeds,
+} from './core/selectRecommendationSeeds.js'
+import {
+  buildRecommendationSeedAffinity,
+} from './core/buildRecommendationSeedAffinity.js'
 import {
   RECOMMENDATION_ERROR_CODES,
   throwRecommendationError,
@@ -66,6 +75,14 @@ async function executeSourceRequest(
       return sourceClient.discoverByGenre(
         request.mediaType,
         request.genreId,
+        request.page,
+        language,
+      )
+
+    case 'seed':
+      return sourceClient.getRecommendations(
+        request.mediaType,
+        request.tmdbId,
         request.page,
         language,
       )
@@ -153,6 +170,7 @@ export function createRecommendationPipeline({
         'getTrending',
         'getPopular',
         'getTopRated',
+        'getRecommendations',
         'discoverByGenre',
       ],
     )
@@ -170,6 +188,7 @@ export function createRecommendationPipeline({
   async function run({
     dna,
     rated = [],
+    seedSignals = [],
     watched = [],
     hidden = [],
     language = 'en-US',
@@ -179,12 +198,45 @@ export function createRecommendationPipeline({
       maxGenres,
     })
 
+    const seeds =
+      selectRecommendationSeeds([
+        ...rated,
+        ...(
+          Array.isArray(seedSignals)
+            ? seedSignals
+            : []
+        ),
+      ])
+
+    const seedRequests = seeds.map(
+      seed => Object.freeze({
+        type: 'seed',
+        mediaType: seed.mediaType,
+        tmdbId: seed.tmdbId,
+        page: 1,
+        seedMediaKey: seed.mediaKey,
+        seedRating: seed.rating,
+        seedWeight: seed.weight,
+      }),
+    )
+
+    const requests = [
+      ...sourcePlan.requests,
+      ...seedRequests,
+    ]
+
     const collected = await collectSources(
       sourceClient,
-      sourcePlan.requests,
+      requests,
       language,
       sourceConcurrency,
     )
+
+    const seedAffinity =
+      buildRecommendationSeedAffinity({
+        seeds,
+        sources: collected.sources,
+      })
 
     const pool = buildRecommendationCandidatePool({
       sources: collected.sources,
@@ -199,24 +251,12 @@ export function createRecommendationPipeline({
       },
     )
 
-    const eligibleCounts = {
-      movie: 0,
-      tv: 0,
-    }
-
-    const eligible = knownEligible.filter(
-      candidate => {
-        if (
-          eligibleCounts[candidate.mediaType]
-          >= maxPerMediaType
-        ) {
-          return false
-        }
-
-        eligibleCounts[candidate.mediaType] += 1
-        return true
-      },
-    )
+    const eligible =
+      selectRecommendationCandidateWindow({
+        candidates: knownEligible,
+        seedAffinity,
+        maxPerMediaType,
+      })
 
     const resolved = await metadataResolver.resolve(
       eligible,
@@ -252,6 +292,7 @@ export function createRecommendationPipeline({
       rerankRecommendationResults({
         rankedResults: ranked.results,
         candidates: resolved,
+        seedAffinity,
       })
 
     const displayByMediaKey = new Map(
@@ -283,7 +324,9 @@ export function createRecommendationPipeline({
       results,
       stats: Object.freeze({
         sourceRequestCount:
-          sourcePlan.requests.length,
+          requests.length,
+        seedCount:
+          seeds.length,
         sourceSuccessCount:
           collected.sources.length,
         sourceFailureCount:

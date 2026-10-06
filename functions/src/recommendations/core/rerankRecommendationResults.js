@@ -1,6 +1,11 @@
 const HEAD_SIZE = 20
 const MAINSTREAM_QUOTA = 15
 
+// Seed affinity changes recommendation order only.
+// It deliberately does not change the displayed DNA match score.
+const SEED_PERSONAL_MAX_BOOST = 22
+const SEED_MAINSTREAM_MAX_BOOST = 0.20
+
 
 function positiveInteger(value) {
   return Number.isSafeInteger(value)
@@ -13,6 +18,24 @@ function clamp01(value) {
     0,
     Math.min(1, value),
   )
+}
+
+
+function seedAffinitySignal(
+  result,
+  seedAffinity,
+) {
+  const value =
+    seedAffinity?.get?.(
+      result?.mediaKey,
+    )?.affinity
+
+  return (
+    typeof value === 'number'
+    && Number.isFinite(value)
+  )
+    ? clamp01(value)
+    : 0
 }
 
 
@@ -226,23 +249,54 @@ function ratingSignal(candidate) {
 function mainstreamRank(
   result,
   candidate,
+  seedAffinity,
 ) {
-  // DNA remains half of the mainstream rank.
-  // voteCount captures long-term recognition,
-  // rating captures quality, and TMDb popularity
-  // adds a small current-awareness signal.
+  // Keep the existing mainstream formula intact and
+  // add a bounded title-to-title affinity boost.
   return (
     0.50 * (result.score / 100)
     + 0.25 * voteSignal(candidate)
     + 0.20 * ratingSignal(candidate)
     + 0.05 * popularitySignal(candidate)
+    + SEED_MAINSTREAM_MAX_BOOST
+      * seedAffinitySignal(
+        result,
+        seedAffinity,
+      )
   )
 }
 
 
-function comparePersonal(a, b) {
+function personalRank(
+  result,
+  seedAffinity,
+) {
   return (
-    b.score - a.score
+    result.score
+    + SEED_PERSONAL_MAX_BOOST
+      * seedAffinitySignal(
+        result,
+        seedAffinity,
+      )
+  )
+}
+
+
+function comparePersonal(
+  a,
+  b,
+  seedAffinity,
+) {
+  return (
+    personalRank(
+      b,
+      seedAffinity,
+    )
+    - personalRank(
+      a,
+      seedAffinity,
+    )
+    || b.score - a.score
     || (
       b.profileEvidenceCoverage
       - a.profileEvidenceCoverage
@@ -344,6 +398,7 @@ function pickDiverse(
 export function rerankRecommendationResults({
   rankedResults,
   candidates,
+  seedAffinity = new Map(),
 } = {}) {
   if (
     !Array.isArray(rankedResults)
@@ -365,7 +420,13 @@ export function rerankRecommendationResults({
   // from stable recommendation scores.
   const personal = [
     ...rankedResults,
-  ].sort(comparePersonal)
+  ].sort(
+    (a, b) => comparePersonal(
+      a,
+      b,
+      seedAffinity,
+    ),
+  )
 
   const mainstream = personal
     .filter(result => (
@@ -385,6 +446,7 @@ export function rerankRecommendationResults({
             b,
             candidateByMediaKey,
           ),
+          seedAffinity,
         )
         - mainstreamRank(
           a,
@@ -392,12 +454,17 @@ export function rerankRecommendationResults({
             a,
             candidateByMediaKey,
           ),
+          seedAffinity,
         )
       )
 
       return (
         difference
-        || comparePersonal(a, b)
+        || comparePersonal(
+          a,
+          b,
+          seedAffinity,
+        )
       )
     })
 

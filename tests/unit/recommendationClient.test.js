@@ -3,6 +3,7 @@ import { describe, it } from 'node:test'
 import {
   normalizeRecommendationsResponse,
   RecommendationClientError,
+  RECOMMENDATION_CLIENT_ALGORITHM_VERSION,
 } from '../../src/features/recommendations/services/normalizeRecommendations.js'
 import {
   createRecommendationService,
@@ -36,7 +37,7 @@ function result(overrides = {}) {
 
 function response(overrides = {}) {
   return {
-    algorithmVersion: '1.3.0',
+    algorithmVersion: RECOMMENDATION_CLIENT_ALGORITHM_VERSION,
     genreIds: [18, 35],
     results: [result()],
     stats: {
@@ -53,7 +54,7 @@ describe('recommendation response normalization', () => {
     )
 
     assert.deepEqual(normalized, {
-      algorithmVersion: '1.3.0',
+      algorithmVersion: RECOMMENDATION_CLIENT_ALGORITHM_VERSION,
       genreIds: [18, 35],
       results: [{
         id: 550,
@@ -231,7 +232,7 @@ describe('recommendation UI state', () => {
     assert.equal(
       deriveRecommendationState({
         data: {
-          algorithmVersion: '1.3.0',
+          algorithmVersion: RECOMMENDATION_CLIENT_ALGORITHM_VERSION,
           genreIds: [],
           results: [],
         },
@@ -242,7 +243,7 @@ describe('recommendation UI state', () => {
     assert.equal(
       deriveRecommendationState({
         data: {
-          algorithmVersion: '1.3.0',
+          algorithmVersion: RECOMMENDATION_CLIENT_ALGORITHM_VERSION,
           genreIds: [],
           results: [result()],
         },

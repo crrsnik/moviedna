@@ -22,7 +22,7 @@ function expectCode(run, code) { assert.throws(run, error => error instanceof Re
 
 describe('recommendation v1.1 formula', () => {
   it('has an independent version and applicable weights sum exactly to one', () => {
-    assert.equal(RECOMMENDATION_ALGORITHM_VERSION, '1.3.0')
+    assert.equal(RECOMMENDATION_ALGORITHM_VERSION, '1.4.0')
     assert.deepEqual(RECOMMENDATION_DIMENSION_WEIGHTS, {
       genres: 0.55,
       mediaTypes: 0.05,
@@ -277,7 +277,7 @@ describe('recommendation validation, ordering and exclusions', () => {
     assert.deepEqual(result(profile, [movie(3, { popularity: 1 }), movie(2, { popularity: 2 }), movie(1, { popularity: 2 })]).results.map(value => value.mediaKey), ['movie_1', 'movie_2', 'movie_3'])
   })
   it('returns empty results and rejects malformed or duplicate candidates safely', () => {
-    assert.deepEqual(result(dna(), []), { algorithmVersion: '1.3.0', results: [], rejectedCount: 0 })
+    assert.deepEqual(result(dna(), []), { algorithmVersion: '1.4.0', results: [], rejectedCount: 0 })
     const ranked = result(dna(), [null, movie(1), movie(1), movie(2, { metadata: { genreIds: ['28'] } }), movie(3)])
     assert.deepEqual(ranked.results.map(value => value.mediaKey), ['movie_3']); assert.equal(ranked.rejectedCount, 4)
   })

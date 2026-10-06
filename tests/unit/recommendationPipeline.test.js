@@ -191,6 +191,28 @@ function sourceClient({
       }
     },
 
+    async getRecommendations(
+      mediaType,
+      tmdbId,
+      page,
+    ) {
+      await maybeFail(
+        mediaType,
+        'recommendations',
+      )
+
+      return {
+        mediaType,
+        source:
+          `seed:${mediaType}_${tmdbId}:${page}`,
+        results:
+          mediaType === 'tv'
+          && tmdbId === 1399
+            ? [tv(94997, 40)]
+            : [],
+      }
+    },
+
     async discoverByGenre(
       mediaType,
       genreId,
@@ -336,6 +358,94 @@ describe('recommendation pipeline', () => {
     )
   })
 
+  it('adds candidates recommended from highly rated seed titles', async () => {
+    const resolver = metadataResolver()
+
+    const pipeline =
+      createRecommendationPipeline({
+        sourceClient: sourceClient(),
+        metadataResolver: resolver,
+      })
+
+    const result = await pipeline.run({
+      dna: dna(),
+      rated: [
+        {
+          mediaType: 'tv',
+          tmdbId: 1399,
+          rating: 10,
+        },
+      ],
+    })
+
+    assert.equal(
+      result.stats.seedCount,
+      1,
+    )
+
+    assert.equal(
+      result.stats.sourceRequestCount,
+      15,
+    )
+
+    assert.ok(
+      resolver.calls[0].includes(
+        'tv_94997',
+      ),
+    )
+
+    assert.ok(
+      result.results.some(
+        item =>
+          item.mediaKey === 'tv_94997',
+      ),
+    )
+  })
+
+  it('uses onboarding likes as recommendation seeds', async () => {
+    const resolver = metadataResolver()
+
+    const pipeline =
+      createRecommendationPipeline({
+        sourceClient: sourceClient(),
+        metadataResolver: resolver,
+      })
+
+    const result = await pipeline.run({
+      dna: dna(),
+      seedSignals: [
+        {
+          mediaType: 'tv',
+          tmdbId: 1399,
+          reaction: 'like',
+        },
+      ],
+    })
+
+    assert.equal(
+      result.stats.seedCount,
+      1,
+    )
+
+    assert.equal(
+      result.stats.sourceRequestCount,
+      15,
+    )
+
+    assert.ok(
+      resolver.calls[0].includes(
+        'tv_94997',
+      ),
+    )
+
+    assert.ok(
+      result.results.some(
+        item =>
+          item.mediaKey === 'tv_94997',
+      ),
+    )
+  })
+
   it('excludes rated and hidden media before metadata resolution', async () => {
     const resolver = metadataResolver()
 
@@ -423,6 +533,9 @@ describe('recommendation pipeline', () => {
         throw failure
       },
       getTopRated: async () => {
+        throw failure
+      },
+      getRecommendations: async () => {
         throw failure
       },
       discoverByGenre: async () => {
