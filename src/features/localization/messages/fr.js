@@ -368,6 +368,21 @@ export const fr = {
     },
   },
 
+  onboardingResult: {
+    title: 'Votre MovieDNA est prêt',
+    description: 'Voici quelques-uns des signaux les plus forts de votre premier profil de goûts.',
+    buildingTitle: 'Création de votre MovieDNA…',
+    buildingDescription: 'Votre onboarding est terminé. Nous transformons vos réactions en votre premier profil de goûts.',
+    failedTitle: 'Votre onboarding est terminé',
+    failedDescription: 'La création de votre MovieDNA prend plus de temps que prévu. Vous pouvez continuer et consulter à nouveau Mon DNA dans quelques instants.',
+    emptyDescription: 'Votre premier MovieDNA est prêt, mais il faut encore un peu plus d’informations pour mettre en avant des signaux forts.',
+    recommendations: 'Voir mes recommandations',
+    improve: 'Améliorer mon DNA',
+    viewDna: 'Voir tout mon DNA',
+    continueHome: 'Continuer vers l’accueil',
+    signalStrength: 'Force du signal MovieDNA pour {label}',
+  },
+
   accountSettingsPage: {
     title: 'Paramètres du compte',
     description: 'Gérez votre e-mail de connexion et votre mot de passe.',

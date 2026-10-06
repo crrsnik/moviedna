@@ -9,6 +9,10 @@ import { getOnboardingErrorMessage } from '../services/onboardingErrors.js'
 import { loadCuratedOnboardingCatalog } from '../services/onboardingCuratedCatalog.js'
 import { canReachMinimum, getDeckState, getOnboardingProgress, prepareOnboardingDeck } from '../utils/onboardingDeck.js'
 import { getOnboardingMediaKey, MAX_RESPONSES } from '../validation/onboardingValidation.js'
+import {
+  clearOnboardingResultPending,
+  markOnboardingResultPending,
+} from '../constants/onboardingResult.js'
 
 export function useOnboarding() {
   const { user } = useAuth()
@@ -158,13 +162,30 @@ export function useOnboarding() {
     const session = sessionRef.current
     if (!session?.active || session.busy || state.isLoading || !progress.canFinish || hasCompletedOnboarding) return
     session.busy = true
-    setState((current) => ({ ...current, isCompleting: true, actionError: null }))
+    setState((current) => ({
+      ...current,
+      isCompleting: true,
+      actionError: null,
+    }))
+
+    markOnboardingResultPending()
+
     try {
       await completeOnboarding({ uid })
-      // Keep actions locked until the confirmed profile snapshot triggers the guard.
+      // Keep actions locked until the confirmed profile snapshot
+      // triggers the route handoff to the result screen.
     } catch (error) {
+      clearOnboardingResultPending()
       session.busy = false
-      if (session.active) setState((current) => ({ ...current, isCompleting: false, actionError: getOnboardingErrorMessage(error) }))
+
+      if (session.active) {
+        setState((current) => ({
+          ...current,
+          isCompleting: false,
+          actionError:
+            getOnboardingErrorMessage(error),
+        }))
+      }
     }
   }
 

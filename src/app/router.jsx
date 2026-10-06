@@ -21,6 +21,7 @@ import MoviesPage from '../pages/MoviesPage.jsx'
 import NotFoundPage from '../pages/NotFoundPage.jsx'
 import DnaRefinementPage from '../pages/DnaRefinementPage.jsx'
 import OnboardingPage from '../pages/OnboardingPage.jsx'
+import OnboardingResultPage from '../pages/OnboardingResultPage.jsx'
 import PersonDetailPage from '../pages/PersonDetailPage.jsx'
 import ProfileOverviewPage from '../pages/ProfileOverviewPage.jsx'
 import ProfileRatingsPage from '../pages/ProfileRatingsPage.jsx'
@@ -81,6 +82,10 @@ const router = createBrowserRouter([
           {
             element: <OnboardingRoute requireCompleted />,
             children: [
+              {
+                path: 'onboarding/result',
+                element: <OnboardingResultPage />,
+              },
               {
                 path: 'profile',
                 element: <ProfileLayout />,

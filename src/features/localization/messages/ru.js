@@ -368,6 +368,21 @@ export const ru = {
     },
   },
 
+  onboardingResult: {
+    title: 'Ваш MovieDNA готов',
+    description: 'Вот несколько самых сильных сигналов вашего первого профиля вкусов.',
+    buildingTitle: 'Создаём ваш MovieDNA…',
+    buildingDescription: 'Онбординг завершён. Мы превращаем ваши реакции в первый профиль вкусов.',
+    failedTitle: 'Онбординг завершён',
+    failedDescription: 'Создание MovieDNA занимает больше времени, чем обычно. Можно продолжить и немного позже снова открыть «Мой DNA».',
+    emptyDescription: 'Ваш первый MovieDNA готов, но пока недостаточно данных, чтобы выделить сильные сигналы.',
+    recommendations: 'Посмотреть рекомендации',
+    improve: 'Улучшить DNA',
+    viewDna: 'Открыть весь DNA',
+    continueHome: 'Перейти на главную',
+    signalStrength: 'Сила сигнала MovieDNA: {label}',
+  },
+
   accountSettingsPage: {
     title: 'Настройки аккаунта',
     description: 'Управляйте электронной почтой для входа и паролем.',

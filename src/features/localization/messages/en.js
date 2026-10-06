@@ -368,6 +368,21 @@ export const en = {
     },
   },
 
+  onboardingResult: {
+    title: 'Your MovieDNA is ready',
+    description: 'Here are some of the strongest signals from your first taste profile.',
+    buildingTitle: 'Building your MovieDNA…',
+    buildingDescription: 'Your onboarding is complete. We’re turning your reactions into your first taste profile.',
+    failedTitle: 'Your onboarding is complete',
+    failedDescription: 'MovieDNA is taking longer than expected to build. You can continue and check My DNA again shortly.',
+    emptyDescription: 'Your first MovieDNA is ready, but it needs a little more evidence before we can highlight strong signals.',
+    recommendations: 'See my recommendations',
+    improve: 'Improve my DNA',
+    viewDna: 'View full DNA',
+    continueHome: 'Continue to home',
+    signalStrength: 'MovieDNA signal strength for {label}',
+  },
+
   accountSettingsPage: {
     title: 'Account settings',
     description: 'Manage your sign-in email and password.',
