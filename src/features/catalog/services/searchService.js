@@ -1,4 +1,5 @@
 import { normalizeCatalog } from './normalizeCatalog.js'
+import { rankSearchResults } from './searchRanking.js'
 import { getTmdb } from './tmdbClient.js'
 import { TmdbError } from './tmdbErrors.js'
 import { getQueryError, normalizeQuery, normalizeType, normalizePage } from '../validation/searchValidation.js'
@@ -14,5 +15,17 @@ export async function searchCatalog({ query, type = 'all', page = 1, language = 
   type = normalizeType(type)
   page = normalizePage(page)
   const data = await getTmdb(`/search/${endpoints[type]}`, { language, signal, search: { query, page } })
-  return normalizeCatalog(data, type, page)
+  const normalized = normalizeCatalog(
+    data,
+    type,
+    page,
+  )
+
+  return {
+    ...normalized,
+    results: rankSearchResults(
+      normalized.results,
+      query,
+    ),
+  }
 }
