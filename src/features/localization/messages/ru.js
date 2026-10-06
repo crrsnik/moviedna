@@ -64,6 +64,11 @@ export const ru = {
       submit: 'Создать аккаунт',
       alreadyHaveAccount: 'Уже есть аккаунт?',
       login: 'Войти',
+      legalPrefix: 'Создавая аккаунт, вы принимаете ',
+      terms: 'Условия использования',
+      legalBridge: ' и подтверждаете, что ознакомились с ',
+      privacy: 'Политикой конфиденциальности',
+      legalSuffix: '.',
     },
 
     passwordReset: {
@@ -887,8 +892,8 @@ export const ru = {
       topRated: 'Лучшие оценки',
       nowPlaying: 'Сейчас в кино',
       upcoming: 'Скоро',
-      airingToday: 'Сегодня в эфире',
-      onTheAir: 'Сейчас в эфире',
+      airingToday: 'Сегодня',
+      onTheAir: 'Скоро в эфире',
       trending: 'В тренде на этой неделе',
     },
     browser: {

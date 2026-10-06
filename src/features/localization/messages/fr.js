@@ -64,6 +64,11 @@ export const fr = {
       submit: 'Créer un compte',
       alreadyHaveAccount: 'Vous avez déjà un compte ?',
       login: 'Se connecter',
+      legalPrefix: 'En créant un compte, vous acceptez les ',
+      terms: 'Conditions d’utilisation',
+      legalBridge: ' et reconnaissez avoir pris connaissance de la ',
+      privacy: 'Politique de confidentialité',
+      legalSuffix: '.',
     },
 
     passwordReset: {

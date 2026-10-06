@@ -30,6 +30,8 @@ import PublicBoardPage from '../pages/PublicBoardPage.jsx'
 import ProfileSettingsPage from '../pages/ProfileSettingsPage.jsx'
 import AccountSettingsPage from '../pages/AccountSettingsPage.jsx'
 import RegisterPage from '../pages/RegisterPage.jsx'
+import TermsPage from '../pages/TermsPage.jsx'
+import PrivacyPage from '../pages/PrivacyPage.jsx'
 import SearchPage from '../pages/SearchPage.jsx'
 import StatisticsPage from '../pages/StatisticsPage.jsx'
 import TvShowDetailPage from '../pages/TvShowDetailPage.jsx'
@@ -48,6 +50,8 @@ const router = createBrowserRouter([
       { path: 'tv/:seriesId', element: <TvShowDetailPage /> },
       { path: 'actors', element: <ActorsPage /> },
       { path: 'actors/:personId', element: <PersonDetailPage /> },
+      { path: 'terms', element: <TermsPage /> },
+      { path: 'privacy', element: <PrivacyPage /> },
 
       {
         element: <GuestOnlyRoute />,

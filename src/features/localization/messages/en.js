@@ -64,6 +64,11 @@ export const en = {
       submit: 'Create account',
       alreadyHaveAccount: 'Already have an account?',
       login: 'Log in',
+      legalPrefix: 'By creating an account, you agree to the ',
+      terms: 'Terms of Use',
+      legalBridge: ' and acknowledge the ',
+      privacy: 'Privacy Policy',
+      legalSuffix: '.',
     },
 
     passwordReset: {
