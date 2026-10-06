@@ -281,6 +281,20 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(userId)).data.onboardingCompleted is bool;
     }
 
+    function isValidHiddenRecommendation(data, mediaKey) {
+      let fields = [
+        'tmdbId',
+        'mediaType',
+        'hiddenAt'
+      ];
+
+      return data.keys().hasAll(fields)
+        && data.keys().hasOnly(fields)
+        && isValidMediaIdentity(data, mediaKey)
+        && data.hiddenAt is timestamp
+        && data.hiddenAt == request.time;
+    }
+
     function isValidRating(data, mediaKey) {
       let fields = ['tmdbId', 'mediaType', 'title', 'posterPath', 'releaseYear',
                     'score', 'createdAt', 'updatedAt'];
@@ -481,6 +495,28 @@ service cloud.firestore {
           && request.resource.data.createdAt == request.time;
         allow update: if isOwner(userId) && isValidCustomList(request.resource.data, listId)
           && request.resource.data.createdAt == resource.data.createdAt;
+      }
+
+      match /hiddenRecommendations/{mediaKey} {
+        allow get, list: if isOwner(userId);
+
+        allow create: if isOwner(userId)
+          && isValidHiddenRecommendation(
+            request.resource.data,
+            mediaKey
+          );
+
+        allow update: if isOwner(userId)
+          && isValidHiddenRecommendation(
+            request.resource.data,
+            mediaKey
+          )
+          && request.resource.data.tmdbId
+            == resource.data.tmdbId
+          && request.resource.data.mediaType
+            == resource.data.mediaType;
+
+        allow delete: if isOwner(userId);
       }
 
       match /savedMedia/{mediaKey} {

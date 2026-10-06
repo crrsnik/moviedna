@@ -140,7 +140,7 @@ export function createRecommendationPipeline({
   sourceClient,
   metadataResolver,
   sourceConcurrency = DEFAULT_SOURCE_CONCURRENCY,
-  maxPerMediaType = 100,
+  maxPerMediaType = 120,
   maxGenres = 3,
 } = {}) {
   if (

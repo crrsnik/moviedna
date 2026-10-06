@@ -603,6 +603,8 @@ export const en = {
   },
 
   recommendationCard: {
+
+    hide: 'Hide from recommendations',
     match: '{score}% match',
     matchAria: 'MovieDNA match {score} percent',
   },

@@ -603,6 +603,8 @@ export const ru = {
   },
 
   recommendationCard: {
+
+    hide: 'Скрыть из рекомендаций',
     match: 'Совпадение {score}%',
     matchAria: 'Совпадение MovieDNA: {score} процентов',
   },

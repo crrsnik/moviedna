@@ -142,7 +142,9 @@ export function createRecommendationHandler({
         watched: Array.isArray(context.watched)
           ? context.watched
           : [],
-        hidden: [],
+        hidden: Array.isArray(context.hidden)
+          ? context.hidden
+          : [],
         language,
       })
     } catch (error) {

@@ -115,10 +115,16 @@ describe('recommendation source plan', () => {
     assert.deepEqual(plan.requests, [
       { type: 'trending', mediaType: 'movie' },
       { type: 'popular', mediaType: 'movie', page: 1 },
+      { type: 'popular', mediaType: 'movie', page: 2 },
+      { type: 'popular', mediaType: 'movie', page: 3 },
       { type: 'topRated', mediaType: 'movie', page: 1 },
+
       { type: 'trending', mediaType: 'tv' },
       { type: 'popular', mediaType: 'tv', page: 1 },
+      { type: 'popular', mediaType: 'tv', page: 2 },
+      { type: 'popular', mediaType: 'tv', page: 3 },
       { type: 'topRated', mediaType: 'tv', page: 1 },
+
       {
         type: 'genre',
         mediaType: 'movie',
@@ -134,6 +140,19 @@ describe('recommendation source plan', () => {
       {
         type: 'genre',
         mediaType: 'movie',
+        genreId: 28,
+        page: 2,
+      },
+      {
+        type: 'genre',
+        mediaType: 'tv',
+        genreId: 28,
+        page: 2,
+      },
+
+      {
+        type: 'genre',
+        mediaType: 'movie',
         genreId: 18,
         page: 1,
       },
@@ -142,6 +161,18 @@ describe('recommendation source plan', () => {
         mediaType: 'tv',
         genreId: 18,
         page: 1,
+      },
+      {
+        type: 'genre',
+        mediaType: 'movie',
+        genreId: 18,
+        page: 2,
+      },
+      {
+        type: 'genre',
+        mediaType: 'tv',
+        genreId: 18,
+        page: 2,
       },
     ])
   })
@@ -155,7 +186,7 @@ describe('recommendation source plan', () => {
     })
 
     assert.deepEqual(plan.genreIds, [])
-    assert.equal(plan.requests.length, 6)
+    assert.equal(plan.requests.length, 10)
   })
 
   it('rejects malformed envelopes and unsafe limits', () => {

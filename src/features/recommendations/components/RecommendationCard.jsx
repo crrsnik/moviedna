@@ -3,8 +3,10 @@ import {
   useTranslation,
 } from '../../localization/hooks/useTranslation.js'
 
+
 function RecommendationCard({
   recommendation,
+  onHide,
 }) {
   const { t } = useTranslation()
 
@@ -16,13 +18,38 @@ function RecommendationCard({
     recommendation.reasons.slice(0, 2)
   )
 
+  const hide = event => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    onHide?.(recommendation)
+  }
+
   return (
     <div className="w-52 space-y-3 sm:w-56">
-      <MediaCard
-        media={recommendation}
-        fluid
-        showType
-      />
+      <div className="relative">
+        <MediaCard
+          media={recommendation}
+          fluid
+          showType
+        />
+
+        <button
+          type="button"
+          onClick={hide}
+          aria-label={t(
+            'recommendationCard.hide',
+          )}
+          title={t(
+            'recommendationCard.hide',
+          )}
+          className="absolute right-2 top-2 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/65 text-xl font-light leading-none text-white opacity-70 shadow-sm backdrop-blur-sm transition hover:scale-105 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        >
+          <span aria-hidden="true">
+            ×
+          </span>
+        </button>
+      </div>
 
       <div className="space-y-2">
         <p className="text-sm font-semibold text-accent">
@@ -50,5 +77,6 @@ function RecommendationCard({
     </div>
   )
 }
+
 
 export default RecommendationCard

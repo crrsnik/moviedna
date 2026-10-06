@@ -271,12 +271,12 @@ describe('recommendation pipeline', () => {
 
     assert.equal(
       result.stats.sourceRequestCount,
-      8,
+      14,
     )
 
     assert.equal(
       result.stats.sourceSuccessCount,
-      8,
+      14,
     )
 
     assert.equal(
@@ -286,7 +286,7 @@ describe('recommendation pipeline', () => {
 
     assert.equal(
       result.stats.duplicateCount,
-      1,
+      9,
     )
 
     assert.deepEqual(
@@ -398,12 +398,12 @@ describe('recommendation pipeline', () => {
 
     assert.equal(
       result.stats.sourceFailureCount,
-      1,
+      3,
     )
 
     assert.equal(
       result.stats.sourceSuccessCount,
-      7,
+      11,
     )
 
     assert.ok(
@@ -504,7 +504,7 @@ describe('recommendation pipeline', () => {
 
     assert.equal(
       result.stats.sourceRequestCount,
-      6,
+      10,
     )
   })
 

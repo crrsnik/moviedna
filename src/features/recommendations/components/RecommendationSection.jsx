@@ -104,6 +104,7 @@ function RecommendationSection() {
               >
                 <RecommendationCard
                   recommendation={recommendation}
+                  onHide={state.hideRecommendation}
                 />
               </li>
             ))}

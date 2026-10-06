@@ -67,6 +67,7 @@ export function createFirestoreAdapter(db, { now = () => Date.now() } = {}) {
       viewingHistory,
       onboardingResponses,
       refinementResponses,
+      hiddenRecommendations,
     ] = await Promise.all([
       reference.collection('movieDna').doc('current').get(),
       reference.collection('ratings').get(),
@@ -74,6 +75,7 @@ export function createFirestoreAdapter(db, { now = () => Date.now() } = {}) {
       reference.collection('viewingHistory').get(),
       reference.collection('onboardingResponses').get(),
       reference.collection('dnaRefinementResponses').get(),
+      reference.collection('hiddenRecommendations').get(),
     ])
 
     const watchedByKey = new Map()
@@ -121,6 +123,13 @@ export function createFirestoreAdapter(db, { now = () => Date.now() } = {}) {
       watched: [...watchedByKey.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([, value]) => value),
+
+      hidden: documents(
+        hiddenRecommendations,
+      ).map(item => ({
+        tmdbId: item.tmdbId,
+        mediaType: item.mediaType,
+      })),
     }
   }
 
