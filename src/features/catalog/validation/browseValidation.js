@@ -40,6 +40,17 @@ export const BROWSE_ENDPOINTS = {
   },
 }
 
+export const TOP_RATED_MIN_VOTES = Object.freeze({
+  movie: 500,
+  tv: 200,
+})
+
+export const TOP_RATED_MIN_AVERAGE = Object.freeze({
+  movie: 7,
+  tv: 7.5,
+})
+
+
 export function normalizeGenre(value) {
   const text = typeof value === 'number'
     ? String(value)
@@ -337,6 +348,8 @@ export function isAllowedBrowseRequest(url) {
   const optional = [
     'with_genres',
     'with_origin_country',
+    'vote_count.gte',
+    'vote_average.gte',
     ...dateKeys,
   ]
 
@@ -365,6 +378,8 @@ export function isAllowedBrowseRequest(url) {
   if (
     !params.has('with_genres')
     && !params.has('with_origin_country')
+    && params.get('sort_by')
+      !== 'vote_count.desc'
   ) {
     return false
   }
@@ -398,17 +413,59 @@ export function isAllowedBrowseRequest(url) {
     ? [
         'popularity.desc',
         'vote_average.desc',
+        'vote_count.desc',
         'primary_release_date.asc',
       ]
     : [
         'popularity.desc',
         'vote_average.desc',
+        'vote_count.desc',
       ]
 
   if (
     !allowedSorts.includes(
       params.get('sort_by'),
     )
+  ) {
+    return false
+  }
+
+  const topRated = (
+    params.get('sort_by')
+      === 'vote_average.desc'
+  )
+
+  const mostVoted = (
+    params.get('sort_by')
+      === 'vote_count.desc'
+  )
+
+  const mediaType = movie
+    ? 'movie'
+    : 'tv'
+
+  const expectedVotes = String(
+    TOP_RATED_MIN_VOTES[mediaType],
+  )
+
+  const expectedAverage = String(
+    TOP_RATED_MIN_AVERAGE[mediaType],
+  )
+
+  if (
+    topRated
+      ? params.get('vote_count.gte')
+        !== expectedVotes
+      : params.has('vote_count.gte')
+  ) {
+    return false
+  }
+
+  if (
+    mostVoted
+      ? params.get('vote_average.gte')
+        !== expectedAverage
+      : params.has('vote_average.gte')
   ) {
     return false
   }

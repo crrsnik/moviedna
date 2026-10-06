@@ -9,9 +9,9 @@ beforeEach(() => {
 })
 afterEach(() => mock.restoreAll())
 const mappings = [
-  [browseMovies, 'popular', '/movie/popular'], [browseMovies, 'top-rated', '/movie/top_rated'],
+  [browseMovies, 'popular', '/movie/popular'],
   [browseMovies, 'now-playing', '/movie/now_playing'], [browseMovies, 'upcoming', '/movie/upcoming'],
-  [browseTvShows, 'popular', '/tv/popular'], [browseTvShows, 'top-rated', '/tv/top_rated'],
+  [browseTvShows, 'popular', '/tv/popular'],
   [browseTvShows, 'airing-today', '/tv/airing_today'], [browseTvShows, 'on-the-air', '/tv/on_the_air'],
   [browsePeople, 'popular', '/person/popular'], [browsePeople, 'trending', '/trending/person/week'],
 ]

@@ -1,16 +1,35 @@
 import { normalizeNamedItems } from './normalizeNamedItems.js'
 import { getTmdb } from './tmdbClient.js'
 import { normalizeCatalog } from './normalizeCatalog.js'
+import { rankTopRatedResults } from './topRatedRanking.js'
 import { TmdbError } from './tmdbErrors.js'
 
 import {
   BROWSE_ENDPOINTS,
+  TOP_RATED_MIN_AVERAGE,
+  TOP_RATED_MIN_VOTES,
   normalizeBrowse,
 } from '../validation/browseValidation.js'
 
 import {
   TMDB_DEFAULT_LANGUAGE,
 } from '../../../shared/config/tmdb.js'
+
+const TOP_RATED_POOL_PAGES = 10
+
+const TOP_RATED_MOST_VOTED_PAGES =
+  Object.freeze({
+    movie: 8,
+    tv: 12,
+  })
+
+const TOP_RATED_PAGE_SIZE = 20
+
+// Top Rated changes slowly, so keep the ranked candidate pool
+// for the current browser session. The key includes locale and
+// active filters, so unrelated catalog views never share data.
+const topRatedPoolCache = new Map()
+
 
 async function getGenres(
   type,
@@ -66,6 +85,9 @@ function discoverViewParams(type, view) {
   if (view === 'top-rated') {
     return {
       sort_by: 'vote_average.desc',
+      'vote_count.gte': String(
+        TOP_RATED_MIN_VOTES[type],
+      ),
     }
   }
 
@@ -178,6 +200,236 @@ async function browse(
 
     if (hasCountry) {
       params.with_origin_country = country
+    }
+  }
+
+  async function loadPage(sourcePage) {
+    const sourceParams = {
+      ...params,
+      page: String(sourcePage),
+    }
+
+    const data = await getTmdb(
+      path,
+      {
+        language,
+        signal,
+        browse: sourceParams,
+      },
+    )
+
+    return normalizeCatalog(
+      data,
+      type,
+      sourcePage,
+    )
+  }
+
+  async function loadMostVotedPage(
+    sourcePage,
+  ) {
+    const sourceParams = {
+      page: String(sourcePage),
+      sort_by: 'vote_count.desc',
+      'vote_average.gte': String(
+        TOP_RATED_MIN_AVERAGE[type],
+      ),
+      include_adult: 'false',
+      [
+        type === 'movie'
+          ? 'include_video'
+          : 'include_null_first_air_dates'
+      ]: 'false',
+    }
+
+    if (hasGenres) {
+      sourceParams.with_genres =
+        genres.join(',')
+    }
+
+    if (hasCountry) {
+      sourceParams.with_origin_country =
+        country
+    }
+
+    const data = await getTmdb(
+      `/discover/${type}`,
+      {
+        language,
+        signal,
+        browse: sourceParams,
+      },
+    )
+
+    return normalizeCatalog(
+      data,
+      type,
+      sourcePage,
+    )
+  }
+
+
+  async function loadRange(
+    load,
+    first,
+    last,
+  ) {
+    if (last < first) return []
+
+    const output = []
+    const batchSize = 4
+
+    for (
+      let start = first;
+      start <= last;
+      start += batchSize
+    ) {
+      const end = Math.min(
+        last,
+        start + batchSize - 1,
+      )
+
+      const batch = await Promise.all(
+        Array.from(
+          {
+            length: end - start + 1,
+          },
+          (_, index) => (
+            load(start + index)
+          ),
+        ),
+      )
+
+      output.push(...batch)
+    }
+
+    return output
+  }
+
+  if (
+    view === 'top-rated'
+    && ['movie', 'tv'].includes(type)
+  ) {
+    const cacheKey = JSON.stringify([
+      type,
+      language,
+      genres,
+      country,
+    ])
+
+    let rankedPool =
+      topRatedPoolCache.get(cacheKey)
+
+    if (!rankedPool) {
+      // Build the candidate pool from two independent
+      // signals:
+      //
+      // 1. TMDb Top Rated catches exceptional ratings.
+      // 2. Most Voted catches established mainstream
+      //    classics that raw vote_average ordering can
+      //    bury many pages deep.
+      const [
+        firstPage,
+        firstMostVotedPage,
+      ] = await Promise.all([
+        loadPage(1),
+        loadMostVotedPage(1),
+      ])
+
+      const sourcePageCount = Math.max(
+        1,
+        Math.min(
+          TOP_RATED_POOL_PAGES,
+          firstPage.totalPages,
+        ),
+      )
+
+      const mostVotedPageCount = Math.max(
+        1,
+        Math.min(
+          TOP_RATED_MOST_VOTED_PAGES[
+            type
+          ],
+          firstMostVotedPage.totalPages,
+        ),
+      )
+
+      const [
+        remainingPages,
+        remainingMostVotedPages,
+      ] = await Promise.all([
+        loadRange(
+          loadPage,
+          2,
+          sourcePageCount,
+        ),
+        loadRange(
+          loadMostVotedPage,
+          2,
+          mostVotedPageCount,
+        ),
+      ])
+
+      const seen = new Set()
+
+      const merged = [
+        firstPage,
+        ...remainingPages,
+        firstMostVotedPage,
+        ...remainingMostVotedPages,
+      ]
+        .flatMap(result => result.results)
+        .filter(item => {
+          const key =
+            `${item.mediaType}:${item.id}`
+
+          if (seen.has(key)) {
+            return false
+          }
+
+          seen.add(key)
+          return true
+        })
+
+      rankedPool = rankTopRatedResults(
+        merged,
+        type,
+      )
+
+      topRatedPoolCache.set(
+        cacheKey,
+        rankedPool,
+      )
+    }
+
+    const totalResults =
+      rankedPool.length
+
+    const totalPages = Math.max(
+      1,
+      Math.ceil(
+        totalResults
+          / TOP_RATED_PAGE_SIZE,
+      ),
+    )
+
+    const safePage = Math.min(
+      page,
+      totalPages,
+    )
+
+    const offset = (
+      safePage - 1
+    ) * TOP_RATED_PAGE_SIZE
+
+    return {
+      page: safePage,
+      totalPages,
+      totalResults,
+      results: rankedPool.slice(
+        offset,
+        offset + TOP_RATED_PAGE_SIZE,
+      ),
     }
   }
 

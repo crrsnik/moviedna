@@ -54,6 +54,25 @@ function relevanceTier(result, query) {
 }
 
 
+function matchPosition(result, query) {
+  const label = searchableText(
+    resultLabel(result),
+  )
+
+  const needle = searchableText(query)
+
+  if (!label || !needle) {
+    return Number.POSITIVE_INFINITY
+  }
+
+  const position = label.indexOf(needle)
+
+  return position >= 0
+    ? position
+    : Number.POSITIVE_INFINITY
+}
+
+
 function popularity(result) {
   return (
     typeof result?.popularity === 'number'
@@ -106,6 +125,8 @@ export function rankSearchResults(
   return [...results].sort((a, b) => (
     relevanceTier(b, query)
       - relevanceTier(a, query)
+    || matchPosition(a, query)
+      - matchPosition(b, query)
     || popularity(b) - popularity(a)
     || voteCount(b) - voteCount(a)
     || voteAverage(b) - voteAverage(a)
