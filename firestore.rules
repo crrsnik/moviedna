@@ -118,6 +118,16 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(userId)).data.onboardingCompleted == false;
     }
 
+    function hasCompletedProfile(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId))
+        && get(/databases/$(database)/documents/users/$(userId)).data.onboardingCompleted == true;
+    }
+
+    function isValidCanonicalResponse(data, responseId) {
+      return isValidResponse(data, responseId)
+        && responseId == data.mediaType + '_' + string(data.tmdbId);
+    }
+
     function isValidResponse(data, responseId) {
       let fields = ['tmdbId', 'mediaType', 'reaction', 'genreIds', 'createdAt', 'updatedAt'];
       let tmdbId = string(data.tmdbId);
@@ -550,6 +560,17 @@ service cloud.firestore {
           && request.resource.data.createdAt == request.time;
         allow update: if isOwner(userId) && hasIncompleteProfile(userId)
           && isValidResponse(request.resource.data, responseId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reaction', 'genreIds', 'updatedAt']);
+        allow delete: if false;
+      }
+
+      match /dnaRefinementResponses/{responseId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasCompletedProfile(userId)
+          && isValidCanonicalResponse(request.resource.data, responseId)
+          && request.resource.data.createdAt == request.time;
+        allow update: if isOwner(userId) && hasCompletedProfile(userId)
+          && isValidCanonicalResponse(request.resource.data, responseId)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reaction', 'genreIds', 'updatedAt']);
         allow delete: if false;
       }

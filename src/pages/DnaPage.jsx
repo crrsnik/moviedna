@@ -1,9 +1,22 @@
+import {
+  Link,
+} from 'react-router-dom'
+
 import DnaDimensionSection from '../features/dna/components/DnaDimensionSection.jsx'
 import DnaStatePanel from '../features/dna/components/DnaStatePanel.jsx'
-import { useMovieDna } from '../features/dna/hooks/useMovieDna.js'
+
+import {
+  useMovieDna,
+} from '../features/dna/hooks/useMovieDna.js'
+
+import {
+  useDnaRefinementProgress,
+} from '../features/dna/hooks/useDnaRefinementProgress.js'
+
 import {
   useTranslation,
 } from '../features/localization/hooks/useTranslation.js'
+
 
 const dimensions = [
   'genres',
@@ -14,9 +27,11 @@ const dimensions = [
   'actors',
 ]
 
+
 export default function DnaPage() {
   const { t } = useTranslation()
   const state = useMovieDna()
+  const refinement = useDnaRefinementProgress()
 
   if (
     !state.current
@@ -47,6 +62,27 @@ export default function DnaPage() {
           {t('dnaUi.description')}
         </p>
       </header>
+
+      {!refinement.isLoading
+        && !refinement.error
+        && !refinement.isComplete && (
+        <section className="max-w-3xl rounded-2xl border border-border bg-surface-muted/50 p-5">
+          <h2 className="text-lg font-semibold text-primary">
+            {t('dnaUi.refinement.ctaTitle')}
+          </h2>
+
+          <p className="mt-2 text-sm leading-relaxed text-secondary">
+            {t('dnaUi.refinement.ctaDescription')}
+          </p>
+
+          <Link
+            to="/profile/dna/refine"
+            className="mt-4 inline-flex rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-contrast hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+          >
+            {t('dnaUi.refinement.action')}
+          </Link>
+        </section>
+      )}
 
       {(state.kind === 'stale'
         || state.kind === 'failed') && (

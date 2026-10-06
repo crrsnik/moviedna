@@ -260,6 +260,14 @@ export const onOnboardingSummaryWritten = onDocumentWritten({
   },
 ))
 
+export const onDnaRefinementResponseWritten = onDocumentWritten({
+  ...triggerOptions,
+  document: 'users/{uid}/dnaRefinementResponses/{mediaKey}',
+}, event => runForActiveUser(
+  event,
+  () => createRuntimeHandlers().sourceWrite(event),
+))
+
 export const onSavedMediaWritten = onDocumentWritten({
   ...triggerOptions,
   document: 'users/{uid}/savedMedia/{mediaKey}',

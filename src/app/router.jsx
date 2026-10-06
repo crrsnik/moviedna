@@ -19,6 +19,7 @@ import MovieDetailPage from '../pages/MovieDetailPage.jsx'
 import NotificationsPage from '../pages/NotificationsPage.jsx'
 import MoviesPage from '../pages/MoviesPage.jsx'
 import NotFoundPage from '../pages/NotFoundPage.jsx'
+import DnaRefinementPage from '../pages/DnaRefinementPage.jsx'
 import OnboardingPage from '../pages/OnboardingPage.jsx'
 import PersonDetailPage from '../pages/PersonDetailPage.jsx'
 import ProfileOverviewPage from '../pages/ProfileOverviewPage.jsx'
@@ -87,6 +88,7 @@ const router = createBrowserRouter([
                   { index: true, element: <ProfileOverviewPage /> },
                   { path: 'library', element: <LibraryPage /> },
                   { path: 'dna', element: <DnaPage /> },
+                  { path: 'dna/refine', element: <DnaRefinementPage /> },
                   { path: 'history', element: <HistoryPage /> },
                   { path: 'ratings', element: <ProfileRatingsPage /> },
                   { path: 'stats', element: <StatisticsPage /> },

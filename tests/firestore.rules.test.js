@@ -250,6 +250,7 @@ const summaryData = (overrides = {}) => ({
   completedAt: serverTimestamp(), updatedAt: serverTimestamp(), ...overrides,
 })
 const responseRef = (db, uid = 'alice', id = '123') => doc(db, 'users', uid, 'onboardingResponses', id)
+const refinementRef = (db, uid = 'alice', id = 'movie_123') => doc(db, 'users', uid, 'dnaRefinementResponses', id)
 const summaryRef = (db, uid = 'alice', id = 'summary') => doc(db, 'users', uid, 'onboarding', id)
 const completionPatch = () => ({ onboardingCompleted: true, updatedAt: serverTimestamp() })
 
@@ -501,6 +502,77 @@ describe('Onboarding security rules', { concurrency: false }, () => {
     }
     it('documents that Rules check genre list shape, not individual element types', async () => {
       await assertSucceeds(setDoc(responseRef(userDb()), responseData({ genreIds: ['not-an-integer', null] })))
+    })
+  })
+
+  describe('DNA refinement responses', () => {
+    it('denies refinement before base onboarding completion', async () => {
+      await assertFails(
+        setDoc(
+          refinementRef(userDb()),
+          responseData(),
+        ),
+      )
+    })
+
+    it('denies legacy movie document IDs for refinement', async () => {
+      const db = userDb()
+
+      await assertSucceeds(completeOnboarding(db))
+
+      await assertFails(
+        setDoc(
+          refinementRef(db, 'alice', '123'),
+          responseData(),
+        ),
+      )
+    })
+
+    it('allows owner refinement after base onboarding completion', async () => {
+      const db = userDb()
+
+      await assertSucceeds(completeOnboarding(db))
+
+      const ref = refinementRef(db)
+
+      await assertSucceeds(
+        setDoc(
+          ref,
+          responseData(),
+        ),
+      )
+
+      const saved = (
+        await assertSucceeds(getDoc(ref))
+      ).data()
+
+      assert.equal(saved.tmdbId, 123)
+      assert.equal(saved.mediaType, 'movie')
+      assert.equal(saved.reaction, 'like')
+
+      await assertSucceeds(
+        updateDoc(ref, {
+          reaction: 'dislike',
+          updatedAt: serverTimestamp(),
+        }),
+      )
+
+      assert.equal(
+        (await assertSucceeds(getDoc(ref))).data().reaction,
+        'dislike',
+      )
+    })
+
+    it('denies another user writing refinement responses', async () => {
+      const aliceDb = userDb()
+      await assertSucceeds(completeOnboarding(aliceDb))
+
+      await assertFails(
+        setDoc(
+          refinementRef(userDb('bob')),
+          responseData(),
+        ),
+      )
     })
   })
 
