@@ -1019,6 +1019,7 @@ export const ru = {
     title: 'Моя библиотека',
     views: {
       navigation: 'Разделы библиотеки',
+      favorites: 'Избранное',
       watchlist: 'Посмотреть позже',
       ratings: 'Мои оценки',
     },

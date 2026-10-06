@@ -111,6 +111,18 @@ function MediaTypeBreakdown({
     mediaTypes.tvShare * 100,
   )
 
+  const movieBarClass = (
+    mediaTypes.movieCount >= mediaTypes.tvCount
+      ? 'bg-accent-hover'
+      : 'bg-zinc-500'
+  )
+
+  const tvBarClass = (
+    mediaTypes.tvCount >= mediaTypes.movieCount
+      ? 'bg-accent-hover'
+      : 'bg-zinc-500'
+  )
+
   return (
     <section className="rounded-xl border border-border bg-surface p-5">
       <h2 className="text-lg font-semibold">
@@ -136,7 +148,7 @@ function MediaTypeBreakdown({
             aria-hidden="true"
           >
             <div
-              className="h-full rounded-full bg-accent-hover"
+              className={`h-full rounded-full ${movieBarClass}`}
               style={{
                 width: `${moviePercent}%`,
               }}
@@ -162,7 +174,7 @@ function MediaTypeBreakdown({
             aria-hidden="true"
           >
             <div
-              className="h-full rounded-full bg-zinc-500"
+              className={`h-full rounded-full ${tvBarClass}`}
               style={{
                 width: `${tvPercent}%`,
               }}

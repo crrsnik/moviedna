@@ -1019,6 +1019,7 @@ export const fr = {
     title: 'Ma bibliothèque',
     views: {
       navigation: 'Vues de la bibliothèque',
+      favorites: 'Favoris',
       watchlist: 'À regarder',
       ratings: 'Mes notes',
     },
