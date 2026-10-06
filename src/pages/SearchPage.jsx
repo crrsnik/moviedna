@@ -22,6 +22,10 @@ import {
 } from '../features/localization/core/catalogUiMessages.js'
 
 import {
+  useCatalogPageScroll,
+} from '../features/catalog/hooks/useCatalogPageScroll.js'
+
+import {
   useTranslation,
 } from '../features/localization/hooks/useTranslation.js'
 
@@ -51,6 +55,10 @@ export default function SearchPage() {
   const pagination = getPagination(
     data?.page ?? page,
     data?.totalPages ?? 1,
+  )
+
+  useCatalogPageScroll(
+    data?.page ?? null,
   )
 
   const canonical = createSearchParams(
@@ -172,8 +180,9 @@ export default function SearchPage() {
       ) : data && (
         <>
           <p
+            data-catalog-scroll-target
             role="status"
-            className="text-sm text-secondary"
+            className="scroll-mt-6 text-sm text-secondary"
           >
             {t(
               'catalog.search.resultsCount',

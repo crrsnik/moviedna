@@ -12,7 +12,12 @@ export default function TvShowsPage() {
         description={t('catalog.pages.tvDescription')}
       />
 
-      <CatalogBrowser type="tv" />
+      <div
+        data-catalog-scroll-target
+        className="scroll-mt-6"
+      >
+        <CatalogBrowser type="tv" />
+      </div>
     </section>
   )
 }

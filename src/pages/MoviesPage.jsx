@@ -12,7 +12,12 @@ export default function MoviesPage() {
         description={t('catalog.pages.moviesDescription')}
       />
 
-      <CatalogBrowser type="movie" />
+      <div
+        data-catalog-scroll-target
+        className="scroll-mt-6"
+      >
+        <CatalogBrowser type="movie" />
+      </div>
     </section>
   )
 }

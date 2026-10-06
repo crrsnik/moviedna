@@ -12,7 +12,12 @@ export default function ActorsPage() {
         description={t('catalog.pages.actorsDescription')}
       />
 
-      <CatalogBrowser type="person" />
+      <div
+        data-catalog-scroll-target
+        className="scroll-mt-6"
+      >
+        <CatalogBrowser type="person" />
+      </div>
     </section>
   )
 }
