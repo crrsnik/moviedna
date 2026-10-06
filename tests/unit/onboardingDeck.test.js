@@ -24,9 +24,9 @@ describe('Onboarding deck and progress', () => {
     )
     assert.equal(original.length, 10)
   })
-  it('caps new unique movies at 20 and tolerates missing poster', () => {
-    const deck = prepareOnboardingDeck(Array.from({ length: 30 }, (_, i) => movie(i + 1)))
-    assert.equal(deck.length, 20)
+  it('caps new unique movies at 30 and tolerates missing poster', () => {
+    const deck = prepareOnboardingDeck(Array.from({ length: 40 }, (_, i) => movie(i + 1)))
+    assert.equal(deck.length, 30)
     assert.equal(deck[0].posterPath, null)
   })
   it('handles malformed upstream list', () => assert.deepEqual(prepareOnboardingDeck(null), []))
@@ -81,17 +81,20 @@ describe('Onboarding deck and progress', () => {
     assert.deepEqual(getDeckState(deck, [response(1)]), { currentMovie: deck[1], remainingMovies: deck.slice(1) })
     assert.equal(getDeckState(deck, deck.map((m) => response(m.id))).currentMovie, null)
   })
-  it('requires both goals and refuses over 30 responses', () => {
-    const saved = Array.from({ length: 10 }, (_, i) => response(i + 1, i < 5 ? 'like' : 'skip'))
+  it('requires all 30 base responses and five opinions', () => {
+    const saved = Array.from(
+      { length: 30 },
+      (_, i) => response(i + 1, i < 5 ? 'like' : 'skip'),
+    )
     assert.equal(getOnboardingProgress(saved).canFinish, true)
-    assert.equal(getOnboardingProgress(saved.slice(0, 9)).missingResponses, 1)
+    assert.equal(getOnboardingProgress(saved.slice(0, 29)).missingResponses, 1)
     assert.equal(getOnboardingProgress(saved.map((r) => ({ ...r, reaction: 'skip' }))).canFinish, false)
     assert.equal(getOnboardingProgress(Array.from({ length: 31 }, (_, i) => response(i + 1))).canFinish, false)
   })
   it('detects insufficient new cards for total or opinion goals', () => {
-    assert.equal(canReachMinimum(getOnboardingProgress([]), 9), false)
-    assert.equal(canReachMinimum(getOnboardingProgress([]), 10), true)
-    const skipped = Array.from({ length: 10 }, (_, i) => response(i + 1, 'skip'))
+    assert.equal(canReachMinimum(getOnboardingProgress([]), 29), false)
+    assert.equal(canReachMinimum(getOnboardingProgress([]), 30), true)
+    const skipped = Array.from({ length: 25 }, (_, i) => response(i + 1, 'skip'))
     assert.equal(canReachMinimum(getOnboardingProgress(skipped), 4), false)
     assert.equal(canReachMinimum(getOnboardingProgress(skipped), 5), true)
     assert.equal(canReachMinimum(getOnboardingProgress(Array.from({ length: 30 }, (_, i) => response(i + 1, 'skip'))), 20), false)

@@ -6,7 +6,7 @@ import {
   getOnboardingMediaKey,
 } from '../validation/onboardingValidation.js'
 
-export const ONBOARDING_CATALOG_SIZE = 20
+export const ONBOARDING_CATALOG_SIZE = 30
 export const ONBOARDING_CATALOG_CONCURRENCY = 4
 
 // Deliberately interleaved across movie/TV, eras and broad genres.

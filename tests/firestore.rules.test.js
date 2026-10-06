@@ -245,8 +245,8 @@ const responseData = (overrides = {}) => ({
   createdAt: serverTimestamp(), updatedAt: serverTimestamp(), ...overrides,
 })
 const summaryData = (overrides = {}) => ({
-  version: 1, userId: 'alice', status: 'completed', responseCount: 10,
-  likedCount: 5, dislikedCount: 3, skippedCount: 2,
+  version: 1, userId: 'alice', status: 'completed', responseCount: 30,
+  likedCount: 15, dislikedCount: 10, skippedCount: 5,
   completedAt: serverTimestamp(), updatedAt: serverTimestamp(), ...overrides,
 })
 const responseRef = (db, uid = 'alice', id = '123') => doc(db, 'users', uid, 'onboardingResponses', id)
@@ -505,18 +505,35 @@ describe('Onboarding security rules', { concurrency: false }, () => {
   })
 
   describe('Summary and atomic completion', () => {
-    for (const count of [10, 30]) {
-      it(`allows atomic completion at count boundary ${count}`, async () => {
-        const db = userDb()
-        await assertSucceeds(completeOnboarding(db, { summary: summaryData({ responseCount: count, likedCount: count, dislikedCount: 0, skippedCount: 0 }) }))
-        const saved = (await assertSucceeds(getDoc(summaryRef(db)))).data()
-        const user = (await getDoc(doc(db, 'users/alice'))).data()
-        assert.equal(user.onboardingCompleted, true)
-        assert.equal(saved.responseCount, count)
-        assert.ok(saved.completedAt.isEqual(saved.updatedAt))
-        assert.ok(saved.completedAt.isEqual(user.updatedAt))
-      })
-    }
+    it('allows atomic completion at the required count of 30', async () => {
+      const db = userDb()
+      await assertSucceeds(completeOnboarding(db, {
+        summary: summaryData({
+          responseCount: 30,
+          likedCount: 30,
+          dislikedCount: 0,
+          skippedCount: 0,
+        }),
+      }))
+      const saved = (await assertSucceeds(getDoc(summaryRef(db)))).data()
+      const user = (await getDoc(doc(db, 'users/alice'))).data()
+      assert.equal(user.onboardingCompleted, true)
+      assert.equal(saved.responseCount, 30)
+      assert.ok(saved.completedAt.isEqual(saved.updatedAt))
+      assert.ok(saved.completedAt.isEqual(user.updatedAt))
+    })
+
+    it('denies atomic completion below the required count of 30', async () => {
+      const db = userDb()
+      await assertFails(completeOnboarding(db, {
+        summary: summaryData({
+          responseCount: 10,
+          likedCount: 10,
+          dislikedCount: 0,
+          skippedCount: 0,
+        }),
+      }))
+    })
     it('allows final responses in the same atomic completion batch', async () => {
       const db = userDb(), batch = writeBatch(db)
       for (let id = 1; id <= 30; id++) batch.set(responseRef(db, 'alice', String(id)), responseData({ tmdbId: id }))

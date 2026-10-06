@@ -333,7 +333,7 @@ export const en = {
     skipForNow: 'Skip for now',
     loading: 'Loading your movies and saved progress…',
     progressSummary: '{total} total responses · {opinions} likes/dislikes',
-    requirements: 'Minimum 10 responses and 5 likes/dislikes. Up to 30 responses.',
+    requirements: 'Complete 30 cards to build your first Movie DNA. At least 5 likes/dislikes are required.',
     retry: 'Retry',
     loadError: "We couldn't load onboarding right now. Please try again.",
     readyToFinish: "You're ready to finish onboarding.",

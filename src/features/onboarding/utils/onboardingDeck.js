@@ -38,7 +38,7 @@ export function prepareOnboardingDeck(movies, responses = []) {
     seen.add(mediaKey)
     deck.push(movie)
 
-    if (deck.length === 20) break
+    if (deck.length === 30) break
   }
 
   return deck

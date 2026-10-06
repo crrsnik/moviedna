@@ -1,6 +1,6 @@
 import { OnboardingError } from '../services/onboardingErrors.js'
 
-export const MIN_RESPONSES = 10
+export const MIN_RESPONSES = 30
 export const MAX_RESPONSES = 30
 export const MIN_OPINIONS = 5
 export const REACTIONS = ['like', 'dislike', 'skip']

@@ -49,11 +49,11 @@ describe('Curated onboarding catalogue', () => {
 
     assert.equal(
       first.filter(seed => seed.mediaType === 'movie').length,
-      10,
+      15,
     )
     assert.equal(
       first.filter(seed => seed.mediaType === 'tv').length,
-      10,
+      15,
     )
   })
 

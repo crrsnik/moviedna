@@ -333,7 +333,7 @@ export const fr = {
     skipForNow: 'Passer pour le moment',
     loading: 'Chargement des films et de votre progression…',
     progressSummary: '{total} réponses au total · {opinions} avis positifs/négatifs',
-    requirements: 'Minimum 10 réponses et 5 avis positifs/négatifs. Jusqu’à 30 réponses.',
+    requirements: 'Complétez 30 cartes pour créer votre premier Movie DNA. Au moins 5 avis positifs/négatifs sont nécessaires.',
     retry: 'Réessayer',
     loadError: 'Impossible de charger l’onboarding pour le moment. Veuillez réessayer.',
     readyToFinish: 'Vous pouvez terminer l’onboarding.',

@@ -146,7 +146,7 @@ service cloud.firestore {
       return data.keys().hasAll(fields) && data.keys().hasOnly(fields)
         && data.version is int && data.version == 1
         && data.userId == userId && data.status == 'completed'
-        && data.responseCount is int && data.responseCount >= 10 && data.responseCount <= 30
+        && data.responseCount is int && data.responseCount == 30
         && data.likedCount is int && data.likedCount >= 0 && data.likedCount <= data.responseCount
         && data.dislikedCount is int && data.dislikedCount >= 0 && data.dislikedCount <= data.responseCount
         && data.skippedCount is int && data.skippedCount >= 0 && data.skippedCount <= data.responseCount
