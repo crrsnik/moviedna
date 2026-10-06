@@ -49,20 +49,31 @@ export default function TvShowDetailPage() {
 
   return (
     <div className="w-full min-w-0 self-start space-y-10">
-      <TvShowDetailHero
-        series={data}
-        actions={
+      <div className="space-y-3">
+        <TvShowDetailHero series={data} />
+
+      <section
+        className="
+          flex flex-col gap-4
+          border-y border-border py-4
+          md:flex-row md:items-start md:justify-between
+        "
+      >
+        <div className="min-w-0">
           <MediaLibraryActions
             mediaType="tv"
             detail={data}
           />
-        }
-      />
+        </div>
 
-      <MediaViewingHistoryAction
-        mediaType="tv"
-        detail={data}
-      />
+        <div className="min-w-0 md:ml-auto">
+          <MediaViewingHistoryAction
+            mediaType="tv"
+            detail={data}
+          />
+        </div>
+      </section>
+      </div>
 
       <MediaRatingControl
         mediaType="tv"

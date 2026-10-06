@@ -45,20 +45,31 @@ export default function MovieDetailPage() {
 
   return (
     <div className="w-full min-w-0 self-start space-y-10">
-      <MovieDetailHero
-        movie={data}
-        actions={
+      <div className="space-y-3">
+        <MovieDetailHero movie={data} />
+
+      <section
+        className="
+          flex flex-col gap-4
+          border-y border-border py-4
+          md:flex-row md:items-start md:justify-between
+        "
+      >
+        <div className="min-w-0">
           <MediaLibraryActions
             mediaType="movie"
             detail={data}
           />
-        }
-      />
+        </div>
 
-      <MediaViewingHistoryAction
-        mediaType="movie"
-        detail={data}
-      />
+        <div className="min-w-0 md:ml-auto">
+          <MediaViewingHistoryAction
+            mediaType="movie"
+            detail={data}
+          />
+        </div>
+      </section>
+      </div>
 
       <MediaRatingControl
         mediaType="movie"

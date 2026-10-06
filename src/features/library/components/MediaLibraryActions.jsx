@@ -15,12 +15,12 @@ import {
 
 import { mediaLibraryService } from '../services/mediaLibraryService.js'
 
-const iconButtonBase = (
-  'ui-pressable inline-flex size-10 cursor-pointer items-center justify-center '
-  + 'rounded-full border transition-colors '
-  + 'focus-visible:outline-2 focus-visible:outline-offset-2 '
-  + 'focus-visible:outline-focus disabled:cursor-wait '
-  + 'disabled:opacity-50'
+const actionButtonBase = (
+  'ui-pressable inline-flex min-h-9 max-w-full cursor-pointer '
+  + 'items-center justify-start gap-2 rounded-full border px-3 py-1.5 '
+  + 'text-sm font-medium transition-colors focus-visible:outline-2 '
+  + 'focus-visible:outline-offset-2 focus-visible:outline-focus '
+  + 'disabled:cursor-wait disabled:opacity-50'
 )
 
 const secondaryButton = (
@@ -32,9 +32,9 @@ const secondaryButton = (
 
 function actionButtonClass(active = false) {
   return [
-    iconButtonBase,
+    actionButtonBase,
     active
-      ? 'border-primary bg-primary text-app'
+      ? 'border-primary bg-surface-muted text-primary'
       : (
         'border-border-strong bg-surface text-primary '
         + 'hover:bg-surface-muted'
@@ -47,7 +47,9 @@ function HeartIcon({ filled = false }) {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="size-5"
+      className={`size-5 shrink-0 ${
+        filled ? 'text-red-500' : ''
+      }`}
       fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor"
       strokeWidth="1.8"
@@ -59,20 +61,30 @@ function HeartIcon({ filled = false }) {
   )
 }
 
-function ClockIcon() {
+function ClockIcon({ filled = false }) {
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="size-5"
+      className={`size-5 shrink-0 ${
+        filled ? 'text-blue-500' : ''
+      }`}
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        fill={filled ? 'currentColor' : 'none'}
+      />
+      <path
+        d="M12 7v5l3 2"
+        stroke={filled ? 'white' : 'currentColor'}
+      />
     </svg>
   )
 }
@@ -82,7 +94,9 @@ function BookmarkIcon({ filled = false }) {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="size-5"
+      className={`size-5 shrink-0 ${
+        filled ? 'text-yellow-400' : ''
+      }`}
       fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor"
       strokeWidth="1.8"
@@ -139,7 +153,7 @@ function AuthenticatedActions({
       )}
       className="space-y-3"
     >
-      <div className="flex flex-wrap gap-2">
+      <div className="flex max-w-full flex-wrap items-center gap-2">
         <button
           type="button"
           className={actionButtonClass(
@@ -164,6 +178,10 @@ function AuthenticatedActions({
           <HeartIcon
             filled={Boolean(data?.favorite)}
           />
+
+          <span className="whitespace-nowrap">
+            {t('library.actions.favorites')}
+          </span>
         </button>
 
         <button
@@ -187,12 +205,21 @@ function AuthenticatedActions({
             ))
           )}
         >
-          <ClockIcon />
+          <ClockIcon
+            filled={Boolean(data?.watchlist)}
+          />
+
+          <span className="whitespace-nowrap">
+            {t('library.actions.watchLater')}
+          </span>
         </button>
 
         <button
           type="button"
-          className={actionButtonClass(false)}
+          className={actionButtonClass(
+            Boolean(data?.listIds?.length)
+            || manage,
+          )}
           disabled={disabled}
           aria-haspopup="dialog"
           aria-label={manageLabel}
@@ -202,6 +229,10 @@ function AuthenticatedActions({
           <BookmarkIcon
             filled={Boolean(data?.listIds?.length)}
           />
+
+          <span className="whitespace-nowrap">
+            {t('library.actions.addToList')}
+          </span>
         </button>
       </div>
 

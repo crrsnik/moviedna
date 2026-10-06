@@ -1,5 +1,7 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import {
+  useId,
+  useState,
+} from 'react'
 
 import { useTranslation } from '../../localization/hooks/useTranslation.js'
 
@@ -25,6 +27,17 @@ export default function ManageListsPanel({
   const [selected, setSelected] =
     useState(() => [...listIds])
 
+  const [creating, setCreating] =
+    useState(false)
+
+  const [newListName, setNewListName] =
+    useState('')
+
+  const [createdListId, setCreatedListId] =
+    useState(null)
+
+  const nameId = useId()
+
   const known = new Set(
     lists.data?.map(list => list.id),
   )
@@ -43,6 +56,82 @@ export default function ManageListsPanel({
     ))
   )
 
+  const hasLists = Boolean(
+    lists.data?.length,
+  )
+
+  const showCreateForm = (
+    creating
+    || createdListId
+    || (
+      !lists.loading
+      && !lists.error
+      && !hasLists
+    )
+  )
+
+  const cleanNewListName =
+    newListName.trim()
+
+  const validNewListName = (
+    cleanNewListName.length > 0
+    && cleanNewListName.length <= 60
+  )
+
+  const createAndAdd = async () => {
+    let listId = createdListId
+
+    if (!listId) {
+      listId = await (
+        mediaLibraryService
+          .createCustomList(
+            uid,
+            {
+              name: cleanNewListName,
+              description: '',
+              visibility: 'private',
+            },
+          )
+      )
+
+      setCreatedListId(listId)
+    }
+
+    const nextSelected = Array.from(
+      new Set([
+        ...selected,
+        listId,
+      ]),
+    )
+
+    await (
+      mediaLibraryService
+        .updateMediaListMemberships(
+          uid,
+          media,
+          nextSelected,
+        )
+    )
+
+    return listId
+  }
+
+  const submitCreate = event => {
+    event.preventDefault()
+
+    if (
+      !validNewListName
+      && !createdListId
+    ) {
+      return
+    }
+
+    action.run(
+      createAndAdd,
+      onClose,
+    )
+  }
+
   return (
     <LibraryDialog
       title={t('library.manage.title')}
@@ -59,20 +148,9 @@ export default function ManageListsPanel({
         </p>
       ) : (
         <>
-          {!lists.data.length ? (
-            <p>
-              {t('library.manage.noLists')}{' '}
-
-              <Link
-                to="/library?view=favorites"
-                className="underline"
-                onClick={onClose}
-              >
-                {t(
-                  'library.manage.createInLibrary',
-                )}
-              </Link>
-              .
+          {!hasLists ? (
+            <p className="text-secondary">
+              {t('library.manage.noLists')}
             </p>
           ) : (
             <fieldset
@@ -109,6 +187,103 @@ export default function ManageListsPanel({
                 </label>
               ))}
             </fieldset>
+          )}
+
+          {hasLists && !showCreateForm && (
+            <button
+              type="button"
+              className={`${libraryButton} mt-5`}
+              disabled={action.pending}
+              onClick={() => (
+                setCreating(true)
+              )}
+            >
+              {t(
+                'library.manage.createNew',
+              )}
+            </button>
+          )}
+
+          {showCreateForm && (
+            <form
+              onSubmit={submitCreate}
+              className="mt-5 space-y-3 rounded-xl border border-border bg-surface-muted p-4"
+            >
+              <div className="space-y-1">
+                <label
+                  htmlFor={nameId}
+                  className="block text-sm font-medium"
+                >
+                  {t(
+                    'library.manage.newListName',
+                  )}
+                </label>
+
+                <input
+                  id={nameId}
+                  type="text"
+                  autoFocus
+                  maxLength={60}
+                  value={newListName}
+                  disabled={
+                    action.pending
+                    || Boolean(createdListId)
+                  }
+                  onChange={event => (
+                    setNewListName(
+                      event.target.value,
+                    )
+                  )}
+                  className="w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                />
+
+                <p className="text-xs text-secondary">
+                  {newListName.length}/60
+                </p>
+              </div>
+
+              <p className="text-sm text-secondary">
+                {t(
+                  'library.manage.quickCreateHint',
+                )}
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {hasLists && !createdListId && (
+                  <button
+                    type="button"
+                    className={libraryButton}
+                    disabled={action.pending}
+                    onClick={() => {
+                      setCreating(false)
+                      setNewListName('')
+                    }}
+                  >
+                    {t('common.cancel')}
+                  </button>
+                )}
+
+                <button
+                  type="submit"
+                  className={libraryButton}
+                  disabled={
+                    action.pending
+                    || (
+                      !validNewListName
+                      && !createdListId
+                    )
+                  }
+                >
+                  {action.pending
+                    ? t(
+                      'library.manage.creatingAndAdding',
+                    )
+                    : t(
+                      'library.manage.createAndAdd',
+                    )}
+                </button>
+              </div>
+            </form>
           )}
 
           {selected.length > 20 && (
@@ -179,38 +354,40 @@ export default function ManageListsPanel({
           {t('common.cancel')}
         </button>
 
-        <button
-          type="button"
-          className={libraryButton}
-          disabled={
-            action.pending
-            || lists.loading
-            || Boolean(lists.error)
-            || missing
-            || selected.length > 20
-          }
-          onClick={() => (
-            action.run(
-              () => (
-                mediaLibraryService
-                  .updateMediaListMemberships(
-                    uid,
-                    media,
-                    selected,
-                  )
-              ),
-              onClose,
-            )
-          )}
-        >
-          {action.pending
-            ? t(
-              'library.manage.saving',
-            )
-            : t(
-              'library.manage.save',
+        {hasLists && (
+          <button
+            type="button"
+            className={libraryButton}
+            disabled={
+              action.pending
+              || lists.loading
+              || Boolean(lists.error)
+              || missing
+              || selected.length > 20
+            }
+            onClick={() => (
+              action.run(
+                () => (
+                  mediaLibraryService
+                    .updateMediaListMemberships(
+                      uid,
+                      media,
+                      selected,
+                    )
+                ),
+                onClose,
+              )
             )}
-        </button>
+          >
+            {action.pending
+              ? t(
+                'library.manage.saving',
+              )
+              : t(
+                'library.manage.save',
+              )}
+          </button>
+        )}
       </div>
     </LibraryDialog>
   )
