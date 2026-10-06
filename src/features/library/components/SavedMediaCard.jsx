@@ -6,6 +6,7 @@ import { useTranslation } from '../../localization/hooks/useTranslation.js'
 
 import { savedMediaRoute } from '../validation/libraryValidation.js'
 import { useLibraryAction } from '../hooks/useLibraryAction.js'
+import { useLocalizedSavedMedia } from '../hooks/useLocalizedSavedMedia.js'
 import { mediaLibraryService } from '../services/mediaLibraryService.js'
 
 export default function SavedMediaCard({
@@ -14,8 +15,14 @@ export default function SavedMediaCard({
   view,
   listId,
 }) {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const action = useLibraryAction()
+
+  const displayItem =
+    useLocalizedSavedMedia(
+      item,
+      locale,
+    )
 
   const removeLabel = listId
     ? t('library.items.removeFromList')
@@ -31,11 +38,11 @@ export default function SavedMediaCard({
       >
         <DetailImage
           src={getTmdbPosterUrl(
-            item.posterPath,
+            displayItem.posterPath,
           )}
           alt={t(
             'catalog.media.posterAlt',
-            { title: item.title },
+            { title: displayItem.title },
           )}
           placeholder={t(
             'catalog.media.noPoster',
@@ -44,7 +51,7 @@ export default function SavedMediaCard({
         />
 
         <h2 className="break-words font-medium">
-          {item.title}
+          {displayItem.title}
         </h2>
 
         <p className="text-sm text-secondary">
@@ -52,7 +59,7 @@ export default function SavedMediaCard({
             item.mediaType === 'movie'
               ? t('catalog.media.movie')
               : t('catalog.media.tv'),
-            item.releaseYear,
+            displayItem.releaseYear,
           ]
             .filter(Boolean)
             .join(' · ')}

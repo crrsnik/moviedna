@@ -1,0 +1,65 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 256 256"
+>
+  
+        <circle cx="128" cy="128" r="96"
+          fill="#18181b"
+          stroke="#facc15"
+          stroke-width="7"/>
+        
+
+  <path
+    d="M52 57L204 199"
+    stroke="#facc15"
+    stroke-width="3"
+    stroke-opacity=".12"
+  />
+
+  <path
+    d="M52 199L204 57"
+    stroke="#facc15"
+    stroke-width="3"
+    stroke-opacity=".07"
+  />
+
+  
+        <circle cx="128" cy="123" r="56"
+          fill="#facc15"/>
+        <circle cx="108" cy="111" r="6"
+          fill="#18181b"/>
+        <circle cx="148" cy="111" r="6"
+          fill="#18181b"/>
+        <path d="M99 137c16 23 42 23 58 0"
+          fill="none"
+          stroke="#18181b"
+          stroke-width="9"
+          stroke-linecap="round"/>
+        
+
+  <rect x="103.0" y="200" width="12" height="5" rx="2.5" fill="#facc15"/>
+<rect x="122.0" y="200" width="12" height="5" rx="2.5" fill="#facc15"/>
+<rect x="141.0" y="200" width="12" height="5" rx="2.5" fill="#facc15"/>
+
+  <g aria-hidden="true">
+    <rect
+      x="150"
+      y="198"
+      width="94"
+      height="42"
+      rx="21"
+      fill="#18181b"
+      stroke="#fafafa"
+      stroke-width="4"
+    />
+    <text
+      x="197"
+      y="226"
+      text-anchor="middle"
+      font-family="Arial, Helvetica, sans-serif"
+      font-size="28"
+      font-weight="700"
+      fill="#fafafa"
+    >50</text>
+  </g>
+</svg>

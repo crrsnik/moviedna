@@ -255,10 +255,15 @@ describe('Onboarding service with Firebase boundaries mocked', { concurrency: fa
   })
   it('rereads Firestore responses and computes exact completion payloads in one batch', async () => {
     await service.loadOnboardingResponses({ uid: 'demo-user' })
-    docs.push(document(data(11)))
+    docs = Array.from(
+      { length: 30 },
+      (_, i) => document(data(i + 1, {
+        reaction: i < 4 ? 'like' : i < 6 ? 'dislike' : 'skip',
+      })),
+    )
     const counts = await service.completeOnboarding({ uid: 'demo-user', counts: { responseCount: 999 } })
     assert.equal(calls.filter(([operation]) => operation === 'list').length, 2)
-    assert.deepEqual(counts, { responseCount: 11, likedCount: 4, dislikedCount: 2, skippedCount: 5 })
+    assert.deepEqual(counts, { responseCount: 30, likedCount: 4, dislikedCount: 2, skippedCount: 24 })
     assert.deepEqual(writes, [
       ['set', 'users/demo-user/onboarding/summary', { version: 1, userId: 'demo-user', status: 'completed', ...counts, completedAt: serverTime, updatedAt: serverTime }],
       ['update', 'users/demo-user', { onboardingCompleted: true, updatedAt: serverTime }],
@@ -266,6 +271,12 @@ describe('Onboarding service with Firebase boundaries mocked', { concurrency: fa
     assert.equal(batchCount, 1); assert.equal(commitCount, 1)
   })
   it('waits for batch commit confirmation', async () => {
+    docs = Array.from(
+      { length: 30 },
+      (_, i) => document(data(i + 1, {
+        reaction: i < 5 ? 'like' : 'skip',
+      })),
+    )
     let release, resolved = false
     commitWait = new Promise((resolve) => { release = resolve })
     const task = service.completeOnboarding({ uid: 'demo-user' }).then(() => { resolved = true })
@@ -275,11 +286,17 @@ describe('Onboarding service with Firebase boundaries mocked', { concurrency: fa
     assert.equal(resolved, true)
   })
   it('reports a rejected batch safely without returning success', async () => {
+    docs = Array.from(
+      { length: 30 },
+      (_, i) => document(data(i + 1, {
+        reaction: i < 5 ? 'like' : 'skip',
+      })),
+    )
     commitWait = new Promise((resolve, reject) => setTimeout(() => reject({ code: 'permission-denied', message: 'RAW_BATCH_DETAILS' }), 20))
     await assert.rejects(service.completeOnboarding({ uid: 'demo-user' }), (error) => error.code === 'permission-denied' && !error.message.includes('RAW_BATCH_DETAILS'))
     assert.equal(commitCount, 1)
   })
-  for (const n of [9, 31]) {
+  for (const n of [9, 29, 31]) {
     it(`does not create a batch for ${n} responses`, async () => {
       docs = Array.from({ length: n }, (_, i) => document(data(i + 1)))
       await assert.rejects(service.completeOnboarding({ uid: 'demo-user' }), { code: 'insufficient-responses' })
@@ -287,7 +304,7 @@ describe('Onboarding service with Firebase boundaries mocked', { concurrency: fa
     })
   }
   it('does not create a batch for fewer than five opinions', async () => {
-    docs = Array.from({ length: 10 }, (_, i) => document(data(i + 1, { reaction: i < 4 ? 'like' : 'skip' })))
+    docs = Array.from({ length: 30 }, (_, i) => document(data(i + 1, { reaction: i < 4 ? 'like' : 'skip' })))
     await assert.rejects(service.completeOnboarding({ uid: 'demo-user' }), { code: 'insufficient-opinions' })
     assert.equal(batchCount, 0)
   })

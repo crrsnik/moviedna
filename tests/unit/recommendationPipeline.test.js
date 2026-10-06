@@ -191,6 +191,28 @@ function sourceClient({
       }
     },
 
+    async getRecommendations(
+      mediaType,
+      tmdbId,
+      page,
+    ) {
+      await maybeFail(
+        mediaType,
+        'recommendations',
+      )
+
+      return {
+        mediaType,
+        source:
+          `seed:${mediaType}_${tmdbId}:${page}`,
+        results:
+          mediaType === 'tv'
+          && tmdbId === 1399
+            ? [tv(94997, 40)]
+            : [],
+      }
+    },
+
     async discoverByGenre(
       mediaType,
       genreId,
@@ -271,12 +293,12 @@ describe('recommendation pipeline', () => {
 
     assert.equal(
       result.stats.sourceRequestCount,
-      8,
+      14,
     )
 
     assert.equal(
       result.stats.sourceSuccessCount,
-      8,
+      14,
     )
 
     assert.equal(
@@ -286,7 +308,7 @@ describe('recommendation pipeline', () => {
 
     assert.equal(
       result.stats.duplicateCount,
-      1,
+      9,
     )
 
     assert.deepEqual(
@@ -295,12 +317,12 @@ describe('recommendation pipeline', () => {
       ),
       [
         'movie_1',
-        'movie_2',
-        'movie_4',
-        'movie_3',
         'tv_1',
+        'movie_2',
         'tv_3',
+        'movie_4',
         'tv_2',
+        'movie_3',
       ],
     )
 
@@ -333,6 +355,94 @@ describe('recommendation pipeline', () => {
       result.results[0]
         .hasPersonalizationEvidence,
       true,
+    )
+  })
+
+  it('adds candidates recommended from highly rated seed titles', async () => {
+    const resolver = metadataResolver()
+
+    const pipeline =
+      createRecommendationPipeline({
+        sourceClient: sourceClient(),
+        metadataResolver: resolver,
+      })
+
+    const result = await pipeline.run({
+      dna: dna(),
+      rated: [
+        {
+          mediaType: 'tv',
+          tmdbId: 1399,
+          rating: 10,
+        },
+      ],
+    })
+
+    assert.equal(
+      result.stats.seedCount,
+      1,
+    )
+
+    assert.equal(
+      result.stats.sourceRequestCount,
+      15,
+    )
+
+    assert.ok(
+      resolver.calls[0].includes(
+        'tv_94997',
+      ),
+    )
+
+    assert.ok(
+      result.results.some(
+        item =>
+          item.mediaKey === 'tv_94997',
+      ),
+    )
+  })
+
+  it('uses onboarding likes as recommendation seeds', async () => {
+    const resolver = metadataResolver()
+
+    const pipeline =
+      createRecommendationPipeline({
+        sourceClient: sourceClient(),
+        metadataResolver: resolver,
+      })
+
+    const result = await pipeline.run({
+      dna: dna(),
+      seedSignals: [
+        {
+          mediaType: 'tv',
+          tmdbId: 1399,
+          reaction: 'like',
+        },
+      ],
+    })
+
+    assert.equal(
+      result.stats.seedCount,
+      1,
+    )
+
+    assert.equal(
+      result.stats.sourceRequestCount,
+      15,
+    )
+
+    assert.ok(
+      resolver.calls[0].includes(
+        'tv_94997',
+      ),
+    )
+
+    assert.ok(
+      result.results.some(
+        item =>
+          item.mediaKey === 'tv_94997',
+      ),
     )
   })
 
@@ -398,12 +508,12 @@ describe('recommendation pipeline', () => {
 
     assert.equal(
       result.stats.sourceFailureCount,
-      1,
+      3,
     )
 
     assert.equal(
       result.stats.sourceSuccessCount,
-      7,
+      11,
     )
 
     assert.ok(
@@ -423,6 +533,9 @@ describe('recommendation pipeline', () => {
         throw failure
       },
       getTopRated: async () => {
+        throw failure
+      },
+      getRecommendations: async () => {
         throw failure
       },
       discoverByGenre: async () => {
@@ -504,7 +617,7 @@ describe('recommendation pipeline', () => {
 
     assert.equal(
       result.stats.sourceRequestCount,
-      6,
+      10,
     )
   })
 

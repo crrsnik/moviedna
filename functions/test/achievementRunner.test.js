@@ -110,7 +110,7 @@ describe('achievement runner', () => {
     )
 
     assert.equal(saved.uid, 'alice')
-    assert.equal(saved.evaluation.totalCount, 32)
+    assert.equal(saved.evaluation.totalCount, 70)
 
     const states = Object.fromEntries(
       saved.evaluation.achievements.map(
@@ -147,7 +147,7 @@ describe('achievement runner', () => {
         status: 'updated',
         completedCount:
           saved.evaluation.completedCount,
-        totalCount: 32,
+        totalCount: 70,
       },
     )
   })

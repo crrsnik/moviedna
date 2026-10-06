@@ -1,4 +1,7 @@
 import { useTranslation } from '../../localization/hooks/useTranslation.js'
+import {
+  useCatalogPageScroll,
+} from '../hooks/useCatalogPageScroll.js'
 import { getPagination } from '../validation/searchValidation.js'
 
 export default function CatalogPagination({
@@ -12,6 +15,10 @@ export default function CatalogPagination({
   const pagination = getPagination(
     data?.page ?? page,
     data?.totalPages ?? 0,
+  )
+
+  useCatalogPageScroll(
+    data?.page ?? null,
   )
 
   function go(target) {

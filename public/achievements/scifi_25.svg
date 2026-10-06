@@ -1,0 +1,65 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 256 256"
+>
+  
+        <path d="M128 27 L229 128 L128 229 L27 128 Z"
+          fill="#18181b"
+          stroke="#818cf8"
+          stroke-width="7"
+          stroke-linejoin="round"/>
+        
+
+  <path
+    d="M52 57L204 199"
+    stroke="#818cf8"
+    stroke-width="3"
+    stroke-opacity=".12"
+  />
+
+  <path
+    d="M52 199L204 57"
+    stroke="#818cf8"
+    stroke-width="3"
+    stroke-opacity=".07"
+  />
+
+  
+        <circle cx="128" cy="124" r="30"
+          fill="#818cf8"/>
+        <ellipse cx="128" cy="124"
+          rx="69" ry="25"
+          fill="none"
+          stroke="#f4f4f5"
+          stroke-width="9"
+          transform="rotate(-16 128 124)"/>
+        <circle cx="181" cy="91" r="8"
+          fill="#f4f4f5"/>
+        
+
+  <rect x="103.0" y="200" width="12" height="5" rx="2.5" fill="#818cf8"/>
+<rect x="122.0" y="200" width="12" height="5" rx="2.5" fill="#818cf8"/>
+<rect x="141.0" y="200" width="12" height="5" rx="2.5" fill="#818cf8"/>
+
+  <g aria-hidden="true">
+    <rect
+      x="150"
+      y="198"
+      width="94"
+      height="42"
+      rx="21"
+      fill="#18181b"
+      stroke="#fafafa"
+      stroke-width="4"
+    />
+    <text
+      x="197"
+      y="226"
+      text-anchor="middle"
+      font-family="Arial, Helvetica, sans-serif"
+      font-size="28"
+      font-weight="700"
+      fill="#fafafa"
+    >25</text>
+  </g>
+</svg>

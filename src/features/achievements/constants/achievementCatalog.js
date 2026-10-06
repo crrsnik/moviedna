@@ -1,5 +1,11 @@
-const achievement = id => Object.freeze({
+const achievement = (
   id,
+  {
+    secret = false,
+  } = {},
+) => Object.freeze({
+  id,
+  secret,
   image: `/achievements/${id}.svg`,
   titleKey: `achievementsUi.items.${id}.title`,
   descriptionKey:
@@ -9,45 +15,74 @@ const achievement = id => Object.freeze({
 export const ACHIEVEMENT_CATALOG = Object.freeze([
   achievement('onboarding_complete'),
   achievement('dna_ready'),
-
   achievement('rating_1'),
   achievement('rating_10'),
   achievement('rating_25'),
   achievement('rating_50'),
   achievement('rating_100'),
-
+  achievement('rating_250'),
+  achievement('rating_500'),
   achievement('watched_1'),
   achievement('watched_10'),
   achievement('watched_25'),
   achievement('watched_50'),
   achievement('watched_100'),
-
+  achievement('watched_250'),
+  achievement('watched_500'),
   achievement('movies_10'),
   achievement('movies_50'),
+  achievement('movies_100'),
+  achievement('movies_250'),
   achievement('tv_10'),
   achievement('tv_50'),
-
+  achievement('tv_100'),
+  achievement('tv_250'),
   achievement('favorite_1'),
   achievement('favorite_10'),
   achievement('favorite_25'),
-
+  achievement('favorite_50'),
+  achievement('favorite_100'),
   achievement('genres_5'),
   achievement('genres_10'),
-
+  achievement('genres_15'),
   achievement('decades_3'),
   achievement('decades_5'),
-
+  achievement('decades_7'),
   achievement('countries_3'),
   achievement('countries_5'),
-
+  achievement('countries_10'),
+  achievement('countries_20'),
   achievement('horror_10'),
+  achievement('horror_25'),
+  achievement('horror_50'),
   achievement('comedy_10'),
+  achievement('comedy_25'),
+  achievement('comedy_50'),
   achievement('scifi_10'),
+  achievement('scifi_25'),
+  achievement('scifi_50'),
   achievement('romance_10'),
-
+  achievement('romance_25'),
+  achievement('romance_50'),
   achievement('friend_1'),
   achievement('friends_5'),
   achievement('friends_10'),
+  achievement('friends_25'),
+  achievement('friends_50'),
+  achievement('auteur_devotee'),
+  achievement('familiar_face'),
+  achievement('film_archaeologist'),
+  achievement('genre_historian'),
+  achievement('world_cinema_scholar'),
+  achievement('genre_omnivore'),
+  achievement('generations_of_cinema'),
+  achievement('long_road'),
+  achievement('secret_director_journey', { secret: true }),
+  achievement('secret_actor_eras', { secret: true }),
+  achievement('secret_franchise_marathon', { secret: true }),
+  achievement('secret_century_club', { secret: true }),
+  achievement('secret_global_nomad', { secret: true }),
+  achievement('secret_genre_timecapsule', { secret: true }),
 ])
 
 export const ACHIEVEMENT_CATALOG_BY_ID =

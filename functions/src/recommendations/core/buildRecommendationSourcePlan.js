@@ -112,27 +112,33 @@ export function buildRecommendationSourcePlan({
   const requests = [
     { type: 'trending', mediaType: 'movie' },
     { type: 'popular', mediaType: 'movie', page: 1 },
+    { type: 'popular', mediaType: 'movie', page: 2 },
+    { type: 'popular', mediaType: 'movie', page: 3 },
     { type: 'topRated', mediaType: 'movie', page: 1 },
     { type: 'trending', mediaType: 'tv' },
     { type: 'popular', mediaType: 'tv', page: 1 },
+    { type: 'popular', mediaType: 'tv', page: 2 },
+    { type: 'popular', mediaType: 'tv', page: 3 },
     { type: 'topRated', mediaType: 'tv', page: 1 },
   ]
 
   for (const genreId of genreIds) {
-    requests.push(
-      {
-        type: 'genre',
-        mediaType: 'movie',
-        genreId,
-        page: 1,
-      },
-      {
-        type: 'genre',
-        mediaType: 'tv',
-        genreId,
-        page: 1,
-      },
-    )
+    for (const page of [1, 2]) {
+      requests.push(
+        {
+          type: 'genre',
+          mediaType: 'movie',
+          genreId,
+          page,
+        },
+        {
+          type: 'genre',
+          mediaType: 'tv',
+          genreId,
+          page,
+        },
+      )
+    }
   }
 
   return Object.freeze({

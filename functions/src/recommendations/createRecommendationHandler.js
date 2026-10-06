@@ -139,10 +139,16 @@ export function createRecommendationHandler({
       return await pipeline.run({
         dna: context.dna,
         rated: context.rated,
+        seedSignals:
+          Array.isArray(context.seedSignals)
+            ? context.seedSignals
+            : [],
         watched: Array.isArray(context.watched)
           ? context.watched
           : [],
-        hidden: [],
+        hidden: Array.isArray(context.hidden)
+          ? context.hidden
+          : [],
         language,
       })
     } catch (error) {

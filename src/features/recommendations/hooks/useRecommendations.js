@@ -13,6 +13,7 @@ import { recommendationRevision } from './recommendationLifecycle.js'
 import { deriveRecommendationState } from './recommendationState.js'
 import { recommendationCache } from '../services/recommendationCache.js'
 import { recommendationService } from '../services/recommendationService.js'
+import { recommendationHiddenService } from '../services/recommendationHiddenService.js'
 
 export function useRecommendations() {
   const { user } = useAuth()
@@ -91,12 +92,23 @@ export function useRecommendations() {
 
     let active = true
 
-    setSnapshot({
-      uid,
-      revision: localizedRevision,
-      loading: true,
-      data: null,
-      error: null,
+    setSnapshot(previous => {
+      const keepCurrent = (
+        previous.uid === uid
+        && previous.revision
+          === localizedRevision
+        && previous.data
+      )
+
+      return {
+        uid,
+        revision: localizedRevision,
+        loading: !keepCurrent,
+        data: keepCurrent
+          ? previous.data
+          : null,
+        error: null,
+      }
     })
 
     recommendationCache
@@ -158,6 +170,74 @@ export function useRecommendations() {
     uid,
     localizedRevision,
   ])
+
+  const hideRecommendation = useCallback(
+    async recommendation => {
+      if (
+        !uid
+        || !localizedRevision
+        || typeof recommendation?.mediaKey
+          !== 'string'
+      ) {
+        return false
+      }
+
+      // Optimistic UI: remove immediately. Because the
+      // section displays only the first 20 results, the
+      // next recommendation automatically slides in.
+      setSnapshot(previous => {
+        if (
+          previous.uid !== uid
+          || previous.revision
+            !== localizedRevision
+          || !previous.data
+          || !Array.isArray(
+            previous.data.results,
+          )
+        ) {
+          return previous
+        }
+
+        return {
+          ...previous,
+          data: {
+            ...previous.data,
+            results:
+              previous.data.results.filter(
+                item => (
+                  item.mediaKey
+                    !== recommendation.mediaKey
+                ),
+              ),
+          },
+        }
+      })
+
+      try {
+        await recommendationHiddenService.hide(
+          recommendation,
+        )
+
+        // Keep the visible list stable. The optimistic
+        // removal already pulls the next reserved result
+        // into view. Clearing the cache ensures that the
+        // next fresh load also excludes hidden titles.
+        recommendationCache.clear(uid)
+
+        return true
+      } catch {
+        // Re-fetch restores the card if persistence failed.
+        retry()
+
+        return false
+      }
+    },
+    [
+      uid,
+      localizedRevision,
+      retry,
+    ],
+  )
 
   const cached = uid && localizedRevision
     ? recommendationCache.get(
@@ -250,5 +330,6 @@ export function useRecommendations() {
       effectiveSnapshot,
     ),
     retry,
+    hideRecommendation,
   }
 }

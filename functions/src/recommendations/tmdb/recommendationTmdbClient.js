@@ -258,6 +258,37 @@ export function createRecommendationTmdbClient({
     )
   }
 
+  async function getRecommendations(
+    mediaType,
+    tmdbId,
+    page = 1,
+    language = 'en-US',
+  ) {
+    validateMediaType(mediaType)
+    validatePage(page)
+    validateLanguage(language)
+
+    if (!positiveInteger(tmdbId)) {
+      throw new MovieDnaServerError(
+        SERVER_ERROR_CODES.INVALID_SOURCE,
+      )
+    }
+
+    const results = await request(
+      `${mediaType}/${tmdbId}/recommendations`,
+      {
+        language,
+        page,
+      },
+    )
+
+    return sourceEnvelope(
+      mediaType,
+      `seed:${mediaType}_${tmdbId}:${page}`,
+      results,
+    )
+  }
+
   async function discoverByGenre(
     mediaType,
     genreId,
@@ -303,6 +334,7 @@ export function createRecommendationTmdbClient({
     getTrending,
     getPopular,
     getTopRated,
+    getRecommendations,
     discoverByGenre,
   })
 }

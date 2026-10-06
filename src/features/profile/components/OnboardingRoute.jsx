@@ -3,8 +3,15 @@ import {
   Outlet,
 } from 'react-router-dom'
 
-import { useTranslation } from '../../localization/hooks/useTranslation.js'
-import { useUserProfile } from '../hooks/useUserProfile.js'
+import {
+  useTranslation,
+} from '../../localization/hooks/useTranslation.js'
+import {
+  hasOnboardingResultPending,
+} from '../../onboarding/constants/onboardingResult.js'
+import {
+  useUserProfile,
+} from '../hooks/useUserProfile.js'
 
 function OnboardingRoute({
   requireCompleted = false,
@@ -32,7 +39,12 @@ function OnboardingRoute({
 
   if (profileError || !profile) {
     return (
-      <div className="max-w-md space-y-5 text-center">
+      <div
+        className="
+          mx-auto max-w-md
+          space-y-5 text-center
+        "
+      >
         <p
           role="alert"
           className="text-secondary"
@@ -43,7 +55,15 @@ function OnboardingRoute({
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="rounded-md bg-accent px-4 py-2 font-medium text-accent-contrast hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+          className="
+            rounded-md bg-accent
+            px-4 py-2 font-medium
+            text-accent-contrast
+            hover:bg-accent-hover
+            focus-visible:outline-2
+            focus-visible:outline-offset-4
+            focus-visible:outline-focus
+          "
         >
           {t('onboarding.route.refresh')}
         </button>
@@ -52,12 +72,25 @@ function OnboardingRoute({
   }
 
   if (requireCompleted) {
+    return hasCompletedOnboarding
+      ? <Outlet />
+      : <Navigate to="/onboarding" replace />
+  }
+
+  if (!hasCompletedOnboarding) {
     return <Outlet />
   }
 
-  return hasCompletedOnboarding
-    ? <Navigate to="/" replace />
-    : <Outlet />
+  return (
+    <Navigate
+      to={
+        hasOnboardingResultPending()
+          ? '/onboarding/result'
+          : '/'
+      }
+      replace
+    />
+  )
 }
 
 export default OnboardingRoute

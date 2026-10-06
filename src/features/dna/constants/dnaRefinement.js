@@ -1,0 +1,1 @@
+export const MAX_DNA_REFINEMENT_RESPONSES = 40

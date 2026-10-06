@@ -64,6 +64,11 @@ export const fr = {
       submit: 'Créer un compte',
       alreadyHaveAccount: 'Vous avez déjà un compte ?',
       login: 'Se connecter',
+      legalPrefix: 'En créant un compte, vous acceptez les ',
+      terms: 'Conditions d’utilisation',
+      legalBridge: ' et reconnaissez avoir pris connaissance de la ',
+      privacy: 'Politique de confidentialité',
+      legalSuffix: '.',
     },
 
     passwordReset: {
@@ -333,7 +338,7 @@ export const fr = {
     skipForNow: 'Passer pour le moment',
     loading: 'Chargement des films et de votre progression…',
     progressSummary: '{total} réponses au total · {opinions} avis positifs/négatifs',
-    requirements: 'Minimum 10 réponses et 5 avis positifs/négatifs. Jusqu’à 30 réponses.',
+    requirements: 'Complétez 30 cartes pour créer votre premier Movie DNA. Au moins 5 avis positifs/négatifs sont nécessaires.',
     retry: 'Réessayer',
     loadError: 'Impossible de charger l’onboarding pour le moment. Veuillez réessayer.',
     readyToFinish: 'Vous pouvez terminer l’onboarding.',
@@ -366,6 +371,21 @@ export const fr = {
       noPoster: 'Aucune affiche disponible',
       noOverview: 'Aucun résumé disponible.',
     },
+  },
+
+  onboardingResult: {
+    title: 'Votre MovieDNA est prêt',
+    description: 'Voici quelques-uns des signaux les plus forts de votre premier profil de goûts.',
+    buildingTitle: 'Création de votre MovieDNA…',
+    buildingDescription: 'Votre onboarding est terminé. Nous transformons vos réactions en votre premier profil de goûts.',
+    failedTitle: 'Votre onboarding est terminé',
+    failedDescription: 'La création de votre MovieDNA prend plus de temps que prévu. Vous pouvez continuer et consulter à nouveau Mon DNA dans quelques instants.',
+    emptyDescription: 'Votre premier MovieDNA est prêt, mais il faut encore un peu plus d’informations pour mettre en avant des signaux forts.',
+    recommendations: 'Voir mes recommandations',
+    improve: 'Améliorer mon DNA',
+    viewDna: 'Voir tout mon DNA',
+    continueHome: 'Continuer vers l’accueil',
+    signalStrength: 'Force du signal MovieDNA pour {label}',
   },
 
   accountSettingsPage: {
@@ -413,6 +433,8 @@ export const fr = {
     showLess: 'Afficher moins',
     showAll: 'Tout afficher ({count})',
     openAchievement: 'Ouvrir le succès : {title}',
+    secretTitle: 'Succès secret',
+    secretDescription: 'Sa condition sera révélée uniquement après son déblocage.',
     items: {
       onboarding_complete: {
         title: 'Premier pas',
@@ -542,10 +564,180 @@ export const fr = {
         title: 'Ciné-club',
         description: 'Connectez-vous avec dix amis sur MovieDNA.',
       },
+      rating_250: {
+        title: 'Critique expérimenté',
+        description: 'Notez 250 titres.',
+      },
+      rating_500: {
+        title: 'Maître critique',
+        description: 'Notez 500 titres.',
+      },
+      watched_250: {
+        title: 'Vétéran de l’écran',
+        description: 'Regardez 250 films ou séries.',
+      },
+      watched_500: {
+        title: 'Le cap des 500',
+        description: 'Regardez 500 films ou séries.',
+      },
+      movies_100: {
+        title: 'Un siècle de cinéma',
+        description: 'Regardez 100 films.',
+      },
+      movies_250: {
+        title: 'Archives du cinéma',
+        description: 'Regardez 250 films.',
+      },
+      tv_100: {
+        title: 'Habitué des séries',
+        description: 'Regardez 100 séries.',
+      },
+      tv_250: {
+        title: 'Historien des séries',
+        description: 'Regardez 250 séries.',
+      },
+      favorite_50: {
+        title: 'Étagère aux trésors',
+        description: 'Ajoutez 50 titres aux favoris.',
+      },
+      favorite_100: {
+        title: 'Panthéon des favoris',
+        description: 'Ajoutez 100 titres aux favoris.',
+      },
+      genres_15: {
+        title: 'Explorateur de genres',
+        description: 'Regardez des titres appartenant à 15 genres différents.',
+      },
+      decades_7: {
+        title: 'Voyageur du temps',
+        description: 'Regardez des titres de 7 décennies différentes.',
+      },
+      countries_10: {
+        title: 'Cinéma du monde',
+        description: 'Regardez des titres de 10 pays différents.',
+      },
+      countries_20: {
+        title: 'Passeport mondial',
+        description: 'Regardez des titres de 20 pays différents.',
+      },
+      horror_25: {
+        title: 'Créature nocturne',
+        description: 'Regardez 25 titres d’horreur.',
+      },
+      horror_50: {
+        title: 'Maître de la peur',
+        description: 'Regardez 50 titres d’horreur.',
+      },
+      comedy_25: {
+        title: 'Éclats de rire',
+        description: 'Regardez 25 comédies.',
+      },
+      comedy_50: {
+        title: 'Connaisseur de comédies',
+        description: 'Regardez 50 comédies.',
+      },
+      scifi_25: {
+        title: 'Au-delà de la Terre',
+        description: 'Regardez 25 titres de science-fiction.',
+      },
+      scifi_50: {
+        title: 'Expert de l’espace-temps',
+        description: 'Regardez 50 titres de science-fiction.',
+      },
+      romance_25: {
+        title: 'Romantique incurable',
+        description: 'Regardez 25 romances.',
+      },
+      romance_50: {
+        title: 'Expert des histoires d’amour',
+        description: 'Regardez 50 romances.',
+      },
+      friends_25: {
+        title: 'Cercle cinéma',
+        description: 'Ajoutez 25 amis sur MovieDNA.',
+      },
+      friends_50: {
+        title: 'Communauté cinéma',
+        description: 'Ajoutez 50 amis sur MovieDNA.',
+      },
+      auteur_devotee: {
+        title: 'Fidèle d’un auteur',
+        description: 'Regardez 15 films du même réalisateur.',
+      },
+      familiar_face: {
+        title: 'Visage familier',
+        description: 'Regardez 25 titres avec le même acteur ou la même actrice.',
+      },
+      film_archaeologist: {
+        title: 'Archéologue du cinéma',
+        description: 'Regardez 25 titres sortis avant 1970.',
+      },
+      genre_historian: {
+        title: 'Historien d’un genre',
+        description: 'Suivez un même genre sur au moins 5 décennies différentes.',
+      },
+      world_cinema_scholar: {
+        title: 'Connaisseur du cinéma mondial',
+        description: 'Regardez 100 titres internationaux provenant d’au moins 20 pays hors États-Unis.',
+      },
+      genre_omnivore: {
+        title: 'Omnivore des genres',
+        description: 'Regardez au moins 10 titres dans chacun de 10 genres différents.',
+      },
+      generations_of_cinema: {
+        title: 'Générations du cinéma',
+        description: 'Regardez au moins 10 titres dans chacune de 6 décennies différentes.',
+      },
+      long_road: {
+        title: 'Le long chemin',
+        description: 'Atteignez 500 titres vus, 250 notes, 50 favoris, 10 genres et 10 pays.',
+      },
+      secret_director_journey: {
+        title: 'Parcours d’un réalisateur',
+        description: 'Suivez un même réalisateur au fil d’une longue carrière et de plusieurs décennies.',
+      },
+      secret_actor_eras: {
+        title: 'À travers les époques',
+        description: 'Suivez le même acteur ou la même actrice à travers plusieurs générations de cinéma.',
+      },
+      secret_franchise_marathon: {
+        title: 'Marathon de franchise',
+        description: 'Explorez exceptionnellement loin une même collection de films.',
+      },
+      secret_century_club: {
+        title: 'Club du siècle',
+        description: 'Explorez une période exceptionnellement vaste de l’histoire du cinéma.',
+      },
+      secret_global_nomad: {
+        title: 'Nomade mondial',
+        description: 'Construisez un historique de visionnage exceptionnellement international.',
+      },
+      secret_genre_timecapsule: {
+        title: 'Capsule temporelle',
+        description: 'Suivez un même genre sur une période exceptionnelle de l’histoire du cinéma.',
+      },
     },
   },
 
   dnaUi: {
+    refinement: {
+      title: 'Affiner votre Movie DNA',
+      description: 'Votre premier Movie DNA est déjà prêt. Ces cartes facultatives donnent à MovieDNA davantage d’indices sur vos goûts et peuvent rendre les futures recommandations plus précises.',
+      progress: '{current} sur {total} cartes d’affinement',
+      remaining: 'Encore {count} cartes facultatives',
+      continueLater: 'Continuer plus tard',
+      backToDna: 'Retour à Mon DNA',
+      loading: 'Chargement des cartes d’affinement…',
+      loadError: 'Impossible de charger les cartes d’affinement pour le moment.',
+      noMoreCards: 'Aucune nouvelle carte d’affinement n’est disponible pour le moment.',
+      saving: 'Mise à jour de votre Movie DNA…',
+      actionError: 'Impossible d’enregistrer cette réponse. Réessayez.',
+      completeTitle: 'Votre affinement est terminé',
+      completeDescription: 'Vous avez répondu aux 40 cartes facultatives. Vos nouvelles évaluations et activités continueront à faire évoluer votre Movie DNA.',
+      ctaTitle: 'Rendre votre DNA plus précis',
+      ctaDescription: 'Votre DNA actuel fonctionne déjà. Vous pouvez répondre à jusqu’à 40 cartes supplémentaires pour donner à MovieDNA une image plus riche de vos goûts.',
+      action: 'Améliorer mon DNA',
+    },
     title: 'Mon DNA',
     description: 'Les tendances les plus fortes de vos préférences en matière de films et de séries.',
     stale: 'Mise à jour de votre MovieDNA. Votre profil précédent reste visible.',
@@ -585,6 +777,8 @@ export const fr = {
   },
 
   recommendationCard: {
+
+    hide: 'Masquer des recommandations',
     match: '{score}% de compatibilité',
     matchAria: 'Compatibilité MovieDNA de {score} pour cent',
   },
@@ -865,6 +1059,9 @@ export const fr = {
       addWatchlist: 'Ajouter à À regarder',
       removeWatchlist: 'Retirer de À regarder',
       manageLists: 'Gérer les listes',
+      favorites: 'Favoris',
+      watchLater: 'Plus tard',
+      addToList: 'Liste',
       saving: 'Enregistrement…',
       loadingStatus: 'Chargement du statut…',
       retryStatus: 'Réessayer',
@@ -875,6 +1072,11 @@ export const fr = {
       title: 'Gérer les listes',
       loading: 'Chargement des listes…',
       noLists: 'Aucune liste personnalisée pour le moment.',
+      createNew: 'Créer une nouvelle liste',
+      newListName: 'Nom de la liste',
+      createAndAdd: 'Créer et ajouter',
+      creatingAndAdding: 'Création…',
+      quickCreateHint: 'La nouvelle liste sera privée. Vous pourrez modifier ses paramètres plus tard dans la bibliothèque.',
       createInLibrary: 'Créer une liste dans votre bibliothèque',
       chooseLists: 'Choisissez les listes pour ce titre ({count}/20)',
       tooMany: 'Choisissez au maximum 20 listes pour ce titre.',

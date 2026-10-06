@@ -1,10 +1,27 @@
-import { useId, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import {
+  useId,
+  useState,
+} from 'react'
 
-import { useTranslation } from '../../localization/hooks/useTranslation.js'
+import {
+  useNavigate,
+} from 'react-router-dom'
+
+import {
+  useTranslation,
+} from '../../localization/hooks/useTranslation.js'
+
 import {
   translateCatalogValidation,
 } from '../../localization/core/catalogUiMessages.js'
+
+import {
+  toTmdbLanguage,
+} from '../../../shared/config/tmdb.js'
+
+import {
+  useSearchAutocomplete,
+} from '../hooks/useSearchAutocomplete.js'
 
 import {
   createSearchParams,
@@ -12,20 +29,94 @@ import {
   normalizeQuery,
 } from '../validation/searchValidation.js'
 
+
+function suggestionPath(item) {
+  if (
+    !Number.isSafeInteger(item?.id)
+    || item.id <= 0
+  ) {
+    return null
+  }
+
+  if (item.mediaType === 'movie') {
+    return `/movies/${item.id}`
+  }
+
+  if (item.mediaType === 'tv') {
+    return `/tv/${item.id}`
+  }
+
+  if (item.mediaType === 'person') {
+    return `/actors/${item.id}`
+  }
+
+  return null
+}
+
+
+function suggestionTitle(item) {
+  return item.mediaType === 'person'
+    ? item.name
+    : item.title
+}
+
+
+function suggestionDetail(item, t) {
+  if (item.mediaType === 'person') {
+    return item.knownForDepartment
+      || t('catalog.media.person')
+  }
+
+  const year =
+    typeof item.releaseDate === 'string'
+      ? item.releaseDate.slice(0, 4)
+      : null
+
+  const type = t(
+    item.mediaType === 'movie'
+      ? 'catalog.media.movie'
+      : 'catalog.media.tv',
+  )
+
+  return year
+    ? `${type} · ${year}`
+    : type
+}
+
+
 export default function SearchForm({
   query = '',
   type = 'all',
 }) {
-  const { t } = useTranslation()
+  const {
+    t,
+    locale,
+  } = useTranslation()
+
+  const language =
+    toTmdbLanguage(locale)
+
   const id = useId()
+  const listId = `${id}-suggestions`
+
   const navigate = useNavigate()
 
-  const [draft, setDraft] = useState({
-    source: query,
-    value: query,
-  })
+  const [draft, setDraft] =
+    useState({
+      source: query,
+      value: query,
+    })
 
-  const [error, setError] = useState(null)
+  const [error, setError] =
+    useState(null)
+
+  const [
+    activeIndex,
+    setActiveIndex,
+  ] = useState(-1)
+
+  const [open, setOpen] =
+    useState(false)
 
   if (draft.source !== query) {
     setDraft({
@@ -34,17 +125,59 @@ export default function SearchForm({
     })
 
     setError(null)
+    setActiveIndex(-1)
+    setOpen(false)
   }
 
-  const value = draft.source === query
-    ? draft.value
-    : query
+  const value =
+    draft.source === query
+      ? draft.value
+      : query
+
+  const autocomplete =
+    useSearchAutocomplete({
+      query: value,
+      language,
+    })
+
+  const suggestions =
+    autocomplete.results
+
+  const suggestionsOpen = (
+    open
+    && suggestions.length > 0
+  )
+
+  function openSuggestion(item) {
+    const path = suggestionPath(item)
+
+    if (!path) return
+
+    setOpen(false)
+    setActiveIndex(-1)
+    navigate(path)
+  }
 
   function submit(event) {
     event.preventDefault()
 
-    const normalized = normalizeQuery(value)
-    const validation = getQueryError(normalized)
+    if (
+      suggestionsOpen
+      && activeIndex >= 0
+      && activeIndex
+        < suggestions.length
+    ) {
+      openSuggestion(
+        suggestions[activeIndex],
+      )
+      return
+    }
+
+    const normalized =
+      normalizeQuery(value)
+
+    const validation =
+      getQueryError(normalized)
 
     setError(validation)
 
@@ -55,12 +188,53 @@ export default function SearchForm({
       value: normalized,
     })
 
+    setOpen(false)
+    setActiveIndex(-1)
+
     navigate(
       `/search?${createSearchParams({
         query: normalized,
         type,
       })}`,
     )
+  }
+
+  function onKeyDown(event) {
+    if (
+      event.key === 'Escape'
+    ) {
+      setOpen(false)
+      setActiveIndex(-1)
+      return
+    }
+
+    if (
+      event.key !== 'ArrowDown'
+      && event.key !== 'ArrowUp'
+    ) {
+      return
+    }
+
+    if (!suggestions.length) {
+      return
+    }
+
+    event.preventDefault()
+    setOpen(true)
+
+    setActiveIndex(current => {
+      if (
+        event.key === 'ArrowDown'
+      ) {
+        return (
+          current + 1
+        ) % suggestions.length
+      }
+
+      return current <= 0
+        ? suggestions.length - 1
+        : current - 1
+    })
   }
 
   return (
@@ -77,27 +251,118 @@ export default function SearchForm({
       </label>
 
       <div className="flex flex-col gap-3 sm:flex-row">
-        <input
-          id={id}
-          type="search"
-          value={value}
-          onChange={event => {
-            setDraft({
-              source: query,
-              value: event.target.value,
-            })
+        <div className="relative min-w-0 flex-1">
+          <input
+            id={id}
+            type="search"
+            autoComplete="off"
+            value={value}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={suggestionsOpen}
+            aria-controls={
+              suggestionsOpen
+                ? listId
+                : undefined
+            }
+            aria-activedescendant={
+              suggestionsOpen
+              && activeIndex >= 0
+                ? `${listId}-${activeIndex}`
+                : undefined
+            }
+            onFocus={() => {
+              if (suggestions.length) {
+                setOpen(true)
+              }
+            }}
+            onBlur={() => {
+              setOpen(false)
+              setActiveIndex(-1)
+            }}
+            onKeyDown={onKeyDown}
+            onChange={event => {
+              setDraft({
+                source: query,
+                value:
+                  event.target.value,
+              })
 
-            setError(null)
-          }}
-          placeholder={t('catalog.search.placeholder')}
-          aria-invalid={Boolean(error)}
-          aria-describedby={
-            error
-              ? `${id}-error`
-              : undefined
-          }
-          className="min-w-0 flex-1 rounded-xl border border-border bg-surface px-4 py-3 text-sm text-primary shadow-[var(--app-shadow-sm)] outline-none transition placeholder:text-tertiary hover:border-border-strong focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-        />
+              setError(null)
+              setOpen(true)
+              setActiveIndex(-1)
+            }}
+            placeholder={t(
+              'catalog.search.placeholder',
+            )}
+            aria-invalid={Boolean(error)}
+            aria-describedby={
+              error
+                ? `${id}-error`
+                : undefined
+            }
+            className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-primary shadow-[var(--app-shadow-sm)] outline-none transition placeholder:text-tertiary hover:border-border-strong focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          />
+
+          {suggestionsOpen && (
+            <ul
+              id={listId}
+              role="listbox"
+              className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-96 overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-[var(--app-shadow-lg)]"
+            >
+              {suggestions.map(
+                (item, index) => (
+                  <li
+                    id={`${listId}-${index}`}
+                    key={`${item.mediaType}:${item.id}`}
+                    role="option"
+                    aria-selected={
+                      activeIndex === index
+                    }
+                  >
+                    <button
+                      type="button"
+                      onPointerDown={
+                        event => {
+                          event.preventDefault()
+                        }
+                      }
+                      onMouseEnter={() => {
+                        setActiveIndex(index)
+                      }}
+                      onClick={() => {
+                        openSuggestion(item)
+                      }}
+                      className={
+                        'flex w-full cursor-pointer items-center justify-between gap-4 rounded-lg px-3 py-2.5 text-left transition '
+                        + (
+                          activeIndex === index
+                            ? 'bg-surface-muted'
+                            : 'hover:bg-surface-muted'
+                        )
+                      }
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium text-primary">
+                          {suggestionTitle(
+                            item,
+                          )}
+                        </span>
+
+                        <span className="mt-0.5 block truncate text-xs text-tertiary">
+                          {suggestionDetail(
+                            item,
+                            t,
+                          )}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                ),
+              )}
+            </ul>
+          )}
+        </div>
 
         <button
           type="submit"
@@ -113,7 +378,10 @@ export default function SearchForm({
           role="alert"
           className="text-sm text-rose-600 dark:text-rose-300"
         >
-          {translateCatalogValidation(t, error)}
+          {translateCatalogValidation(
+            t,
+            error,
+          )}
         </p>
       )}
     </form>

@@ -5,12 +5,24 @@ import {
   buildRecommendationCandidatePool,
 } from './core/buildRecommendationCandidatePool.js'
 import {
+  selectRecommendationCandidateWindow,
+} from './core/selectRecommendationCandidateWindow.js'
+import {
   prepareRecommendationCandidate,
 } from './core/prepareRecommendationCandidates.js'
 import {
   excludeKnownMedia,
   rankRecommendations,
 } from './core/rankRecommendations.js'
+import {
+  rerankRecommendationResults,
+} from './core/rerankRecommendationResults.js'
+import {
+  selectRecommendationSeeds,
+} from './core/selectRecommendationSeeds.js'
+import {
+  buildRecommendationSeedAffinity,
+} from './core/buildRecommendationSeedAffinity.js'
 import {
   RECOMMENDATION_ERROR_CODES,
   throwRecommendationError,
@@ -63,6 +75,14 @@ async function executeSourceRequest(
       return sourceClient.discoverByGenre(
         request.mediaType,
         request.genreId,
+        request.page,
+        language,
+      )
+
+    case 'seed':
+      return sourceClient.getRecommendations(
+        request.mediaType,
+        request.tmdbId,
         request.page,
         language,
       )
@@ -140,7 +160,7 @@ export function createRecommendationPipeline({
   sourceClient,
   metadataResolver,
   sourceConcurrency = DEFAULT_SOURCE_CONCURRENCY,
-  maxPerMediaType = 100,
+  maxPerMediaType = 70,
   maxGenres = 3,
 } = {}) {
   if (
@@ -150,6 +170,7 @@ export function createRecommendationPipeline({
         'getTrending',
         'getPopular',
         'getTopRated',
+        'getRecommendations',
         'discoverByGenre',
       ],
     )
@@ -167,6 +188,7 @@ export function createRecommendationPipeline({
   async function run({
     dna,
     rated = [],
+    seedSignals = [],
     watched = [],
     hidden = [],
     language = 'en-US',
@@ -176,25 +198,65 @@ export function createRecommendationPipeline({
       maxGenres,
     })
 
+    const seeds =
+      selectRecommendationSeeds([
+        ...rated,
+        ...(
+          Array.isArray(seedSignals)
+            ? seedSignals
+            : []
+        ),
+      ])
+
+    const seedRequests = seeds.map(
+      seed => Object.freeze({
+        type: 'seed',
+        mediaType: seed.mediaType,
+        tmdbId: seed.tmdbId,
+        page: 1,
+        seedMediaKey: seed.mediaKey,
+        seedRating: seed.rating,
+        seedWeight: seed.weight,
+      }),
+    )
+
+    const requests = [
+      ...sourcePlan.requests,
+      ...seedRequests,
+    ]
+
     const collected = await collectSources(
       sourceClient,
-      sourcePlan.requests,
+      requests,
       language,
       sourceConcurrency,
     )
 
+    const seedAffinity =
+      buildRecommendationSeedAffinity({
+        seeds,
+        sources: collected.sources,
+      })
+
     const pool = buildRecommendationCandidatePool({
       sources: collected.sources,
-      maxPerMediaType,
+      maxPerMediaType: 500,
     })
 
-    const eligible = excludeKnownMedia(
+    const knownEligible = excludeKnownMedia(
       pool.candidates,
       {
         rated: [...rated, ...watched],
         hidden,
       },
     )
+
+    const eligible =
+      selectRecommendationCandidateWindow({
+        candidates: knownEligible,
+        seedAffinity,
+        maxPerMediaType,
+      })
 
     const resolved = await metadataResolver.resolve(
       eligible,
@@ -226,6 +288,13 @@ export function createRecommendationPipeline({
       candidates: prepared,
     })
 
+    const rerankedResults =
+      rerankRecommendationResults({
+        rankedResults: ranked.results,
+        candidates: resolved,
+        seedAffinity,
+      })
+
     const displayByMediaKey = new Map(
       prepared.map(candidate => [
         candidate.mediaKey,
@@ -234,7 +303,7 @@ export function createRecommendationPipeline({
     )
 
     const results = Object.freeze(
-      ranked.results.map(result => {
+      rerankedResults.map(result => {
         const display = displayByMediaKey.get(
           result.mediaKey,
         )
@@ -255,7 +324,9 @@ export function createRecommendationPipeline({
       results,
       stats: Object.freeze({
         sourceRequestCount:
-          sourcePlan.requests.length,
+          requests.length,
+        seedCount:
+          seeds.length,
         sourceSuccessCount:
           collected.sources.length,
         sourceFailureCount:
@@ -267,10 +338,12 @@ export function createRecommendationPipeline({
         duplicateCount:
           pool.duplicateCount,
         trimmedCount:
-          pool.trimmedCount,
+          pool.trimmedCount
+          + knownEligible.length
+          - eligible.length,
         knownExcludedCount:
           pool.candidates.length
-          - eligible.length,
+          - knownEligible.length,
         metadataResolvedCount:
           resolved.length,
         preparationRejectedCount,

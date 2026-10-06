@@ -19,7 +19,9 @@ import MovieDetailPage from '../pages/MovieDetailPage.jsx'
 import NotificationsPage from '../pages/NotificationsPage.jsx'
 import MoviesPage from '../pages/MoviesPage.jsx'
 import NotFoundPage from '../pages/NotFoundPage.jsx'
+import DnaRefinementPage from '../pages/DnaRefinementPage.jsx'
 import OnboardingPage from '../pages/OnboardingPage.jsx'
+import OnboardingResultPage from '../pages/OnboardingResultPage.jsx'
 import PersonDetailPage from '../pages/PersonDetailPage.jsx'
 import ProfileOverviewPage from '../pages/ProfileOverviewPage.jsx'
 import ProfileRatingsPage from '../pages/ProfileRatingsPage.jsx'
@@ -28,6 +30,8 @@ import PublicBoardPage from '../pages/PublicBoardPage.jsx'
 import ProfileSettingsPage from '../pages/ProfileSettingsPage.jsx'
 import AccountSettingsPage from '../pages/AccountSettingsPage.jsx'
 import RegisterPage from '../pages/RegisterPage.jsx'
+import TermsPage from '../pages/TermsPage.jsx'
+import PrivacyPage from '../pages/PrivacyPage.jsx'
 import SearchPage from '../pages/SearchPage.jsx'
 import StatisticsPage from '../pages/StatisticsPage.jsx'
 import TvShowDetailPage from '../pages/TvShowDetailPage.jsx'
@@ -46,6 +50,8 @@ const router = createBrowserRouter([
       { path: 'tv/:seriesId', element: <TvShowDetailPage /> },
       { path: 'actors', element: <ActorsPage /> },
       { path: 'actors/:personId', element: <PersonDetailPage /> },
+      { path: 'terms', element: <TermsPage /> },
+      { path: 'privacy', element: <PrivacyPage /> },
 
       {
         element: <GuestOnlyRoute />,
@@ -81,12 +87,17 @@ const router = createBrowserRouter([
             element: <OnboardingRoute requireCompleted />,
             children: [
               {
+                path: 'onboarding/result',
+                element: <OnboardingResultPage />,
+              },
+              {
                 path: 'profile',
                 element: <ProfileLayout />,
                 children: [
                   { index: true, element: <ProfileOverviewPage /> },
                   { path: 'library', element: <LibraryPage /> },
                   { path: 'dna', element: <DnaPage /> },
+                  { path: 'dna/refine', element: <DnaRefinementPage /> },
                   { path: 'history', element: <HistoryPage /> },
                   { path: 'ratings', element: <ProfileRatingsPage /> },
                   { path: 'stats', element: <StatisticsPage /> },

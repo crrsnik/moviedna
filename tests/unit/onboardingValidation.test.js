@@ -66,13 +66,16 @@ describe('Onboarding validation', () => {
       },
     )
   })
-  for (const n of [0, 9, 31]) {
+  for (const n of [0, 9, 10, 29, 31]) {
     it(`rejects completion with ${n} responses`, () => assert.throws(() => validateCompletionCounts(getOnboardingCounts(responses(n))), { code: 'insufficient-responses' }))
   }
-  for (const n of [10, 30]) {
-    it(`allows completion with ${n} responses and 5 opinions`, () => assert.equal(validateCompletionCounts(getOnboardingCounts(responses(n, 5))).responseCount, n))
-  }
-  it('rejects four opinions among ten responses', () => assert.throws(() => validateCompletionCounts(getOnboardingCounts(responses(10, 4))), { code: 'insufficient-opinions' }))
+  it('allows completion with 30 responses and 5 opinions', () => {
+    assert.equal(
+      validateCompletionCounts(getOnboardingCounts(responses(30, 5))).responseCount,
+      30,
+    )
+  })
+  it('rejects four opinions among 30 responses', () => assert.throws(() => validateCompletionCounts(getOnboardingCounts(responses(30, 4))), { code: 'insufficient-opinions' }))
   it('rejects duplicate response documents', () => assert.throws(() => getOnboardingCounts([input(), input()]), { code: 'invalid-data' }))
   it('rejects corrupt response lists', () => {
     assert.throws(() => getOnboardingCounts(null), { code: 'invalid-data' })

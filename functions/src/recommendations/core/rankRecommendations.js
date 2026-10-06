@@ -2,6 +2,9 @@ import {
   RECOMMENDATION_ALGORITHM_VERSION,
   RECOMMENDATION_DIMENSION_WEIGHTS,
   RECOMMENDATION_NEUTRAL_SCORE,
+  RECOMMENDATION_QUALITY_BASELINE,
+  RECOMMENDATION_QUALITY_FULL_CONFIDENCE_VOTES,
+  RECOMMENDATION_QUALITY_MAX_ADJUSTMENT,
   RECOMMENDATION_ROUNDING_DECIMALS,
   RECOMMENDATION_SCORE_MAX,
   RECOMMENDATION_SCORE_MIN,
@@ -103,11 +106,32 @@ function normalizeCandidate(value) {
   if (releaseYear !== undefined && releaseYear !== null
     && (!Number.isInteger(releaseYear) || releaseYear < 1800 || releaseYear > 2200)) return null
   const popularity = value.popularity ?? 0
-  if (typeof popularity !== 'number' || !Number.isFinite(popularity) || popularity < 0) return null
+
+  if (
+    typeof popularity !== 'number'
+    || !Number.isFinite(popularity)
+    || popularity < 0
+  ) return null
+
+  const voteAverage = value.voteAverage ?? null
+  const voteCount = value.voteCount ?? 0
+
+  if (
+    voteAverage !== null
+    && !finite(voteAverage, 0, 10)
+  ) return null
+
+  if (
+    !Number.isSafeInteger(voteCount)
+    || voteCount < 0
+  ) return null
+
   return {
     mediaKey, tmdbId: value.tmdbId, mediaType: value.mediaType,
     title: typeof value.title === 'string' && value.title.trim() ? value.title.trim() : null,
     popularity,
+    voteAverage,
+    voteCount,
     features: {
       genres: { available: genres.available, keys: genres.values.map((id) => `genre:${id}`) },
       mediaTypes: { available: true, keys: [`media:${value.mediaType}`] },
@@ -124,20 +148,96 @@ function applicableDimensions(mediaType) {
   return [...COMMON_DIMENSIONS, mediaType === 'movie' ? 'directors' : 'creators']
 }
 
-function dimensionEvidence(dnaDimension, feature) {
-  if (!feature.available || feature.keys.length === 0) return { match: 0, coverage: 0, hasEvidence: false }
+function dimensionEvidence(
+  dnaDimension,
+  feature,
+  {
+    matchedOnly = false,
+  } = {},
+) {
+  if (
+    !feature.available
+    || feature.keys.length === 0
+  ) {
+    return {
+      match: 0,
+      coverage: 0,
+      hasEvidence: false,
+    }
+  }
+
   let matchedCount = 0
-  const total = feature.keys.reduce((sum, key) => {
-    if (!dnaDimension.has(key)) return sum
-    matchedCount += 1
-    return sum + dnaDimension.get(key)
-  }, 0)
+
+  const total = feature.keys.reduce(
+    (sum, key) => {
+      if (!dnaDimension.has(key)) {
+        return sum
+      }
+
+      matchedCount += 1
+
+      return (
+        sum
+        + dnaDimension.get(key)
+      )
+    },
+    0,
+  )
+
+  const denominator = (
+    matchedOnly
+    && matchedCount > 0
+  )
+    ? matchedCount
+    : feature.keys.length
+
   return {
-    match: round(total / feature.keys.length),
-    coverage: round(matchedCount / feature.keys.length),
-    hasEvidence: matchedCount > 0,
+    match: round(
+      total / denominator,
+    ),
+    coverage: round(
+      matchedCount
+        / feature.keys.length,
+    ),
+    hasEvidence:
+      matchedCount > 0,
   }
 }
+
+function recommendationQualityAdjustment(candidate) {
+  if (
+    candidate.voteAverage === null
+    || candidate.voteCount <= 0
+  ) {
+    return 0
+  }
+
+  const confidence = Math.min(
+    1,
+    Math.log10(candidate.voteCount + 1)
+      / Math.log10(
+        RECOMMENDATION_QUALITY_FULL_CONFIDENCE_VOTES + 1,
+      ),
+  )
+
+  const qualitySignal = Math.max(
+    -1,
+    Math.min(
+      1,
+      (
+        candidate.voteAverage
+        - RECOMMENDATION_QUALITY_BASELINE
+      ) / 3.5,
+    ),
+  )
+
+  return round(
+    RECOMMENDATION_QUALITY_MAX_ADJUSTMENT
+      * qualitySignal
+      * confidence,
+  )
+}
+
 
 function explanationReasons(breakdown) {
   const ranked = breakdown
@@ -151,6 +251,85 @@ function explanationReasons(breakdown) {
     : `Some ${REASON_LABELS[entry.dimension]} signals are a weaker fit.`)
 }
 
+function genreContribution(result) {
+  return (
+    result.breakdown.find(
+      entry => (
+        entry.dimension === 'genres'
+      ),
+    )?.contribution
+    ?? 0
+  )
+}
+
+
+function familiarityAdjustment(candidate) {
+  if (!candidate) return 0
+
+  const voteCount = (
+    Number.isSafeInteger(
+      candidate.voteCount,
+    )
+    && candidate.voteCount > 0
+  )
+    ? candidate.voteCount
+    : 0
+
+  const popularity = (
+    typeof candidate.popularity
+      === 'number'
+    && Number.isFinite(
+      candidate.popularity,
+    )
+    && candidate.popularity > 0
+  )
+    ? candidate.popularity
+    : 0
+
+  // voteCount approximates long-term recognition,
+  // popularity adds a smaller current-awareness signal.
+  const voteSignal = Math.min(
+    1,
+    Math.log10(voteCount + 1)
+      / 5,
+  )
+
+  const popularitySignal = Math.min(
+    1,
+    Math.log10(popularity + 1)
+      / Math.log10(201),
+  )
+
+  return (
+    12
+    * (
+      voteSignal * 0.7
+      + popularitySignal * 0.3
+    )
+  )
+}
+
+
+function genreFocusedRank(
+  result,
+  candidate,
+) {
+  return (
+    result.score
+
+    // Genre is deliberately the strongest reranking signal.
+    // Max genre contribution 0.35 => +10.5 rank points.
+    + 30
+      * genreContribution(result)
+
+    // Familiar titles get at most +4 points.
+    + familiarityAdjustment(
+      candidate,
+    )
+  )
+}
+
+
 function rankCandidate(candidate, dna) {
   const dimensions = applicableDimensions(candidate.mediaType)
   let affinity = 0
@@ -160,7 +339,14 @@ function rankCandidate(candidate, dna) {
   const breakdown = dimensions.map((dimension) => {
     const feature = candidate.features[dimension]
     const weight = RECOMMENDATION_DIMENSION_WEIGHTS[dimension]
-    const evidence = dimensionEvidence(dna[dimension], feature)
+    const evidence = dimensionEvidence(
+      dna[dimension],
+      feature,
+      {
+        matchedOnly:
+          dimension === 'genres',
+      },
+    )
     const contribution = round(weight * evidence.match)
     affinity += contribution
     if (feature.available) coveredWeight += weight
@@ -171,8 +357,22 @@ function rankCandidate(candidate, dna) {
       metadataAvailable: feature.available, profileEvidenceCoverage: evidence.coverage,
     })
   })
-  const score = round(Math.min(RECOMMENDATION_SCORE_MAX, Math.max(RECOMMENDATION_SCORE_MIN,
-    RECOMMENDATION_NEUTRAL_SCORE + 50 * affinity)), 2)
+  const qualityAdjustment = (
+    recommendationQualityAdjustment(candidate)
+  )
+
+  const score = round(
+    Math.min(
+      RECOMMENDATION_SCORE_MAX,
+      Math.max(
+        RECOMMENDATION_SCORE_MIN,
+        RECOMMENDATION_NEUTRAL_SCORE
+          + 50 * affinity
+          + qualityAdjustment,
+      ),
+    ),
+    2,
+  )
   return Object.freeze({
     mediaKey: candidate.mediaKey, tmdbId: candidate.tmdbId, mediaType: candidate.mediaType,
     title: candidate.title, score, metadataCoverage: round(coveredWeight),
@@ -202,6 +402,197 @@ export function excludeKnownMedia(candidates, { rated = [], hidden = [] } = {}) 
   })
 }
 
+const RECOMMENDATION_HEAD_SIZE = 20
+const RECOMMENDATION_FAMILIAR_HEAD_QUOTA = 12
+
+function recognizableCandidate(candidate) {
+  if (!candidate) return false
+
+  const voteThreshold = (
+    candidate.mediaType === 'movie'
+      ? 3000
+      : 1000
+  )
+
+  return (
+    candidate.voteCount >= voteThreshold
+    || familiarityAdjustment(candidate) >= 8.5
+  )
+}
+
+
+function usefulGenreFit(result) {
+  return (
+    genreContribution(result) >= 0.08
+    && result.score >= 52
+  )
+}
+
+
+function applyFamiliarityQuota(
+  rankedResults,
+  candidateByMediaKey,
+) {
+  if (
+    rankedResults.length
+      <= RECOMMENDATION_HEAD_SIZE
+  ) {
+    // We still reorder short lists,
+    // but never manufacture candidates.
+  }
+
+  const familiarResults = (
+    rankedResults
+      .filter(result => {
+        const candidate = (
+          candidateByMediaKey.get(
+            result.mediaKey,
+          )
+        )
+
+        return (
+          recognizableCandidate(
+            candidate,
+          )
+          && usefulGenreFit(result)
+        )
+      })
+      .sort((a, b) => {
+        const aCandidate = (
+          candidateByMediaKey.get(
+            a.mediaKey,
+          )
+        )
+
+        const bCandidate = (
+          candidateByMediaKey.get(
+            b.mediaKey,
+          )
+        )
+
+        return (
+          familiarityAdjustment(
+            bCandidate,
+          )
+          - familiarityAdjustment(
+            aCandidate,
+          )
+          || b.score - a.score
+          || (
+            genreContribution(b)
+            - genreContribution(a)
+          )
+          || a.mediaKey.localeCompare(
+            b.mediaKey,
+          )
+        )
+      })
+  )
+
+  const selected = new Set()
+  const head = []
+
+  let familiarIndex = 0
+  let rankedIndex = 0
+
+  function nextUnselected(list, index) {
+    let cursor = index
+
+    while (cursor < list.length) {
+      const value = list[cursor]
+      cursor += 1
+
+      if (!selected.has(value.mediaKey)) {
+        return {
+          value,
+          nextIndex: cursor,
+        }
+      }
+    }
+
+    return {
+      value: null,
+      nextIndex: cursor,
+    }
+  }
+
+  // Alternate familiar / DNA-first.
+  // Result: up to 10 recognizable titles
+  // in the first 20.
+  for (
+    let position = 0;
+    position < Math.min(
+      RECOMMENDATION_HEAD_SIZE,
+      rankedResults.length,
+    );
+    position += 1
+  ) {
+    const wantFamiliar = (
+      position % 2 === 0
+      && (
+        head.filter(item => (
+          recognizableCandidate(
+            candidateByMediaKey.get(
+              item.mediaKey,
+            ),
+          )
+          && usefulGenreFit(item)
+        )).length
+        < RECOMMENDATION_FAMILIAR_HEAD_QUOTA
+      )
+    )
+
+    let picked = null
+
+    if (wantFamiliar) {
+      const next = nextUnselected(
+        familiarResults,
+        familiarIndex,
+      )
+
+      familiarIndex = next.nextIndex
+      picked = next.value
+    }
+
+    if (!picked) {
+      const next = nextUnselected(
+        rankedResults,
+        rankedIndex,
+      )
+
+      rankedIndex = next.nextIndex
+      picked = next.value
+    }
+
+    if (!picked) {
+      const next = nextUnselected(
+        familiarResults,
+        familiarIndex,
+      )
+
+      familiarIndex = next.nextIndex
+      picked = next.value
+    }
+
+    if (!picked) break
+
+    selected.add(picked.mediaKey)
+    head.push(picked)
+  }
+
+  return [
+    ...head,
+    ...rankedResults.filter(
+      result => (
+        !selected.has(
+          result.mediaKey,
+        )
+      ),
+    ),
+  ]
+}
+
+
 export function rankRecommendations({ dna, candidates, algorithmVersion = RECOMMENDATION_ALGORITHM_VERSION } = {}) {
   if (algorithmVersion !== RECOMMENDATION_ALGORITHM_VERSION) {
     throwRecommendationError(RECOMMENDATION_ERROR_CODES.UNSUPPORTED_VERSION)
@@ -212,9 +603,86 @@ export function rankRecommendations({ dna, candidates, algorithmVersion = RECOMM
   const counts = new Map()
   for (const candidate of normalized) if (candidate) counts.set(candidate.mediaKey, (counts.get(candidate.mediaKey) ?? 0) + 1)
   const accepted = normalized.filter((candidate) => candidate && counts.get(candidate.mediaKey) === 1)
-  const results = accepted.map((candidate) => rankCandidate(candidate, dnaIndex))
-    .sort((a, b) => b.score - a.score || b.metadataCoverage - a.metadataCoverage
-      || b.popularity - a.popularity || a.mediaKey.localeCompare(b.mediaKey))
+  const candidateByMediaKey = new Map(
+    accepted.map(candidate => [
+      candidate.mediaKey,
+      candidate,
+    ]),
+  )
+
+  const rankedResults = accepted
+    .map(
+      candidate => (
+        rankCandidate(
+          candidate,
+          dnaIndex,
+        )
+      ),
+    )
+    .sort((a, b) => {
+      const aCandidate = (
+        candidateByMediaKey.get(
+          a.mediaKey,
+        )
+      )
+
+      const bCandidate = (
+        candidateByMediaKey.get(
+          b.mediaKey,
+        )
+      )
+
+      const aRankingScore = (
+        a.score
+        + familiarityAdjustment(
+          aCandidate,
+        )
+      )
+
+      const bRankingScore = (
+        b.score
+        + familiarityAdjustment(
+          bCandidate,
+        )
+      )
+
+      const rankingDifference = (
+        bRankingScore
+        - aRankingScore
+      )
+
+      if (
+        Math.abs(
+          rankingDifference,
+        ) > 1e-9
+      ) {
+        return rankingDifference
+      }
+
+      return (
+        b.score - a.score
+        || (
+          b.profileEvidenceCoverage
+          - a.profileEvidenceCoverage
+        )
+        || (
+          b.metadataCoverage
+          - a.metadataCoverage
+        )
+        || (
+          b.popularity
+          - a.popularity
+        )
+        || a.mediaKey.localeCompare(
+          b.mediaKey,
+        )
+      )
+    })
+  const results = applyFamiliarityQuota(
+    rankedResults,
+    candidateByMediaKey,
+  )
+
   return Object.freeze({
     algorithmVersion: RECOMMENDATION_ALGORITHM_VERSION,
     results: Object.freeze(results),

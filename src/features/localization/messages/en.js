@@ -64,6 +64,11 @@ export const en = {
       submit: 'Create account',
       alreadyHaveAccount: 'Already have an account?',
       login: 'Log in',
+      legalPrefix: 'By creating an account, you agree to the ',
+      terms: 'Terms of Use',
+      legalBridge: ' and acknowledge the ',
+      privacy: 'Privacy Policy',
+      legalSuffix: '.',
     },
 
     passwordReset: {
@@ -333,7 +338,7 @@ export const en = {
     skipForNow: 'Skip for now',
     loading: 'Loading your movies and saved progress…',
     progressSummary: '{total} total responses · {opinions} likes/dislikes',
-    requirements: 'Minimum 10 responses and 5 likes/dislikes. Up to 30 responses.',
+    requirements: 'Complete 30 cards to build your first Movie DNA. At least 5 likes/dislikes are required.',
     retry: 'Retry',
     loadError: "We couldn't load onboarding right now. Please try again.",
     readyToFinish: "You're ready to finish onboarding.",
@@ -366,6 +371,21 @@ export const en = {
       noPoster: 'No poster available',
       noOverview: 'No overview available.',
     },
+  },
+
+  onboardingResult: {
+    title: 'Your MovieDNA is ready',
+    description: 'Here are some of the strongest signals from your first taste profile.',
+    buildingTitle: 'Building your MovieDNA…',
+    buildingDescription: 'Your onboarding is complete. We’re turning your reactions into your first taste profile.',
+    failedTitle: 'Your onboarding is complete',
+    failedDescription: 'MovieDNA is taking longer than expected to build. You can continue and check My DNA again shortly.',
+    emptyDescription: 'Your first MovieDNA is ready, but it needs a little more evidence before we can highlight strong signals.',
+    recommendations: 'See my recommendations',
+    improve: 'Improve my DNA',
+    viewDna: 'View full DNA',
+    continueHome: 'Continue to home',
+    signalStrength: 'MovieDNA signal strength for {label}',
   },
 
   accountSettingsPage: {
@@ -413,6 +433,8 @@ export const en = {
     showLess: 'Show less',
     showAll: 'Show all ({count})',
     openAchievement: 'Open achievement: {title}',
+    secretTitle: 'Secret achievement',
+    secretDescription: 'Its condition will be revealed only after you unlock it.',
     items: {
       onboarding_complete: {
         title: 'First Step',
@@ -542,10 +564,180 @@ export const en = {
         title: 'Movie Club',
         description: 'Connect with ten friends on MovieDNA.',
       },
+      rating_250: {
+        title: 'Seasoned Critic',
+        description: 'Rate 250 titles.',
+      },
+      rating_500: {
+        title: 'Master Critic',
+        description: 'Rate 500 titles.',
+      },
+      watched_250: {
+        title: 'Screen Veteran',
+        description: 'Watch 250 movies or TV shows.',
+      },
+      watched_500: {
+        title: 'Half a Thousand',
+        description: 'Watch 500 movies or TV shows.',
+      },
+      movies_100: {
+        title: 'Century of Cinema',
+        description: 'Watch 100 movies.',
+      },
+      movies_250: {
+        title: 'Film Archive',
+        description: 'Watch 250 movies.',
+      },
+      tv_100: {
+        title: 'Series Regular',
+        description: 'Watch 100 TV shows.',
+      },
+      tv_250: {
+        title: 'Binge Historian',
+        description: 'Watch 250 TV shows.',
+      },
+      favorite_50: {
+        title: 'Treasure Shelf',
+        description: 'Add 50 titles to Favorites.',
+      },
+      favorite_100: {
+        title: 'Hall of Favorites',
+        description: 'Add 100 titles to Favorites.',
+      },
+      genres_15: {
+        title: 'Genre Explorer',
+        description: 'Watch titles across 15 different genres.',
+      },
+      decades_7: {
+        title: 'Time Traveller',
+        description: 'Watch titles from 7 different decades.',
+      },
+      countries_10: {
+        title: 'World Cinema',
+        description: 'Watch titles from 10 different countries.',
+      },
+      countries_20: {
+        title: 'Global Passport',
+        description: 'Watch titles from 20 different countries.',
+      },
+      horror_25: {
+        title: 'Night Creature',
+        description: 'Watch 25 horror titles.',
+      },
+      horror_50: {
+        title: 'Master of Fear',
+        description: 'Watch 50 horror titles.',
+      },
+      comedy_25: {
+        title: 'Laugh Track',
+        description: 'Watch 25 comedy titles.',
+      },
+      comedy_50: {
+        title: 'Comedy Connoisseur',
+        description: 'Watch 50 comedy titles.',
+      },
+      scifi_25: {
+        title: 'Beyond Earth',
+        description: 'Watch 25 science-fiction titles.',
+      },
+      scifi_50: {
+        title: 'Space-Time Expert',
+        description: 'Watch 50 science-fiction titles.',
+      },
+      romance_25: {
+        title: 'Hopeless Romantic',
+        description: 'Watch 25 romance titles.',
+      },
+      romance_50: {
+        title: 'Love Story Expert',
+        description: 'Watch 50 romance titles.',
+      },
+      friends_25: {
+        title: 'Movie Circle',
+        description: 'Connect with 25 friends on MovieDNA.',
+      },
+      friends_50: {
+        title: 'Movie Community',
+        description: 'Connect with 50 friends on MovieDNA.',
+      },
+      auteur_devotee: {
+        title: 'Auteur Devotee',
+        description: 'Watch 15 films by the same director.',
+      },
+      familiar_face: {
+        title: 'Familiar Face',
+        description: 'Watch 25 titles featuring the same actor.',
+      },
+      film_archaeologist: {
+        title: 'Film Archaeologist',
+        description: 'Watch 25 titles released before 1970.',
+      },
+      genre_historian: {
+        title: 'Genre Historian',
+        description: 'Follow one genre across at least 5 different decades.',
+      },
+      world_cinema_scholar: {
+        title: 'World Cinema Scholar',
+        description: 'Watch 100 international titles across at least 20 non-US countries.',
+      },
+      genre_omnivore: {
+        title: 'Genre Omnivore',
+        description: 'Watch at least 10 titles in each of 10 different genres.',
+      },
+      generations_of_cinema: {
+        title: 'Generations of Cinema',
+        description: 'Watch at least 10 titles from each of 6 different decades.',
+      },
+      long_road: {
+        title: 'The Long Road',
+        description: 'Reach 500 watched titles, 250 ratings, 50 favorites, 10 genres and 10 countries.',
+      },
+      secret_director_journey: {
+        title: "Director's Journey",
+        description: 'Follow one director through a long career across multiple decades.',
+      },
+      secret_actor_eras: {
+        title: 'Across Eras',
+        description: 'Follow the same actor through several generations of cinema.',
+      },
+      secret_franchise_marathon: {
+        title: 'Franchise Marathon',
+        description: 'Go unusually deep into a single film collection.',
+      },
+      secret_century_club: {
+        title: 'Century Club',
+        description: 'Explore an exceptional span of cinema history.',
+      },
+      secret_global_nomad: {
+        title: 'Global Nomad',
+        description: 'Build an unusually international viewing history.',
+      },
+      secret_genre_timecapsule: {
+        title: 'Genre Time Capsule',
+        description: 'Follow one genre across an extraordinary stretch of film history.',
+      },
     },
   },
 
   dnaUi: {
+    refinement: {
+      title: 'Refine your Movie DNA',
+      description: 'Your first Movie DNA is already ready. These optional cards give MovieDNA more evidence about your taste and can make future recommendations more precise.',
+      progress: '{current} of {total} refinement cards',
+      remaining: '{count} optional cards remaining',
+      continueLater: 'Continue later',
+      backToDna: 'Back to My DNA',
+      loading: 'Loading refinement cards…',
+      loadError: 'We could not load refinement cards right now.',
+      noMoreCards: 'No new refinement cards are available right now.',
+      saving: 'Updating your Movie DNA…',
+      actionError: 'We could not save this answer. Please try again.',
+      completeTitle: 'Your refinement is complete',
+      completeDescription: 'You have answered all 40 optional refinement cards. New ratings and activity will continue to evolve your Movie DNA.',
+      ctaTitle: 'Make your DNA more precise',
+      ctaDescription: 'Your current DNA already works. You can optionally answer up to 40 more cards to give MovieDNA a richer picture of your taste.',
+      action: 'Improve my DNA',
+    },
     title: 'My DNA',
     description: 'The strongest patterns in your movie and TV preferences.',
     stale: 'Updating your MovieDNA. Your previous profile remains visible.',
@@ -585,6 +777,8 @@ export const en = {
   },
 
   recommendationCard: {
+
+    hide: 'Hide from recommendations',
     match: '{score}% match',
     matchAria: 'MovieDNA match {score} percent',
   },
@@ -865,6 +1059,9 @@ export const en = {
       addWatchlist: 'Add to Watchlist',
       removeWatchlist: 'Remove from Watchlist',
       manageLists: 'Manage lists',
+      favorites: 'Favorites',
+      watchLater: 'Later',
+      addToList: 'Collection',
       saving: 'Saving…',
       loadingStatus: 'Loading saved status…',
       retryStatus: 'Retry saved status',
@@ -875,6 +1072,11 @@ export const en = {
       title: 'Manage lists',
       loading: 'Loading lists…',
       noLists: 'No custom lists yet.',
+      createNew: 'Create new list',
+      newListName: 'List name',
+      createAndAdd: 'Create and add',
+      creatingAndAdding: 'Creating…',
+      quickCreateHint: 'The new list will be private. You can change its details later in Library.',
       createInLibrary: 'Create a list in your Library',
       chooseLists: 'Choose lists for this title ({count}/20)',
       tooMany: 'Choose no more than 20 lists for this title.',

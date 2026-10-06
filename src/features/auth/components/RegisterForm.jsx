@@ -115,6 +115,28 @@ function RegisterForm() {
       <button type="submit" disabled={isSubmitting} className="w-full rounded-md bg-accent px-4 py-3 font-semibold text-accent-contrast hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus disabled:cursor-wait disabled:opacity-60">
         {isSubmitting ? t('auth.register.submitting') : t('auth.register.submit')}
       </button>
+      <p className="text-center text-xs leading-relaxed text-tertiary">
+        {t('auth.register.legalPrefix')}
+
+        <Link
+          to="/terms"
+          className="rounded text-secondary underline underline-offset-4 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        >
+          {t('auth.register.terms')}
+        </Link>
+
+        {t('auth.register.legalBridge')}
+
+        <Link
+          to="/privacy"
+          className="rounded text-secondary underline underline-offset-4 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        >
+          {t('auth.register.privacy')}
+        </Link>
+
+        {t('auth.register.legalSuffix')}
+      </p>
+
       <p className="text-center text-sm text-secondary">
         {t('auth.register.alreadyHaveAccount')}{' '}
         <Link to="/login" className="rounded text-primary underline underline-offset-4 hover:text-secondary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus">{t('auth.register.login')}</Link>

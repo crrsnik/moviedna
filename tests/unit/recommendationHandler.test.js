@@ -56,6 +56,7 @@ describe('recommendation callable handler', () => {
     assert.deepEqual(calls, [{
       dna,
       rated,
+      seedSignals: [],
       watched: [],
       hidden: [],
       language: 'en-US',

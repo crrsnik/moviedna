@@ -18,6 +18,24 @@ const tabClasses = ({ isActive }) => [
     : 'text-secondary hover:bg-surface-muted hover:text-white',
 ].join(' ')
 
+function SettingsIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z" />
+    </svg>
+  )
+}
+
 function ProfileLayout() {
   const { t } = useTranslation()
 
@@ -59,30 +77,95 @@ function ProfileLayout() {
 
   return (
     <div className="w-full min-w-0 self-start space-y-8">
-      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-7">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <div
-            className="flex size-24 shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted text-5xl"
-            aria-label={t(
-              'profile.avatar',
-              {
-                label: t(
-                  `profile.avatars.${avatar.id}`,
-                ),
-              },
-            )}
-            role="img"
-          >
-            {avatar.symbol}
+      <section className="relative rounded-2xl border border-border bg-surface p-5 sm:p-7">
+        {/* Mobile settings shortcut */}
+        <Link
+          to="/profile/settings"
+          aria-label={t('profile.editProfile')}
+          title={t('profile.editProfile')}
+          className="
+            absolute right-4 top-4
+            inline-flex size-10 items-center justify-center
+            rounded-full border border-border-strong
+            bg-surface text-secondary
+            transition-colors
+            hover:bg-surface-muted hover:text-primary
+            focus-visible:outline-2
+            focus-visible:outline-offset-2
+            focus-visible:outline-focus
+            sm:hidden
+          "
+        >
+          <SettingsIcon />
+        </Link>
+
+        <div
+          className="
+            flex flex-col items-center gap-4 text-center
+            sm:flex-row sm:items-center sm:gap-5 sm:text-left
+          "
+        >
+          <div className="flex shrink-0 flex-col items-center gap-2">
+            <div
+              className="
+                flex size-28 items-center justify-center
+                rounded-full border border-border
+                bg-surface-muted text-6xl
+                sm:size-24 sm:text-5xl
+              "
+              aria-label={t(
+                'profile.avatar',
+                {
+                  label: avatar.label,
+                },
+              )}
+              role="img"
+            >
+              {avatar.symbol}
+            </div>
+
+            {/* Mobile visibility */}
+            <span
+              className="
+                rounded-full border border-border-strong
+                px-2.5 py-1 text-xs font-medium
+                text-secondary
+                sm:hidden
+              "
+            >
+              {profile.profileVisibility === 'public'
+                ? t('profile.publicProfile')
+                : t('profile.privateProfile')}
+            </span>
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="break-words text-3xl font-bold tracking-tight sm:text-4xl">
+            <div
+              className="
+                flex flex-col items-center gap-2
+                sm:flex-row sm:flex-wrap
+                sm:items-center sm:gap-3
+              "
+            >
+              <h1
+                className="
+                  break-words text-3xl font-bold tracking-tight
+                  sm:text-4xl
+                "
+              >
                 {profile.displayName}
               </h1>
 
-              <span className="rounded-full border border-border px-2.5 py-1 text-xs font-medium text-secondary">
+              {/* Desktop visibility */}
+              <span
+                className="
+                  hidden rounded-full
+                  border border-border-strong
+                  px-2.5 py-1 text-xs font-medium
+                  text-secondary
+                  sm:inline-flex
+                "
+              >
                 {profile.profileVisibility === 'public'
                   ? t('profile.publicProfile')
                   : t('profile.privateProfile')}
@@ -93,9 +176,20 @@ function ProfileLayout() {
               @{profile.username}
             </p>
 
+            {/* Original desktop edit button */}
             <Link
               to="/profile/settings"
-              className="mt-4 inline-flex rounded-md border border-border-strong px-3 py-2 text-sm font-medium text-primary hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+              className="
+                mt-4 hidden rounded-md
+                border border-border-strong
+                px-3 py-2 text-sm font-medium
+                text-primary
+                hover:bg-surface-muted
+                focus-visible:outline-2
+                focus-visible:outline-offset-2
+                focus-visible:outline-focus
+                sm:inline-flex
+              "
             >
               {t('profile.editProfile')}
             </Link>

@@ -26,7 +26,9 @@ function normalizeGenreIds(value) {
   const result = []
 
   for (const genre of value) {
-    const id = genre?.id
+    const id = Number.isSafeInteger(genre)
+      ? genre
+      : genre?.id
 
     if (
       !Number.isSafeInteger(id)
@@ -105,7 +107,9 @@ export function normalizeOnboardingMediaSummary(
       && raw.vote_count >= 0
         ? raw.vote_count
         : 0,
-    genreIds: normalizeGenreIds(raw.genres),
+    genreIds: normalizeGenreIds(
+      raw.genres ?? raw.genre_ids,
+    ),
     popularity:
       Number.isFinite(raw.popularity)
       && raw.popularity >= 0

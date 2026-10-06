@@ -118,6 +118,16 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(userId)).data.onboardingCompleted == false;
     }
 
+    function hasCompletedProfile(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId))
+        && get(/databases/$(database)/documents/users/$(userId)).data.onboardingCompleted == true;
+    }
+
+    function isValidCanonicalResponse(data, responseId) {
+      return isValidResponse(data, responseId)
+        && responseId == data.mediaType + '_' + string(data.tmdbId);
+    }
+
     function isValidResponse(data, responseId) {
       let fields = ['tmdbId', 'mediaType', 'reaction', 'genreIds', 'createdAt', 'updatedAt'];
       let tmdbId = string(data.tmdbId);
@@ -146,7 +156,7 @@ service cloud.firestore {
       return data.keys().hasAll(fields) && data.keys().hasOnly(fields)
         && data.version is int && data.version == 1
         && data.userId == userId && data.status == 'completed'
-        && data.responseCount is int && data.responseCount >= 10 && data.responseCount <= 30
+        && data.responseCount is int && data.responseCount == 30
         && data.likedCount is int && data.likedCount >= 0 && data.likedCount <= data.responseCount
         && data.dislikedCount is int && data.dislikedCount >= 0 && data.dislikedCount <= data.responseCount
         && data.skippedCount is int && data.skippedCount >= 0 && data.skippedCount <= data.responseCount
@@ -269,6 +279,20 @@ service cloud.firestore {
     function hasProfile(userId) {
       return exists(/databases/$(database)/documents/users/$(userId))
         && get(/databases/$(database)/documents/users/$(userId)).data.onboardingCompleted is bool;
+    }
+
+    function isValidHiddenRecommendation(data, mediaKey) {
+      let fields = [
+        'tmdbId',
+        'mediaType',
+        'hiddenAt'
+      ];
+
+      return data.keys().hasAll(fields)
+        && data.keys().hasOnly(fields)
+        && isValidMediaIdentity(data, mediaKey)
+        && data.hiddenAt is timestamp
+        && data.hiddenAt == request.time;
     }
 
     function isValidRating(data, mediaKey) {
@@ -473,6 +497,28 @@ service cloud.firestore {
           && request.resource.data.createdAt == resource.data.createdAt;
       }
 
+      match /hiddenRecommendations/{mediaKey} {
+        allow get, list: if isOwner(userId);
+
+        allow create: if isOwner(userId)
+          && isValidHiddenRecommendation(
+            request.resource.data,
+            mediaKey
+          );
+
+        allow update: if isOwner(userId)
+          && isValidHiddenRecommendation(
+            request.resource.data,
+            mediaKey
+          )
+          && request.resource.data.tmdbId
+            == resource.data.tmdbId
+          && request.resource.data.mediaType
+            == resource.data.mediaType;
+
+        allow delete: if isOwner(userId);
+      }
+
       match /savedMedia/{mediaKey} {
         allow get, list, delete: if isOwner(userId);
         allow create: if isOwner(userId) && isValidSavedMedia(request.resource.data, mediaKey)
@@ -550,6 +596,17 @@ service cloud.firestore {
           && request.resource.data.createdAt == request.time;
         allow update: if isOwner(userId) && hasIncompleteProfile(userId)
           && isValidResponse(request.resource.data, responseId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reaction', 'genreIds', 'updatedAt']);
+        allow delete: if false;
+      }
+
+      match /dnaRefinementResponses/{responseId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasCompletedProfile(userId)
+          && isValidCanonicalResponse(request.resource.data, responseId)
+          && request.resource.data.createdAt == request.time;
+        allow update: if isOwner(userId) && hasCompletedProfile(userId)
+          && isValidCanonicalResponse(request.resource.data, responseId)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reaction', 'genreIds', 'updatedAt']);
         allow delete: if false;
       }

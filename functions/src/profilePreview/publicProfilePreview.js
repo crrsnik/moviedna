@@ -1,3 +1,7 @@
+import {
+  ACHIEVEMENT_DEFINITION_BY_ID,
+} from '../achievements/achievementDefinitions.js'
+
 import { resolvePublicGenreLabel } from './genreLabels.js'
 
 const PROFILE_PREVIEW_SCHEMA_VERSION = 1
@@ -138,6 +142,13 @@ export function buildPublicAchievementsPreview(
   const achievements = []
 
   for (const [id, value] of Object.entries(raw)) {
+    if (
+      ACHIEVEMENT_DEFINITION_BY_ID[id]
+        ?.secret === true
+    ) {
+      continue
+    }
+
     if (
       !/^[a-z][a-z0-9_]*$/.test(id)
       || !value

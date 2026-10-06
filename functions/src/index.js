@@ -201,7 +201,7 @@ function createRecommendationRuntimeHandler() {
   const pipeline = createRecommendationPipeline({
     sourceClient,
     metadataResolver,
-    maxPerMediaType: 40,
+    maxPerMediaType: 70,
   })
 
   return createRecommendationHandler({
@@ -258,6 +258,14 @@ export const onOnboardingSummaryWritten = onDocumentWritten({
       achievements,
     }
   },
+))
+
+export const onDnaRefinementResponseWritten = onDocumentWritten({
+  ...triggerOptions,
+  document: 'users/{uid}/dnaRefinementResponses/{mediaKey}',
+}, event => runForActiveUser(
+  event,
+  () => createRuntimeHandlers().sourceWrite(event),
 ))
 
 export const onSavedMediaWritten = onDocumentWritten({

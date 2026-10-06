@@ -28,10 +28,18 @@ export function createFirestoreAdapter(db, { now = () => Date.now() } = {}) {
 
   async function loadSources(uid) {
     const reference = user(uid)
-    const [profile, ratings, responses, summary, savedMedia] = await Promise.all([
+    const [
+      profile,
+      ratings,
+      responses,
+      refinementResponses,
+      summary,
+      savedMedia,
+    ] = await Promise.all([
       reference.get(),
       reference.collection('ratings').get(),
       reference.collection('onboardingResponses').get(),
+      reference.collection('dnaRefinementResponses').get(),
       reference.collection('onboarding').doc('summary').get(),
       reference.collection('savedMedia').where('favorite', '==', true).get(),
     ])
@@ -39,7 +47,10 @@ export function createFirestoreAdapter(db, { now = () => Date.now() } = {}) {
       uid,
       profile: profile.exists ? profile.data() : null,
       ratings: documents(ratings),
-      onboardingResponses: documents(responses),
+      onboardingResponses: [
+        ...documents(responses),
+        ...documents(refinementResponses),
+      ],
       onboardingSummary: summary.exists ? summary.data() : null,
       savedMedia: documents(savedMedia),
     }
@@ -55,12 +66,16 @@ export function createFirestoreAdapter(db, { now = () => Date.now() } = {}) {
       watchedSavedMedia,
       viewingHistory,
       onboardingResponses,
+      refinementResponses,
+      hiddenRecommendations,
     ] = await Promise.all([
       reference.collection('movieDna').doc('current').get(),
       reference.collection('ratings').get(),
       reference.collection('savedMedia').where('watched', '==', true).get(),
       reference.collection('viewingHistory').get(),
       reference.collection('onboardingResponses').get(),
+      reference.collection('dnaRefinementResponses').get(),
+      reference.collection('hiddenRecommendations').get(),
     ])
 
     const watchedByKey = new Map()
@@ -90,9 +105,25 @@ export function createFirestoreAdapter(db, { now = () => Date.now() } = {}) {
       addWatched(item)
     }
 
-    for (const item of documents(onboardingResponses)) {
-      if (item.reaction === 'like' || item.reaction === 'dislike') {
+    const seedSignals = []
+
+    for (const item of [
+      ...documents(onboardingResponses),
+      ...documents(refinementResponses),
+    ]) {
+      if (
+        item.reaction === 'like'
+        || item.reaction === 'dislike'
+      ) {
         addWatched(item)
+      }
+
+      if (item.reaction === 'like') {
+        seedSignals.push({
+          tmdbId: item.tmdbId,
+          mediaType: item.mediaType,
+          reaction: 'like',
+        })
       }
     }
 
@@ -101,10 +132,19 @@ export function createFirestoreAdapter(db, { now = () => Date.now() } = {}) {
       rated: documents(ratings).map((rating) => ({
         tmdbId: rating.tmdbId,
         mediaType: rating.mediaType,
+        rating: rating.score ?? null,
       })),
+      seedSignals,
       watched: [...watchedByKey.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([, value]) => value),
+
+      hidden: documents(
+        hiddenRecommendations,
+      ).map(item => ({
+        tmdbId: item.tmdbId,
+        mediaType: item.mediaType,
+      })),
     }
   }
 

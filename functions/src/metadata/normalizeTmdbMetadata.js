@@ -52,8 +52,16 @@ function baseMetadata(payload, mediaType) {
 export function normalizeMovieMetadata(payload) {
   const result = baseMetadata(payload, 'movie')
   const crew = Array.isArray(payload.credits?.crew) ? payload.credits.crew : []
+  const collectionId = positiveInteger(
+    payload.belongs_to_collection?.id,
+  )
+    ? payload.belongs_to_collection.id
+    : null
   return {
     ...result,
+    ...(collectionId === null
+      ? {}
+      : { collectionId }),
     directors: people(crew.filter((member) => member?.job === 'Director'), 10),
     creators: [],
     actors: people(payload.credits?.cast, 3, true),

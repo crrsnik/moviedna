@@ -1,6 +1,7 @@
 const SEARCH_PATHS = new Set(['/search/multi', '/search/movie', '/search/tv', '/search/person'])
 const LIST_PATHS = new Set([
   '/trending/movie/day', '/trending/tv/day',
+  '/trending/movie/week', '/trending/tv/week',
   '/movie/popular', '/movie/top_rated', '/movie/now_playing', '/movie/upcoming',
   '/tv/popular', '/tv/top_rated', '/tv/airing_today', '/tv/on_the_air',
   '/person/popular', '/trending/person/week',
@@ -12,6 +13,16 @@ const DETAIL_APPEND = Object.freeze({
   person: 'combined_credits,images,external_ids',
 })
 const MAX_PAGE = 500
+
+const TOP_RATED_MIN_VOTES = Object.freeze({
+  movie: '500',
+  tv: '200',
+})
+
+const TOP_RATED_MIN_AVERAGE = Object.freeze({
+  movie: '7',
+  tv: '7.5',
+})
 
 const ALLOWED_LANGUAGES = new Set([
   'en-US',
@@ -166,6 +177,8 @@ export function validateTmdbProxyRequest(rawUrl, method = 'GET') {
     const optional = [
       'with_genres',
       'with_origin_country',
+      'vote_count.gte',
+      'vote_average.gte',
       ...dateKeys,
     ]
 
@@ -173,11 +186,13 @@ export function validateTmdbProxyRequest(rawUrl, method = 'GET') {
       ? new Set([
           'popularity.desc',
           'vote_average.desc',
+          'vote_count.desc',
           'primary_release_date.asc',
         ])
       : new Set([
           'popularity.desc',
           'vote_average.desc',
+          'vote_count.desc',
         ])
 
     if (
@@ -195,11 +210,31 @@ export function validateTmdbProxyRequest(rawUrl, method = 'GET') {
       || !allowedSorts.has(
         params.get('sort_by'),
       )
+      || (
+        params.get('sort_by')
+          === 'vote_average.desc'
+          ? params.get('vote_count.gte')
+            !== TOP_RATED_MIN_VOTES[
+              movie ? 'movie' : 'tv'
+            ]
+          : params.has('vote_count.gte')
+      )
+      || (
+        params.get('sort_by')
+          === 'vote_count.desc'
+          ? params.get('vote_average.gte')
+            !== TOP_RATED_MIN_AVERAGE[
+              movie ? 'movie' : 'tv'
+            ]
+          : params.has('vote_average.gte')
+      )
       || params.get('include_adult') !== 'false'
       || params.get(tail) !== 'false'
       || (
         !params.has('with_genres')
         && !params.has('with_origin_country')
+        && params.get('sort_by')
+          !== 'vote_count.desc'
       )
       || (
         params.has('with_genres')

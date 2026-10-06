@@ -25,6 +25,9 @@
 
   --app-focus: #71717a;
 
+  --app-selection-background: #c7d2fe;
+  --app-selection-text: #111827;
+
   --app-shadow-sm:
     0 1px 2px rgb(15 23 42 / 0.04),
     0 1px 3px rgb(15 23 42 / 0.05);
@@ -54,6 +57,9 @@
   --app-accent-contrast: #09090b;
 
   --app-focus: #a1a1aa;
+
+  --app-selection-background: #475569;
+  --app-selection-text: #ffffff;
 
   --app-shadow-sm:
     0 1px 2px rgb(0 0 0 / 0.16),
@@ -133,8 +139,8 @@ dialog {
 }
 
 ::selection {
-  background: var(--app-accent-soft);
-  color: var(--app-text-primary);
+  background: var(--app-selection-background);
+  color: var(--app-selection-text);
 }
 
 @keyframes moviedna-popover-in {

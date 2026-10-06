@@ -5,7 +5,7 @@ import {
 } from './recommendationErrors.js'
 
 const MEDIA_TYPES = ['movie', 'tv']
-const DEFAULT_MAX_PER_MEDIA_TYPE = 100
+const DEFAULT_MAX_PER_MEDIA_TYPE = 120
 const MAX_PER_MEDIA_TYPE = 500
 
 function validLimit(value) {

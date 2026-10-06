@@ -1,16 +1,22 @@
-export const RECOMMENDATION_ALGORITHM_VERSION = '1.2.0'
+export const RECOMMENDATION_ALGORITHM_VERSION = '1.4.0'
 export const RECOMMENDATION_SCORE_MIN = 0
 export const RECOMMENDATION_SCORE_MAX = 100
 export const RECOMMENDATION_NEUTRAL_SCORE = 50
 
+// TMDb quality is only a small prior.
+// Personal MovieDNA affinity remains the dominant signal.
+export const RECOMMENDATION_QUALITY_MAX_ADJUSTMENT = 6
+export const RECOMMENDATION_QUALITY_BASELINE = 6.5
+export const RECOMMENDATION_QUALITY_FULL_CONFIDENCE_VOTES = 50_000
+
 export const RECOMMENDATION_DIMENSION_WEIGHTS = Object.freeze({
-  genres: 0.35,
+  genres: 0.55,
   mediaTypes: 0.05,
-  decades: 0.15,
-  countries: 0.13,
-  actors: 0.16,
-  directors: 0.16,
-  creators: 0.16,
+  decades: 0.07,
+  countries: 0.05,
+  actors: 0.13,
+  directors: 0.15,
+  creators: 0.15,
 })
 
 export const RECOMMENDATION_ROUNDING_DECIMALS = 6
