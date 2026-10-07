@@ -686,28 +686,38 @@ service cloud.firestore {
 
       match /boards/{listId} {
         allow get, list: if isAuthenticated()
-          && exists(
-            /databases/$(database)/documents/publicProfiles/$(userId)
-          )
           && (
-            get(
-              /databases/$(database)/documents/publicProfiles/$(userId)
-            ).data.profileVisibility == 'public'
-            || hasAcceptedFriendshipWith(userId)
+            isOwner(userId)
+            || (
+              exists(
+                /databases/$(database)/documents/publicProfiles/$(userId)
+              )
+              && (
+                get(
+                  /databases/$(database)/documents/publicProfiles/$(userId)
+                ).data.profileVisibility == 'public'
+                || hasAcceptedFriendshipWith(userId)
+              )
+            )
           );
 
         allow create, update, delete: if false;
 
         match /items/{mediaKey} {
           allow get, list: if isAuthenticated()
-            && exists(
-              /databases/$(database)/documents/publicProfiles/$(userId)
-            )
             && (
-              get(
-                /databases/$(database)/documents/publicProfiles/$(userId)
-              ).data.profileVisibility == 'public'
-              || hasAcceptedFriendshipWith(userId)
+              isOwner(userId)
+              || (
+                exists(
+                  /databases/$(database)/documents/publicProfiles/$(userId)
+                )
+                && (
+                  get(
+                    /databases/$(database)/documents/publicProfiles/$(userId)
+                  ).data.profileVisibility == 'public'
+                  || hasAcceptedFriendshipWith(userId)
+                )
+              )
             );
 
           allow create, update, delete: if false;
