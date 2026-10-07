@@ -5,6 +5,9 @@ import {
 import {
   getOnboardingMediaKey,
 } from '../validation/onboardingValidation.js'
+import {
+  orderDiagnosticOnboardingSeeds,
+} from './onboardingDiagnosticPlan.js'
 
 export const ONBOARDING_CATALOG_SIZE = 30
 export const ONBOARDING_CATALOG_CONCURRENCY = 4
@@ -76,6 +79,10 @@ export const ONBOARDING_CURATED_SEEDS = Object.freeze([
   { mediaType: 'movie', tmdbId: 545611 }, // Everything Everywhere All at Once
   { mediaType: 'movie', tmdbId: 872585 }, // Oppenheimer
   { mediaType: 'movie', tmdbId: 346698 }, // Barbie
+
+  // Specific diagnostic probes.
+  { mediaType: 'movie', tmdbId: 4232 },   // Scream
+  { mediaType: 'movie', tmdbId: 84892 },  // The Perks of Being a Wallflower
 ].map(Object.freeze))
 
 export function selectOnboardingSeeds(
@@ -83,21 +90,30 @@ export function selectOnboardingSeeds(
 ) {
   const seen = new Set(
     (Array.isArray(responses) ? responses : [])
-      .map((response) => getOnboardingMediaKey(
-        response?.mediaType,
-        response?.tmdbId,
+      .map(response => (
+        getOnboardingMediaKey(
+          response?.mediaType,
+          response?.tmdbId,
+        )
       ))
       .filter(Boolean),
   )
 
-  return ONBOARDING_CURATED_SEEDS.filter((seed) => (
-    !seen.has(
-      getOnboardingMediaKey(
-        seed.mediaType,
-        seed.tmdbId,
+  const available =
+    ONBOARDING_CURATED_SEEDS.filter(
+      seed => (
+        !seen.has(
+          getOnboardingMediaKey(
+            seed.mediaType,
+            seed.tmdbId,
+          ),
+        )
       ),
     )
-  ))
+
+  return orderDiagnosticOnboardingSeeds(
+    available,
+  )
 }
 
 function isSkippableCatalogueError(error) {

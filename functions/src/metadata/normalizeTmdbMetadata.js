@@ -26,6 +26,48 @@ function people(values, maximum, withOrder = false) {
     .slice(0, maximum)
 }
 
+function keywords(payload) {
+  const appended = payload?.keywords
+
+  const values = Array.isArray(appended?.keywords)
+    ? appended.keywords
+    : Array.isArray(appended?.results)
+      ? appended.results
+      : []
+
+  const unique = new Map()
+
+  for (const value of values) {
+    if (
+      !positiveInteger(value?.id)
+      || typeof value.name !== 'string'
+    ) {
+      continue
+    }
+
+    const name = value.name
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+
+    if (!name || name.length > 100) continue
+
+    if (!unique.has(value.id)) {
+      unique.set(value.id, {
+        id: value.id,
+        name,
+      })
+    }
+  }
+
+  return [...unique.values()]
+    .sort((a, b) => (
+      a.id - b.id
+      || a.name.localeCompare(b.name)
+    ))
+    .slice(0, 100)
+}
+
 function baseMetadata(payload, mediaType) {
   if (!payload || !positiveInteger(payload.id)) {
     throw new MovieDnaServerError(SERVER_ERROR_CODES.INVALID_METADATA)
@@ -43,6 +85,7 @@ function baseMetadata(payload, mediaType) {
     tmdbId: payload.id,
     mediaType,
     genreIds,
+    keywords: keywords(payload),
     releaseYear: year(mediaType === 'movie' ? payload.release_date : payload.first_air_date),
     originalLanguage,
     countryCodes,

@@ -42,7 +42,9 @@ function cached(id, mediaType = 'movie') {
     tmdbId: id,
     mediaType,
     
-    collectionId: null,genreIds: [28],
+    collectionId: null,
+    genreIds: [28],
+    keywords: [],
     releaseYear: 2020,
     originalLanguage: 'en',
     countryCodes: ['US'],

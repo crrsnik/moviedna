@@ -4,6 +4,8 @@ import {
   Outlet,
 } from 'react-router-dom'
 
+import { useMovieDna } from '../../dna/hooks/useMovieDna.js'
+import { selectTasteTitle } from '../../dna/utils/selectTasteTitle.js'
 import { useTranslation } from '../../localization/hooks/useTranslation.js'
 import {
   PROFILE_AVATARS,
@@ -39,6 +41,8 @@ function SettingsIcon() {
 function ProfileLayout() {
   const { t } = useTranslation()
 
+  const dnaState = useMovieDna()
+
   const {
     profile,
     isProfileLoading,
@@ -70,6 +74,10 @@ function ProfileLayout() {
       </div>
     )
   }
+
+  const tasteTitle = selectTasteTitle(
+    dnaState.current?.dimensions,
+  )
 
   const avatar = PROFILE_AVATARS.find(
     ({ id }) => id === profile.avatarId,
@@ -124,19 +132,41 @@ function ProfileLayout() {
               {avatar.symbol}
             </div>
 
-            {/* Mobile visibility */}
-            <span
+            <div
               className="
-                rounded-full border border-border-strong
-                px-2.5 py-1 text-xs font-medium
-                text-secondary
-                sm:hidden
+                flex flex-col items-center
+                gap-1.5 sm:hidden
               "
             >
-              {profile.profileVisibility === 'public'
-                ? t('profile.publicProfile')
-                : t('profile.privateProfile')}
-            </span>
+              {tasteTitle && (
+                <span
+                  className="
+                    rounded-full border border-accent
+                    bg-surface px-2.5 py-1
+                    text-xs font-semibold text-primary
+                  "
+                >
+                  {t(
+                    `profile.tasteTitles.${tasteTitle.id}`,
+                  )}
+                </span>
+              )}
+
+              {/* Mobile visibility */}
+              <span
+                className="
+                  rounded-full
+                  border border-border-strong
+                  px-2.5 py-1
+                  text-xs font-medium
+                  text-secondary
+                "
+              >
+                {profile.profileVisibility === 'public'
+                  ? t('profile.publicProfile')
+                  : t('profile.privateProfile')}
+              </span>
+            </div>
           </div>
 
           <div className="min-w-0 flex-1">
@@ -155,6 +185,22 @@ function ProfileLayout() {
               >
                 {profile.displayName}
               </h1>
+
+              {tasteTitle && (
+                <span
+                  className="
+                    hidden rounded-full
+                    border border-accent
+                    bg-surface px-2.5 py-1
+                    text-xs font-semibold text-primary
+                    sm:inline-flex
+                  "
+                >
+                  {t(
+                    `profile.tasteTitles.${tasteTitle.id}`,
+                  )}
+                </span>
+              )}
 
               {/* Desktop visibility */}
               <span

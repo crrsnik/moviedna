@@ -26,7 +26,9 @@ export function createTmdbClient({
     if (!['movie', 'tv'].includes(mediaType) || !Number.isSafeInteger(tmdbId) || tmdbId <= 0) {
       throw new MovieDnaServerError(SERVER_ERROR_CODES.INVALID_METADATA)
     }
-    const append = mediaType === 'movie' ? 'credits' : 'aggregate_credits'
+    const append = mediaType === 'movie'
+      ? 'credits,keywords'
+      : 'aggregate_credits,keywords'
     const url = new URL(`${mediaType}/${tmdbId}`, TMDB_API_BASE_URL)
     url.searchParams.set('language', 'en-US')
     url.searchParams.set('append_to_response', append)

@@ -24,7 +24,7 @@ function profile(onboardingCompleted = true) {
 
 function cache(tmdbId, mediaType = 'movie') {
   return {
-    schemaVersion: 1, tmdbId, mediaType, genreIds: [28], releaseYear: 2020,
+    schemaVersion: 1, tmdbId, mediaType, genreIds: [28], keywords: [], releaseYear: 2020,
     originalLanguage: 'en', countryCodes: ['US'],
     directors: mediaType === 'movie' ? [{ id: 2, name: 'Synthetic Director' }] : [],
     creators: mediaType === 'tv' ? [{ id: 3, name: 'Synthetic Creator' }] : [],

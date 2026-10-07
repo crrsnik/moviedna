@@ -1,3 +1,4 @@
+import { inferTasteTags } from '../../dna/core/tasteTaxonomy.js'
 import { recommendationMediaKey } from './rankRecommendations.js'
 
 const MEDIA_TYPES = new Set(['movie', 'tv'])
@@ -84,6 +85,59 @@ function ids(values) {
   return result
 }
 
+function keywords(values) {
+  if (values === undefined) return []
+
+  if (
+    !Array.isArray(values)
+    || values.length > 100
+  ) {
+    return null
+  }
+
+  const unique = new Map()
+
+  for (const value of values) {
+    if (
+      !plain(value)
+      || !positiveInteger(value.id)
+      || typeof value.name !== 'string'
+    ) {
+      return null
+    }
+
+    const name = value.name
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+
+    if (
+      !name
+      || name.length > 100
+    ) {
+      return null
+    }
+
+    if (!unique.has(value.id)) {
+      unique.set(
+        value.id,
+        {
+          id: value.id,
+          name,
+        },
+      )
+    }
+  }
+
+  return [...unique.values()]
+    .sort(
+      (a, b) => (
+        a.id - b.id
+        || a.name.localeCompare(b.name)
+      ),
+    )
+}
+
 function countryCodes(values) {
   if (!Array.isArray(values)) return null
 
@@ -167,6 +221,12 @@ export function recommendationMetadataFromResolved(
   const completeness = metadata.completeness
   const result = {}
 
+  const normalizedKeywords = keywords(
+    metadata.keywords,
+  )
+
+  if (!normalizedKeywords) return null
+
   if (completeness.genres === true) {
     const genreIds = ids(metadata.genres)
     if (!genreIds) return null
@@ -216,6 +276,37 @@ export function recommendationMetadataFromResolved(
       if (!creators) return null
       result.creators = creators.map((id) => ({ id }))
     }
+  }
+
+  const taxonomyMetadata = {
+    genres: (result.genreIds ?? []).map(
+      id => ({
+        id,
+        label: String(id),
+      }),
+    ),
+    keywords: normalizedKeywords,
+    originalLanguage: result.originalLanguage
+      ? {
+          code: result.originalLanguage,
+          label: result.originalLanguage,
+        }
+      : null,
+    countries: (result.countryCodes ?? []).map(
+      code => ({
+        code,
+        label: code,
+      }),
+    ),
+  }
+
+  const inferredTasteTags = inferTasteTags(
+    taxonomyMetadata,
+    mediaType,
+  )
+
+  if (inferredTasteTags.length) {
+    result.tasteTags = inferredTasteTags
   }
 
   return result

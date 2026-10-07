@@ -199,12 +199,14 @@ export function createFirestoreAdapter(db, { now = () => Date.now() } = {}) {
       if (state.data()?.runToken !== runToken) throw new MovieDnaServerError(SERVER_ERROR_CODES.STALE_RUN)
       const unchanged = current.exists
         && current.data().algorithmVersion === calculation.algorithmVersion
+        && current.data().calculationRevision === calculation.calculationRevision
         && current.data().inputFingerprint === calculation.inputFingerprint
       if (!unchanged) {
         transaction.set(dnaRef, {
           schemaVersion: 1,
           status: calculation.sourceCounts.uniqueNonZeroUsed ? 'ready' : 'insufficient-data',
           algorithmVersion: calculation.algorithmVersion,
+          calculationRevision: calculation.calculationRevision,
           inputFingerprint: calculation.inputFingerprint,
           sourceCounts: calculation.sourceCounts,
           metadataCoverage: calculation.metadataCoverage,

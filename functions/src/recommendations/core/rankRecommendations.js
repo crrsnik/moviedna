@@ -8,6 +8,7 @@ import {
   RECOMMENDATION_ROUNDING_DECIMALS,
   RECOMMENDATION_SCORE_MAX,
   RECOMMENDATION_SCORE_MIN,
+  RECOMMENDATION_TASTE_MAX_ADJUSTMENT,
 } from './recommendationConstants.js'
 import { RECOMMENDATION_ERROR_CODES, throwRecommendationError } from './recommendationErrors.js'
 
@@ -46,6 +47,9 @@ export function recommendationMediaKey(mediaType, tmdbId) {
   return `${mediaType}_${tmdbId}`
 }
 
+const TASTE_KEY_PATTERN =
+  /^taste:[a-z0-9]+(?:-[a-z0-9]+)*$/
+
 function normalizeDna(dna) {
   if (!plain(dna) || dna.schemaVersion !== 1 || dna.algorithmVersion !== '1.0.0' || !plain(dna.dimensions)) {
     throwRecommendationError(RECOMMENDATION_ERROR_CODES.INVALID_DNA)
@@ -64,6 +68,72 @@ function normalizeDna(dna) {
     }
     index[dimension] = values
   }
+
+  const tasteEntries =
+    dna.dimensions.tasteTags ?? []
+
+  if (!Array.isArray(tasteEntries)) {
+    throwRecommendationError(
+      RECOMMENDATION_ERROR_CODES.INVALID_DNA,
+    )
+  }
+
+  const tasteValues = new Map()
+
+  for (const entry of tasteEntries) {
+    if (
+      !plain(entry)
+      || typeof entry.key !== 'string'
+      || !TASTE_KEY_PATTERN.test(entry.key)
+    ) {
+      continue
+    }
+
+    let strength = null
+
+    if (
+      finite(
+        entry.strength,
+        -1,
+        1,
+      )
+    ) {
+      strength = entry.strength
+    } else if (
+      finite(
+        entry.affinity,
+        -1,
+        1,
+      )
+      && finite(
+        entry.confidence,
+        0,
+        1,
+      )
+    ) {
+      strength =
+        entry.affinity
+        * entry.confidence
+    }
+
+    if (strength === null) {
+      continue
+    }
+
+    if (tasteValues.has(entry.key)) {
+      throwRecommendationError(
+        RECOMMENDATION_ERROR_CODES.INVALID_DNA,
+      )
+    }
+
+    tasteValues.set(
+      entry.key,
+      round(strength),
+    )
+  }
+
+  index.tasteTags = tasteValues
+
   return index
 }
 
@@ -87,6 +157,44 @@ function normalizePeople(value, maximum) {
   return { available: true, values: uniqueSorted(ids, (a, b) => a - b) }
 }
 
+function normalizeTasteTags(value) {
+  if (value === undefined) {
+    return {
+      available: false,
+      keys: [],
+    }
+  }
+
+  if (
+    !Array.isArray(value)
+    || value.length > 50
+  ) {
+    return null
+  }
+
+  const keys = []
+
+  for (const item of value) {
+    const key = plain(item)
+      ? item.key
+      : item
+
+    if (
+      typeof key !== 'string'
+      || !TASTE_KEY_PATTERN.test(key)
+    ) {
+      return null
+    }
+
+    keys.push(key)
+  }
+
+  return {
+    available: true,
+    keys: uniqueSorted(keys),
+  }
+}
+
 function normalizeCandidate(value) {
   if (!plain(value)) return null
   const mediaKey = recommendationMediaKey(value.mediaType, value.tmdbId)
@@ -99,7 +207,17 @@ function normalizeCandidate(value) {
   const directors = normalizePeople(source.directors, 10)
   const creators = normalizePeople(source.creators, 10)
   const actors = normalizePeople(source.actors, 20)
-  if (!genres || !countries || !directors || !creators || !actors) return null
+  const tasteTags =
+    normalizeTasteTags(source.tasteTags)
+
+  if (
+    !genres
+    || !countries
+    || !directors
+    || !creators
+    || !actors
+    || !tasteTags
+  ) return null
   if (value.mediaType === 'movie' && creators.values.length) return null
   if (value.mediaType === 'tv' && directors.values.length) return null
   const releaseYear = source.releaseYear
@@ -132,6 +250,7 @@ function normalizeCandidate(value) {
     popularity,
     voteAverage,
     voteCount,
+    tasteTags,
     features: {
       genres: { available: genres.available, keys: genres.values.map((id) => `genre:${id}`) },
       mediaTypes: { available: true, keys: [`media:${value.mediaType}`] },
@@ -201,6 +320,50 @@ function dimensionEvidence(
     ),
     hasEvidence:
       matchedCount > 0,
+  }
+}
+
+function tasteEvidence(
+  dnaTasteTags,
+  candidateTasteTags,
+) {
+  if (
+    !candidateTasteTags.available
+    || candidateTasteTags.keys.length === 0
+  ) {
+    return {
+      match: 0,
+      matchedCount: 0,
+      hasEvidence: false,
+    }
+  }
+
+  const matched =
+    candidateTasteTags.keys.filter(
+      key => dnaTasteTags.has(key),
+    )
+
+  if (!matched.length) {
+    return {
+      match: 0,
+      matchedCount: 0,
+      hasEvidence: false,
+    }
+  }
+
+  const total = matched.reduce(
+    (sum, key) => (
+      sum + dnaTasteTags.get(key)
+    ),
+    0,
+  )
+
+  return {
+    match: round(
+      total / matched.length,
+    ),
+    matchedCount: matched.length,
+    hasEvidence: true,
   }
 }
 
@@ -357,6 +520,19 @@ function rankCandidate(candidate, dna) {
       metadataAvailable: feature.available, profileEvidenceCoverage: evidence.coverage,
     })
   })
+  const taste = tasteEvidence(
+    dna.tasteTags,
+    candidate.tasteTags,
+  )
+
+  const tasteAdjustment = round(
+    RECOMMENDATION_TASTE_MAX_ADJUSTMENT
+      * taste.match,
+  )
+
+  hasPersonalizationEvidence ||=
+    taste.hasEvidence
+
   const qualityAdjustment = (
     recommendationQualityAdjustment(candidate)
   )
@@ -368,7 +544,8 @@ function rankCandidate(candidate, dna) {
         RECOMMENDATION_SCORE_MIN,
         RECOMMENDATION_NEUTRAL_SCORE
           + 50 * affinity
-          + qualityAdjustment,
+          + qualityAdjustment
+          + tasteAdjustment,
       ),
     ),
     2,
@@ -377,6 +554,9 @@ function rankCandidate(candidate, dna) {
     mediaKey: candidate.mediaKey, tmdbId: candidate.tmdbId, mediaType: candidate.mediaType,
     title: candidate.title, score, metadataCoverage: round(coveredWeight),
     profileEvidenceCoverage: round(evidenceWeight), hasPersonalizationEvidence,
+    tasteMatch: taste.match,
+    tasteAdjustment,
+    tasteEvidenceCount: taste.matchedCount,
     breakdown: Object.freeze(breakdown), reasons: Object.freeze(explanationReasons(breakdown)),
     popularity: candidate.popularity,
   })

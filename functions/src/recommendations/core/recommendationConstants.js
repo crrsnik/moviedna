@@ -1,4 +1,4 @@
-export const RECOMMENDATION_ALGORITHM_VERSION = '1.4.0'
+export const RECOMMENDATION_ALGORITHM_VERSION = '1.6.0'
 export const RECOMMENDATION_SCORE_MIN = 0
 export const RECOMMENDATION_SCORE_MAX = 100
 export const RECOMMENDATION_NEUTRAL_SCORE = 50
@@ -8,6 +8,11 @@ export const RECOMMENDATION_NEUTRAL_SCORE = 50
 export const RECOMMENDATION_QUALITY_MAX_ADJUSTMENT = 6
 export const RECOMMENDATION_QUALITY_BASELINE = 6.5
 export const RECOMMENDATION_QUALITY_FULL_CONFIDENCE_VOTES = 50_000
+
+// Specific taste is a bounded refinement layer.
+// It can distinguish candidates with the same broad DNA fit,
+// but it cannot overpower the whole recommendation formula.
+export const RECOMMENDATION_TASTE_MAX_ADJUSTMENT = 12
 
 export const RECOMMENDATION_DIMENSION_WEIGHTS = Object.freeze({
   genres: 0.55,

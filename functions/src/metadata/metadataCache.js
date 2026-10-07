@@ -5,6 +5,7 @@ function validIdentity(entry, item) {
   return entry?.schemaVersion === 1
     && entry.tmdbId === item.tmdbId
     && entry.mediaType === item.mediaType
+    && Array.isArray(entry.keywords)
     && Object.prototype.hasOwnProperty.call(
       entry,
       'collectionId',
@@ -18,6 +19,7 @@ function toCoreMetadata(entry) {
   return {
     status: entry.metadataStatus,
     genres: (entry.genreIds ?? []).map((id) => ({ id, label: String(id) })),
+    keywords: Array.isArray(entry.keywords) ? entry.keywords : [],
     releaseYear: entry.releaseYear ?? null,
     originalLanguage: entry.originalLanguage
       ? { code: entry.originalLanguage, label: entry.originalLanguage }
@@ -41,7 +43,7 @@ function missingEntry(item) {
     schemaVersion: 1,
     tmdbId: item.tmdbId,
     mediaType: item.mediaType,
-    genreIds: [], releaseYear: null, originalLanguage: null, countryCodes: [],
+    genreIds: [], keywords: [], releaseYear: null, originalLanguage: null, countryCodes: [],
     directors: [], creators: [], actors: [],
     metadataStatus: 'missing',
     metadataCompleteness: {

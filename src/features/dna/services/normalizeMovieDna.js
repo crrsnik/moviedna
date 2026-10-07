@@ -18,27 +18,185 @@ function count(value) {
   return value
 }
 function normalizeEntry(value, dimension) {
-  if (!plain(value) || typeof value.key !== 'string' || !value.key || typeof value.label !== 'string' || !value.label.trim()
-    || !finiteRange(value.score, -1, 1) || !finiteRange(value.confidence, 0, 1)
-    || !Number.isSafeInteger(value.evidenceCount) || value.evidenceCount < 1
-    || typeof value.signedContribution !== 'number' || !Number.isFinite(value.signedContribution)
-    || typeof value.absoluteEvidenceWeight !== 'number' || !Number.isFinite(value.absoluteEvidenceWeight) || value.absoluteEvidenceWeight < 0) {
+  if (
+    !plain(value)
+    || typeof value.key !== 'string'
+    || !value.key
+    || typeof value.label !== 'string'
+    || !value.label.trim()
+    || !finiteRange(value.score, -1, 1)
+    || !finiteRange(value.confidence, 0, 1)
+    || !Number.isSafeInteger(value.evidenceCount)
+    || value.evidenceCount < 1
+    || typeof value.signedContribution !== 'number'
+    || !Number.isFinite(value.signedContribution)
+    || typeof value.absoluteEvidenceWeight !== 'number'
+    || !Number.isFinite(value.absoluteEvidenceWeight)
+    || value.absoluteEvidenceWeight < 0
+  ) {
     throw new MovieDnaDocumentError('malformed')
   }
+
+  const label = dimension === 'tasteTags'
+    ? value.label.trim()
+    : resolveDimensionLabel(
+        dimension,
+        value,
+      )
+
   return Object.freeze({
-    key: value.key, label: resolveDimensionLabel(dimension, value), score: value.score, confidence: value.confidence,
-    evidenceCount: value.evidenceCount, signedContribution: value.signedContribution,
-    absoluteEvidenceWeight: value.absoluteEvidenceWeight,
+    key: value.key,
+    label,
+    score: value.score,
+    confidence: value.confidence,
+    evidenceCount: value.evidenceCount,
+    signedContribution:
+      value.signedContribution,
+    absoluteEvidenceWeight:
+      value.absoluteEvidenceWeight,
   })
 }
+
 function normalizeDimensions(value) {
-  if (!plain(value)) throw new MovieDnaDocumentError('malformed')
+  if (!plain(value)) {
+    throw new MovieDnaDocumentError(
+      'malformed',
+    )
+  }
+
   const result = {}
+
   for (const name of DIMENSIONS) {
     const entries = value[name] ?? []
-    if (!Array.isArray(entries)) throw new MovieDnaDocumentError('malformed')
-    result[name] = Object.freeze(entries.map((entry) => normalizeEntry(entry, name)).sort((a, b) => b.score - a.score || b.confidence - a.confidence || a.label.localeCompare(b.label)))
+
+    if (!Array.isArray(entries)) {
+      throw new MovieDnaDocumentError(
+        'malformed',
+      )
+    }
+
+    result[name] = Object.freeze(
+      entries
+        .map(
+          entry => normalizeEntry(
+            entry,
+            name,
+          ),
+        )
+        .sort(
+          (a, b) => (
+            b.score - a.score
+            || b.confidence - a.confidence
+            || a.label.localeCompare(
+              b.label,
+            )
+          ),
+        ),
+    )
   }
+
+  const tasteEntries =
+    value.tasteTags ?? []
+
+  if (!Array.isArray(tasteEntries)) {
+    throw new MovieDnaDocumentError(
+      'malformed',
+    )
+  }
+
+  result.tasteTags = Object.freeze(
+    tasteEntries
+      .map(entry => {
+        const normalized =
+          normalizeEntry(
+            entry,
+            'tasteTags',
+          )
+
+        const absolute =
+          normalized.absoluteEvidenceWeight
+
+        const signed =
+          normalized.signedContribution
+
+        const derivedAffinity =
+          absolute > 0
+            ? Math.max(
+                -1,
+                Math.min(
+                  1,
+                  signed / absolute,
+                ),
+              )
+            : 0
+
+        const affinity =
+          finiteRange(
+            entry.affinity,
+            -1,
+            1,
+          )
+            ? entry.affinity
+            : derivedAffinity
+
+        const positiveEvidenceWeight =
+          typeof entry.positiveEvidenceWeight
+            === 'number'
+          && Number.isFinite(
+            entry.positiveEvidenceWeight,
+          )
+          && entry.positiveEvidenceWeight >= 0
+            ? entry.positiveEvidenceWeight
+            : Math.max(
+                0,
+                (absolute + signed) / 2,
+              )
+
+        const negativeEvidenceWeight =
+          typeof entry.negativeEvidenceWeight
+            === 'number'
+          && Number.isFinite(
+            entry.negativeEvidenceWeight,
+          )
+          && entry.negativeEvidenceWeight >= 0
+            ? entry.negativeEvidenceWeight
+            : Math.max(
+                0,
+                (absolute - signed) / 2,
+              )
+
+        const derivedStrength =
+          affinity
+          * normalized.confidence
+
+        const strength =
+          finiteRange(
+            entry.strength,
+            -1,
+            1,
+          )
+            ? entry.strength
+            : derivedStrength
+
+        return Object.freeze({
+          ...normalized,
+          affinity,
+          positiveEvidenceWeight,
+          negativeEvidenceWeight,
+          strength,
+        })
+      })
+      .sort(
+        (a, b) => (
+          b.strength - a.strength
+          || b.confidence - a.confidence
+          || a.label.localeCompare(
+            b.label,
+          )
+        ),
+      ),
+  )
+
   return Object.freeze(result)
 }
 

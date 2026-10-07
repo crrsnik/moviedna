@@ -7,6 +7,7 @@ import { getTmdbErrorMessage, TmdbError } from '../../catalog/services/tmdbError
 import { loadOnboardingResponses, saveOnboardingResponse, completeOnboarding } from '../services/onboardingService.js'
 import { getOnboardingErrorMessage } from '../services/onboardingErrors.js'
 import { loadCuratedOnboardingCatalog } from '../services/onboardingCuratedCatalog.js'
+import { prepareAdaptiveOnboardingDeck } from '../services/onboardingDiagnosticPlan.js'
 import { canReachMinimum, getDeckState, getOnboardingProgress, prepareOnboardingDeck } from '../utils/onboardingDeck.js'
 import { getOnboardingMediaKey, MAX_RESPONSES } from '../validation/onboardingValidation.js'
 import {
@@ -113,7 +114,20 @@ export function useOnboarding() {
   ])
 
   const progress = getOnboardingProgress(state.responses)
-  const { currentMovie, remainingMovies } = getDeckState(state.deck, state.responses)
+
+  const adaptiveDeck =
+    prepareAdaptiveOnboardingDeck(
+      state.deck,
+      state.responses,
+    )
+
+  const {
+    currentMovie,
+    remainingMovies,
+  } = getDeckState(
+    adaptiveDeck,
+    state.responses,
+  )
 
   function retry() {
     if (sessionRef.current?.busy) return
@@ -189,5 +203,15 @@ export function useOnboarding() {
     }
   }
 
-  return { ...state, currentMovie, remainingMovies, counts: progress, progress, retry, reactToMovie, complete }
+  return {
+    ...state,
+    deck: adaptiveDeck,
+    currentMovie,
+    remainingMovies,
+    counts: progress,
+    progress,
+    retry,
+    reactToMovie,
+    complete,
+  }
 }

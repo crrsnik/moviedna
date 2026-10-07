@@ -1,4 +1,4 @@
-export const RECOMMENDATION_CLIENT_ALGORITHM_VERSION = '1.4.0'
+export const RECOMMENDATION_CLIENT_ALGORITHM_VERSION = '1.5.0'
 
 export class RecommendationClientError extends Error {
   constructor(code = 'malformed') {

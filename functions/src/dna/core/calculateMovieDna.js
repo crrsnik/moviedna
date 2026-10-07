@@ -1,18 +1,24 @@
 import {
   ACTOR_WEIGHT_MULTIPLIER,
+  DEFAULT_GENRE_SPECIFICITY_WEIGHT,
   FAVORITE_WEIGHT,
+  GENRE_SPECIFICITY_WEIGHTS,
+  MOVIEDNA_SCHEMA_VERSION,
   MOVIEDNA_ALGORITHM_VERSION,
+  MOVIEDNA_CALCULATION_REVISION,
   MOVIEDNA_ROUNDING_DECIMALS,
   ONBOARDING_WEIGHTS,
   RATING_WEIGHTS,
 } from './movieDnaConstants.js'
 import { MOVIEDNA_ERROR_CODES, throwMovieDnaError } from './movieDnaErrors.js'
+import { inferTasteTags } from './tasteTaxonomy.js'
 
 const MEDIA_TYPES = new Set(['movie', 'tv'])
 const REACTIONS = new Set(['like', 'dislike', 'skip'])
 const METADATA_STATUSES = new Set(['ready', 'partial', 'missing', 'temporary-error'])
 const DIMENSION_NAMES = [
-  'genres', 'mediaTypes', 'decades', 'languages',
+  'genres', 'specificGenres', 'genrePairs', 'tasteTags',
+  'mediaTypes', 'decades', 'languages',
   'countries', 'directors', 'creators', 'actors',
 ]
 const COVERAGE_FIELDS = ['genres', 'releaseYear', 'originalLanguage', 'countries', 'people']
@@ -61,6 +67,47 @@ function normalizeGenres(value) {
     return { key: `genre:${genre.id}`, label: normalizeLabel(genre.label, String(genre.id)), id: genre.id }
   })
   return uniqueSorted(genres, (genre) => genre.id, (a, b) => a.id - b.id || a.label.localeCompare(b.label))
+}
+
+function normalizeKeywords(value) {
+  if (value === undefined) return []
+
+  if (!Array.isArray(value) || value.length > 100) {
+    throwMovieDnaError(MOVIEDNA_ERROR_CODES.INVALID_METADATA)
+  }
+
+  const keywords = value.map((keyword) => {
+    if (
+      !isPlainObject(keyword)
+      || !isPositiveSafeInteger(keyword.id)
+      || typeof keyword.name !== 'string'
+    ) {
+      throwMovieDnaError(MOVIEDNA_ERROR_CODES.INVALID_METADATA)
+    }
+
+    const name = keyword.name
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+
+    if (!name || name.length > 100) {
+      throwMovieDnaError(MOVIEDNA_ERROR_CODES.INVALID_METADATA)
+    }
+
+    return {
+      id: keyword.id,
+      name,
+    }
+  })
+
+  return uniqueSorted(
+    keywords,
+    (keyword) => keyword.id,
+    (a, b) => (
+      a.id - b.id
+      || a.name.localeCompare(b.name)
+    ),
+  )
 }
 
 function normalizeCountries(value) {
@@ -129,7 +176,7 @@ function normalizeCompleteness(value) {
 function normalizeMetadata(value, mediaType) {
   if (value === undefined || value === null) {
     return {
-      status: 'missing', genres: [], releaseYear: null, originalLanguage: null,
+      status: 'missing', genres: [], keywords: [], releaseYear: null, originalLanguage: null,
       countries: [], directors: [], creators: [], actors: [],
       completeness: normalizeCompleteness(),
     }
@@ -154,6 +201,7 @@ function normalizeMetadata(value, mediaType) {
   return {
     status: value.status,
     genres: normalizeGenres(value.genres),
+    keywords: normalizeKeywords(value.keywords),
     releaseYear,
     originalLanguage: language && {
       key: `language:${language.code}`,
@@ -207,6 +255,29 @@ function effectiveSignal(item) {
   return { source: null, weight: 0 }
 }
 
+function genreSpecificityWeight(genre) {
+  return GENRE_SPECIFICITY_WEIGHTS[genre.id]
+    ?? DEFAULT_GENRE_SPECIFICITY_WEIGHT
+}
+
+function genrePairValues(genres) {
+  const pairs = []
+
+  for (let leftIndex = 0; leftIndex < genres.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < genres.length; rightIndex += 1) {
+      const left = genres[leftIndex]
+      const right = genres[rightIndex]
+
+      pairs.push({
+        key: `genre-pair:${left.id}+${right.id}`,
+        label: `${left.label} + ${right.label}`,
+      })
+    }
+  }
+
+  return pairs
+}
+
 function dimensionValues(item) {
   const metadata = item.metadata
   const decade = metadata.releaseYear === null ? [] : [{
@@ -215,6 +286,9 @@ function dimensionValues(item) {
   }]
   return {
     genres: metadata.genres,
+    specificGenres: metadata.genres,
+    genrePairs: genrePairValues(metadata.genres),
+    tasteTags: inferTasteTags(metadata, item.mediaType),
     mediaTypes: [{ key: `media:${item.mediaType}`, label: item.mediaType === 'movie' ? 'Movies' : 'TV' }],
     decades: decade,
     languages: metadata.originalLanguage ? [metadata.originalLanguage] : [],
@@ -250,16 +324,50 @@ function finalizeDimensions(accumulator) {
     const denominator = candidates.reduce((sum, value) => sum + value.absoluteEvidenceWeight, 0)
     dimensions[name] = candidates
       .filter((value) => name !== 'actors' || value.mediaKeys.size >= 2)
-      .map((value) => ({
-        key: value.key,
-        label: value.label,
-        signedContribution: round(value.signedContribution),
-        absoluteEvidenceWeight: round(value.absoluteEvidenceWeight),
-        evidenceCount: value.mediaKeys.size,
-        score: denominator ? round(value.signedContribution / denominator) : 0,
-        confidence: round(Math.min(1, value.absoluteEvidenceWeight / 2)
-          * Math.min(1, value.mediaKeys.size / 3)),
-      }))
+      .map((value) => {
+        const confidence = round(
+          Math.min(1, value.absoluteEvidenceWeight / 2)
+            * Math.min(1, value.mediaKeys.size / 3),
+        )
+
+        const entry = {
+          key: value.key,
+          label: value.label,
+          signedContribution: round(value.signedContribution),
+          absoluteEvidenceWeight: round(value.absoluteEvidenceWeight),
+          evidenceCount: value.mediaKeys.size,
+          score: denominator ? round(value.signedContribution / denominator) : 0,
+          confidence,
+        }
+
+        if (
+          name === 'specificGenres'
+          || name === 'genrePairs'
+          || name === 'tasteTags'
+        ) {
+          const affinity = value.absoluteEvidenceWeight
+            ? round(value.signedContribution / value.absoluteEvidenceWeight)
+            : 0
+
+          const positiveEvidenceWeight = round(
+            (value.absoluteEvidenceWeight + value.signedContribution) / 2,
+          )
+
+          const negativeEvidenceWeight = round(
+            (value.absoluteEvidenceWeight - value.signedContribution) / 2,
+          )
+
+          return {
+            ...entry,
+            affinity,
+            positiveEvidenceWeight,
+            negativeEvidenceWeight,
+            strength: round(affinity * confidence),
+          }
+        }
+
+        return entry
+      })
       .sort((a, b) => b.score - a.score || b.evidenceCount - a.evidenceCount || a.key.localeCompare(b.key))
       .slice(0, name === 'mediaTypes' ? 2 : 20)
   }
@@ -285,6 +393,7 @@ function metadataCoverage(items) {
 function fingerprintPayload(items) {
   return {
     algorithmVersion: MOVIEDNA_ALGORITHM_VERSION,
+    calculationRevision: MOVIEDNA_CALCULATION_REVISION,
     items: items.map((item) => ({
       mediaKey: item.mediaKey,
       tmdbId: item.tmdbId,
@@ -295,6 +404,10 @@ function fingerprintPayload(items) {
       metadata: {
         status: item.metadata.status,
         genreIds: item.metadata.genres.map((value) => value.id),
+        keywords: item.metadata.keywords.map((value) => ({
+          id: value.id,
+          name: value.name,
+        })),
         releaseYear: item.metadata.releaseYear,
         originalLanguage: item.metadata.originalLanguage?.code ?? null,
         countryCodes: item.metadata.countries.map((value) => value.code),
@@ -366,6 +479,41 @@ export async function calculateMovieDna(input) {
     for (const name of DIMENSION_NAMES) {
       const dimension = values[name]
       if (!dimension.length) continue
+      if (name === 'tasteTags') {
+        for (const value of dimension) {
+          addContribution(
+            accumulator[name],
+            value,
+            signal.weight,
+            item.mediaKey,
+          )
+        }
+
+        continue
+      }
+
+      if (name === 'specificGenres') {
+        const specificityTotal = dimension.reduce(
+          (sum, value) => sum + genreSpecificityWeight(value),
+          0,
+        )
+
+        for (const value of dimension) {
+          const contribution = specificityTotal
+            ? signal.weight * genreSpecificityWeight(value) / specificityTotal
+            : 0
+
+          addContribution(
+            accumulator[name],
+            value,
+            contribution,
+            item.mediaKey,
+          )
+        }
+
+        continue
+      }
+
       const multiplier = name === 'actors' ? ACTOR_WEIGHT_MULTIPLIER : 1
       const contribution = (signal.weight * multiplier) / dimension.length
       for (const value of dimension) addContribution(accumulator[name], value, contribution, item.mediaKey)
@@ -383,7 +531,9 @@ export async function calculateMovieDna(input) {
   )
 
   return {
+    schemaVersion: MOVIEDNA_SCHEMA_VERSION,
     algorithmVersion: MOVIEDNA_ALGORITHM_VERSION,
+    calculationRevision: MOVIEDNA_CALCULATION_REVISION,
     inputFingerprint: await sha256(JSON.stringify(fingerprintPayload(items))),
     sourceCounts,
     metadataCoverage: coverage,
