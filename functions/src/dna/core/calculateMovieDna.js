@@ -3,6 +3,7 @@ import {
   DEFAULT_GENRE_SPECIFICITY_WEIGHT,
   FAVORITE_WEIGHT,
   GENRE_SPECIFICITY_WEIGHTS,
+  MOVIEDNA_SCHEMA_VERSION,
   MOVIEDNA_ALGORITHM_VERSION,
   MOVIEDNA_CALCULATION_REVISION,
   MOVIEDNA_ROUNDING_DECIMALS,
@@ -530,6 +531,7 @@ export async function calculateMovieDna(input) {
   )
 
   return {
+    schemaVersion: MOVIEDNA_SCHEMA_VERSION,
     algorithmVersion: MOVIEDNA_ALGORITHM_VERSION,
     inputFingerprint: await sha256(JSON.stringify(fingerprintPayload(items))),
     sourceCounts,

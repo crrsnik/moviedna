@@ -3,6 +3,7 @@ import { createRequire } from 'node:module'
 import { after, before, describe, it } from 'node:test'
 
 import { createFirestoreAdapter } from '../../functions/src/adapters/firestoreAdapter.js'
+import { calculateMovieDna } from '../../functions/src/dna/core/calculateMovieDna.js'
 import { createRecommendationHandler } from '../../functions/src/recommendations/createRecommendationHandler.js'
 import { createRecommendationPipeline } from '../../functions/src/recommendations/recommendationPipeline.js'
 import { normalizeRecommendationsResponse } from '../../src/features/recommendations/services/normalizeRecommendations.js'
@@ -164,6 +165,308 @@ function metadataFor(candidate) {
       countries: true,
       people: true,
     },
+  }
+}
+
+function tasteEvidenceItem(
+  id,
+  {
+    rating = null,
+    onboardingReaction = null,
+    keyword,
+  },
+) {
+  return {
+    mediaKey: `movie_${id}`,
+    tmdbId: id,
+    mediaType: 'movie',
+    rating,
+    onboardingReaction,
+    favorite: false,
+
+    metadata: {
+      status: 'ready',
+
+      genres: [
+        {
+          id: 18,
+          label: 'Drama',
+        },
+        {
+          id: 53,
+          label: 'Thriller',
+        },
+      ],
+
+      keywords: [
+        {
+          id: id * 100,
+          name: keyword,
+        },
+      ],
+
+      releaseYear: 2020,
+
+      originalLanguage: {
+        code: 'en',
+        label: 'English',
+      },
+
+      countries: [
+        {
+          code: 'US',
+          label: 'United States',
+        },
+      ],
+
+      directors: [],
+      creators: [],
+      actors: [],
+
+      completeness: {
+        genres: true,
+        releaseYear: true,
+        originalLanguage: true,
+        countries: true,
+        people: true,
+      },
+    },
+  }
+}
+
+async function psychologicalTasteDna(
+  direction,
+) {
+  const positive = direction === 'positive'
+
+  const items = positive
+    ? [
+        tasteEvidenceItem(
+          7101,
+          {
+            rating: 10,
+            keyword: 'psychology',
+          },
+        ),
+        tasteEvidenceItem(
+          7102,
+          {
+            rating: 9,
+            keyword: 'paranoia',
+          },
+        ),
+        tasteEvidenceItem(
+          7103,
+          {
+            onboardingReaction: 'like',
+            keyword: 'obsession',
+          },
+        ),
+      ]
+    : [
+        tasteEvidenceItem(
+          7201,
+          {
+            rating: 1,
+            keyword: 'psychology',
+          },
+        ),
+        tasteEvidenceItem(
+          7202,
+          {
+            rating: 2,
+            keyword: 'paranoia',
+          },
+        ),
+        tasteEvidenceItem(
+          7203,
+          {
+            onboardingReaction: 'dislike',
+            keyword: 'obsession',
+          },
+        ),
+      ]
+
+  return calculateMovieDna({
+    items,
+  })
+}
+
+function tasteDiscoveryCandidate(
+  id,
+  title,
+) {
+  return {
+    id,
+    title,
+    popularity: 40,
+    poster_path: `/taste-${id}.jpg`,
+    release_date: '2024-01-15',
+    vote_average: 7.5,
+    vote_count: 2000,
+  }
+}
+
+function tasteSource(mediaType) {
+  return {
+    source: 'taste-intelligence-integration',
+    mediaType,
+
+    results: mediaType === 'movie'
+      ? [
+          tasteDiscoveryCandidate(
+            7501,
+            'Psychological Candidate',
+          ),
+          tasteDiscoveryCandidate(
+            7502,
+            'Generic Thriller',
+          ),
+        ]
+      : [],
+  }
+}
+
+function tasteMetadataFor(candidate) {
+  const psychological =
+    candidate.tmdbId === 7501
+
+  return {
+    status: 'ready',
+
+    genres: [
+      {
+        id: 18,
+        label: 'Drama',
+      },
+      {
+        id: 53,
+        label: 'Thriller',
+      },
+    ],
+
+    keywords: psychological
+      ? [
+          {
+            id: 88001,
+            name: 'psychology',
+          },
+          {
+            id: 88002,
+            name: 'paranoia',
+          },
+        ]
+      : [],
+
+    releaseYear: 2024,
+
+    originalLanguage: {
+      code: 'en',
+      label: 'English',
+    },
+
+    countries: [
+      {
+        code: 'US',
+        label: 'United States',
+      },
+    ],
+
+    directors: [
+      {
+        id: 99001,
+        name: 'Same Director',
+      },
+    ],
+
+    creators: [],
+
+    actors: [
+      {
+        id: 99002,
+        name: 'Same Actor',
+        billingOrder: 0,
+      },
+    ],
+
+    completeness: {
+      genres: true,
+      releaseYear: true,
+      originalLanguage: true,
+      countries: true,
+      people: true,
+    },
+  }
+}
+
+function tasteSourceClient() {
+  return {
+    async getTrending(mediaType) {
+      return tasteSource(mediaType)
+    },
+
+    async getPopular(mediaType) {
+      return tasteSource(mediaType)
+    },
+
+    async getTopRated(mediaType) {
+      return tasteSource(mediaType)
+    },
+
+    async getRecommendations(
+      mediaType,
+    ) {
+      return tasteSource(mediaType)
+    },
+
+    async discoverByGenre(
+      mediaType,
+    ) {
+      return tasteSource(mediaType)
+    },
+  }
+}
+
+function tasteMetadataResolver() {
+  return {
+    async resolve(candidates) {
+      return candidates.map(
+        candidate => ({
+          ...candidate,
+          metadata:
+            tasteMetadataFor(candidate),
+        }),
+      )
+    },
+  }
+}
+
+async function runTasteRecommendationFlow(
+  direction,
+) {
+  const calculatedDna =
+    await psychologicalTasteDna(direction)
+
+  const pipeline =
+    createRecommendationPipeline({
+      sourceClient: tasteSourceClient(),
+      metadataResolver:
+        tasteMetadataResolver(),
+      maxPerMediaType: 10,
+    })
+
+  const recommendation =
+    await pipeline.run({
+      dna: calculatedDna,
+      rated: [],
+      seedSignals: [],
+      watched: [],
+      hidden: [],
+    })
+
+  return {
+    dna: calculatedDna,
+    recommendation,
   }
 }
 
@@ -393,5 +696,151 @@ describe(
         client.results[0].reasons.length >= 1,
       )
     })
+
+    it(
+      'carries positive psychological-thriller taste from ratings and onboarding into recommendation ranking',
+      async () => {
+        const {
+          dna: calculatedDna,
+          recommendation,
+        } =
+          await runTasteRecommendationFlow(
+            'positive',
+          )
+
+        const psychologicalTaste =
+          calculatedDna.dimensions.tasteTags.find(
+            entry => (
+              entry.key
+              === 'taste:psychological-thriller'
+            ),
+          )
+
+        assert.ok(
+          psychologicalTaste,
+          'DNA should infer Psychological Thriller.',
+        )
+
+        assert.ok(
+          psychologicalTaste.strength > 0.9,
+          'Repeated positive evidence should create a strong taste.',
+        )
+
+        const psychological =
+          recommendation.results.find(
+            result => (
+              result.mediaKey
+              === 'movie_7501'
+            ),
+          )
+
+        const generic =
+          recommendation.results.find(
+            result => (
+              result.mediaKey
+              === 'movie_7502'
+            ),
+          )
+
+        assert.ok(psychological)
+        assert.ok(generic)
+
+        assert.ok(
+          psychological.tasteMatch > 0,
+        )
+
+        assert.ok(
+          psychological.tasteAdjustment > 0,
+        )
+
+        assert.equal(
+          generic.tasteAdjustment,
+          0,
+        )
+
+        assert.ok(
+          psychological.score
+          > generic.score,
+        )
+
+        assert.equal(
+          recommendation.results[0].mediaKey,
+          'movie_7501',
+        )
+      },
+    )
+
+    it(
+      'carries negative psychological-thriller taste into recommendation ranking',
+      async () => {
+        const {
+          dna: calculatedDna,
+          recommendation,
+        } =
+          await runTasteRecommendationFlow(
+            'negative',
+          )
+
+        const psychologicalTaste =
+          calculatedDna.dimensions.tasteTags.find(
+            entry => (
+              entry.key
+              === 'taste:psychological-thriller'
+            ),
+          )
+
+        assert.ok(
+          psychologicalTaste,
+          'DNA should preserve negative Psychological Thriller evidence.',
+        )
+
+        assert.ok(
+          psychologicalTaste.strength < -0.9,
+          'Repeated negative evidence should create a strong negative taste.',
+        )
+
+        const psychological =
+          recommendation.results.find(
+            result => (
+              result.mediaKey
+              === 'movie_7501'
+            ),
+          )
+
+        const generic =
+          recommendation.results.find(
+            result => (
+              result.mediaKey
+              === 'movie_7502'
+            ),
+          )
+
+        assert.ok(psychological)
+        assert.ok(generic)
+
+        assert.ok(
+          psychological.tasteMatch < 0,
+        )
+
+        assert.ok(
+          psychological.tasteAdjustment < 0,
+        )
+
+        assert.equal(
+          generic.tasteAdjustment,
+          0,
+        )
+
+        assert.ok(
+          psychological.score
+          < generic.score,
+        )
+
+        assert.equal(
+          recommendation.results[0].mediaKey,
+          'movie_7502',
+        )
+      },
+    )
   },
 )
