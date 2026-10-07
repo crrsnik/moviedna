@@ -14,6 +14,10 @@ import {
 import {
   TmdbError,
 } from '../../src/features/catalog/services/tmdbErrors.js'
+import {
+  getOnboardingDiagnosticProfile,
+  ONBOARDING_DIAGNOSTIC_ROLE_TARGETS,
+} from '../../src/features/onboarding/services/onboardingDiagnosticPlan.js'
 
 describe('Curated onboarding catalogue', () => {
   it('keeps a large unique movie/TV seed pool', () => {
@@ -41,20 +45,83 @@ describe('Curated onboarding catalogue', () => {
     assert.ok(tv >= 20)
   })
 
-  it('starts with a balanced movie/TV deck', () => {
-    const first = ONBOARDING_CURATED_SEEDS.slice(
-      0,
-      ONBOARDING_CATALOG_SIZE,
+  it('builds a balanced diagnostic 30-card deck', () => {
+    const first = selectOnboardingSeeds([])
+      .slice(
+        0,
+        ONBOARDING_CATALOG_SIZE,
+      )
+
+    assert.equal(
+      first.filter(
+        seed => seed.mediaType === 'movie',
+      ).length,
+      15,
     )
 
     assert.equal(
-      first.filter(seed => seed.mediaType === 'movie').length,
+      first.filter(
+        seed => seed.mediaType === 'tv',
+      ).length,
       15,
     )
+
+    const roleCounts = {
+      anchor: 0,
+      discriminator: 0,
+      probe: 0,
+    }
+
+    const tastes = new Set()
+    const franchises = []
+
+    for (const seed of first) {
+      const profile =
+        getOnboardingDiagnosticProfile(seed)
+
+      roleCounts[profile.role] += 1
+
+      for (
+        const taste
+        of profile.tasteTargets
+      ) {
+        tastes.add(taste)
+      }
+
+      if (profile.franchiseGroup) {
+        franchises.push(
+          profile.franchiseGroup,
+        )
+      }
+    }
+
+    assert.deepEqual(
+      roleCounts,
+      ONBOARDING_DIAGNOSTIC_ROLE_TARGETS,
+    )
+
     assert.equal(
-      first.filter(seed => seed.mediaType === 'tv').length,
-      15,
+      new Set(franchises).size,
+      franchises.length,
     )
+
+    for (const taste of [
+      'taste:psychological-thriller',
+      'taste:crime-thriller',
+      'taste:emotional-drama',
+      'taste:philosophical-sci-fi',
+      'taste:dystopian-sci-fi',
+      'taste:space-sci-fi',
+      'taste:coming-of-age',
+      'taste:dark-comedy',
+      'taste:slasher',
+      'taste:supernatural-horror',
+    ]) {
+      assert.ok(
+        tastes.has(taste),
+        `Missing diagnostic coverage for ${taste}`,
+      )
+    }
   })
 
   it('removes only exact identities already answered', () => {
@@ -96,7 +163,7 @@ describe('Curated onboarding catalogue', () => {
     assert.ok(selected.length > 20)
   })
 
-  it('loads at most 20 cards in source order with bounded concurrency', async () => {
+  it('loads at most 30 diagnostic cards in selected order with bounded concurrency', async () => {
     let active = 0
     let maximumActive = 0
 
@@ -143,8 +210,11 @@ describe('Curated onboarding catalogue', () => {
       result.map(item => (
         `${item.mediaType}_${item.id}`
       )),
-      ONBOARDING_CURATED_SEEDS
-        .slice(0, ONBOARDING_CATALOG_SIZE)
+      selectOnboardingSeeds([])
+        .slice(
+          0,
+          ONBOARDING_CATALOG_SIZE,
+        )
         .map(seed => (
           `${seed.mediaType}_${seed.tmdbId}`
         )),
@@ -158,7 +228,7 @@ describe('Curated onboarding catalogue', () => {
   })
 
   it('skips missing curated entries and continues filling the deck', async () => {
-    const first = ONBOARDING_CURATED_SEEDS[0]
+    const first = selectOnboardingSeeds([])[0]
 
     const result = await loadCuratedOnboardingCatalog({
       language: 'en-US',
