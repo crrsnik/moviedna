@@ -29,6 +29,7 @@ function cache(tmdbId, mediaType = 'movie') {
     directors: mediaType === 'movie' ? [{ id: 2, name: 'Synthetic Director' }] : [],
     creators: mediaType === 'tv' ? [{ id: 3, name: 'Synthetic Creator' }] : [],
     actors: [{ id: 4, name: 'Synthetic Actor', billingOrder: 0 }],
+    collectionId: null,
     metadataStatus: 'ready',
     metadataCompleteness: {
       genres: true, releaseYear: true, originalLanguage: true, countries: true, people: true,
