@@ -5,6 +5,7 @@ import { describe, it } from 'node:test'
 
 import { deriveMovieDnaState } from '../../src/features/dna/hooks/dnaState.js'
 import { createMovieDnaService } from '../../src/features/dna/services/createMovieDnaService.js'
+import { createMovieDnaSnapshotCache } from '../../src/features/dna/services/movieDnaSnapshotCache.js'
 import { resolveDimensionLabel } from '../../src/features/dna/services/dimensionLabels.js'
 import { MOVIEDNA_DIMENSIONS, normalizeMovieDnaCurrent, normalizeMovieDnaRecalculation } from '../../src/features/dna/services/normalizeMovieDna.js'
 import { isLocalFirebaseMode, LOCAL_EMULATORS, LOCAL_FIREBASE_CONFIG } from '../../src/shared/config/localFirebase.js'
@@ -196,5 +197,59 @@ describe('local safety and accessible UI contract', () => {
     assert.match(seed, /Refusing to seed/); assert.doesNotMatch(seed, /api\.themoviedb\.org|TMDB_READ_ACCESS_TOKEN/)
     const result = spawnSync(process.execPath, ['scripts/seedDnaLocal.js'], { cwd: new URL('../..', import.meta.url), env: {} })
     assert.notEqual(result.status, 0); assert.match(result.stderr.toString(), /Refusing to seed/)
+  })
+})
+
+
+describe('MovieDNA snapshot cache', () => {
+  it('reuses the last snapshot by owner', () => {
+    const cache = createMovieDnaSnapshotCache()
+    const value = {
+      current: { status: 'ready' },
+      recalculation: null,
+      error: null,
+    }
+
+    assert.equal(cache.get('owner-a'), null)
+
+    cache.set('owner-a', value)
+
+    assert.equal(
+      cache.get('owner-a'),
+      value,
+    )
+    assert.equal(
+      cache.get('owner-b'),
+      null,
+    )
+  })
+
+  it('clears one owner independently', () => {
+    const cache = createMovieDnaSnapshotCache()
+
+    cache.set('owner-a', { current: null })
+    cache.set('owner-b', { current: null })
+
+    cache.clear('owner-a')
+
+    assert.equal(cache.get('owner-a'), null)
+    assert.deepEqual(
+      cache.get('owner-b'),
+      { current: null },
+    )
+  })
+
+  it('rejects malformed writes', () => {
+    const cache = createMovieDnaSnapshotCache()
+
+    assert.throws(
+      () => cache.set('', {}),
+      TypeError,
+    )
+
+    assert.throws(
+      () => cache.set('owner-a', null),
+      TypeError,
+    )
   })
 })
