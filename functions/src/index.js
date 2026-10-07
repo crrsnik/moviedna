@@ -305,7 +305,7 @@ export const onCustomListWritten = onDocumentWritten({
 ))
 
 export const onMovieDnaCurrentWritten = onDocumentWritten({
-  ...profilePreviewTriggerOptions,
+  ...triggerOptions,
   document: 'users/{uid}/movieDna/current',
 }, event => runForActiveUser(
   event,
