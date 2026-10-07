@@ -83,7 +83,7 @@ describe('Taste Title profile UI', () => {
 
       assert.equal(
         titleIds.size,
-        46,
+        82,
       )
 
       for (const locale of [

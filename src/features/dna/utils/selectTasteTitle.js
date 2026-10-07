@@ -48,6 +48,26 @@ export const TASTE_TITLE_IDS =
 
     'taste:russian-romantic-tv':
       'russianRomanticTv',
+    'taste:romantic-drama':
+      'romanticDrama',
+    'taste:romantic-comedy':
+      'romanticComedy',
+    'taste:mystery-detective':
+      'mysteryDetective',
+    'taste:action-spectacle':
+      'actionSpectacle',
+    'taste:fantasy-adventure':
+      'fantasyAdventure',
+    'taste:dark-fantasy':
+      'darkFantasy',
+    'taste:historical-period':
+      'historicalPeriod',
+    'taste:war-drama':
+      'warDrama',
+    'taste:anime':
+      'anime',
+    'taste:adult-animation':
+      'adultAnimation',
   })
 
 function pairKey(left, right) {
@@ -232,7 +252,137 @@ export const TASTE_TITLE_COMBINATIONS =
       'taste:supernatural-horror',
       'taste:russian-romantic-tv',
     )]: 'gothicRomantic',
-  })
+  
+    [pairKey(
+      'taste:romantic-drama',
+      'taste:emotional-drama',
+    )]: 'heartOnSleeve',
+
+    [pairKey(
+      'taste:romantic-drama',
+      'taste:historical-period',
+    )]: 'periodRomantic',
+
+    [pairKey(
+      'taste:romantic-drama',
+      'taste:war-drama',
+    )]: 'wartimeRomantic',
+
+    [pairKey(
+      'taste:romantic-drama',
+      'taste:fantasy-adventure',
+    )]: 'enchantedRomantic',
+
+    [pairKey(
+      'taste:romantic-comedy',
+      'taste:coming-of-age',
+    )]: 'romcomDreamer',
+
+    [pairKey(
+      'taste:romantic-comedy',
+      'taste:dark-comedy',
+    )]: 'romanticSatirist',
+
+    [pairKey(
+      'taste:romantic-comedy',
+      'taste:russian-romantic-tv',
+    )]: 'serialRomantic',
+
+    [pairKey(
+      'taste:mystery-detective',
+      'taste:psychological-thriller',
+    )]: 'mindDetective',
+
+    [pairKey(
+      'taste:mystery-detective',
+      'taste:crime-thriller',
+    )]: 'masterDetective',
+
+    [pairKey(
+      'taste:mystery-detective',
+      'taste:supernatural-horror',
+    )]: 'paranormalDetective',
+
+    [pairKey(
+      'taste:mystery-detective',
+      'taste:historical-period',
+    )]: 'periodDetective',
+
+    [pairKey(
+      'taste:action-spectacle',
+      'taste:dystopian-sci-fi',
+    )]: 'rebellionJunkie',
+
+    [pairKey(
+      'taste:action-spectacle',
+      'taste:space-sci-fi',
+    )]: 'spaceRanger',
+
+    [pairKey(
+      'taste:action-spectacle',
+      'taste:crime-thriller',
+    )]: 'urbanHunter',
+
+    [pairKey(
+      'taste:fantasy-adventure',
+      'taste:coming-of-age',
+    )]: 'chosenOne',
+
+    [pairKey(
+      'taste:fantasy-adventure',
+      'taste:space-sci-fi',
+    )]: 'worldHopper',
+
+    [pairKey(
+      'taste:fantasy-adventure',
+      'taste:dark-comedy',
+    )]: 'chaoticAdventurer',
+
+    [pairKey(
+      'taste:dark-fantasy',
+      'taste:supernatural-horror',
+    )]: 'gothicNightmare',
+
+    [pairKey(
+      'taste:dark-fantasy',
+      'taste:slasher',
+    )]: 'darkSurvivor',
+
+    [pairKey(
+      'taste:historical-period',
+      'taste:war-drama',
+    )]: 'warHistorian',
+
+    [pairKey(
+      'taste:historical-period',
+      'taste:emotional-drama',
+    )]: 'periodSoul',
+
+    [pairKey(
+      'taste:war-drama',
+      'taste:emotional-drama',
+    )]: 'battleScarredHeart',
+
+    [pairKey(
+      'taste:anime',
+      'taste:philosophical-sci-fi',
+    )]: 'animePhilosopher',
+
+    [pairKey(
+      'taste:anime',
+      'taste:coming-of-age',
+    )]: 'animeDreamer',
+
+    [pairKey(
+      'taste:adult-animation',
+      'taste:dark-comedy',
+    )]: 'animatedSatirist',
+
+    [pairKey(
+      'taste:adult-animation',
+      'taste:philosophical-sci-fi',
+    )]: 'animatedPhilosopher',
+})
 
 function finite(value) {
   return (

@@ -1,6 +1,6 @@
 export const MOVIEDNA_SCHEMA_VERSION = 1
 export const MOVIEDNA_ALGORITHM_VERSION = '1.0.0'
-export const MOVIEDNA_CALCULATION_REVISION = 3
+export const MOVIEDNA_CALCULATION_REVISION = 4
 
 export const RATING_WEIGHTS = Object.freeze({
   1: -1,
