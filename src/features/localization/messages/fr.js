@@ -118,6 +118,7 @@ export const fr = {
     loadError: 'Impossible de charger votre profil.',
     publicProfile: 'Profil public',
     privateProfile: 'Profil privé',
+    tasteTitleLabel: 'Titre cinéphile',
     editProfile: 'Modifier le profil',
     navigation: 'Navigation du profil',
     avatar: 'Avatar {label}',

@@ -118,6 +118,7 @@ export const en = {
     loadError: "We couldn't load your profile.",
     publicProfile: 'Public profile',
     privateProfile: 'Private profile',
+    tasteTitleLabel: 'Taste title',
     editProfile: 'Edit profile',
     navigation: 'Profile navigation',
     avatar: '{label} avatar',
