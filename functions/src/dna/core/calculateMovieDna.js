@@ -66,6 +66,47 @@ function normalizeGenres(value) {
   return uniqueSorted(genres, (genre) => genre.id, (a, b) => a.id - b.id || a.label.localeCompare(b.label))
 }
 
+function normalizeKeywords(value) {
+  if (value === undefined) return []
+
+  if (!Array.isArray(value) || value.length > 100) {
+    throwMovieDnaError(MOVIEDNA_ERROR_CODES.INVALID_METADATA)
+  }
+
+  const keywords = value.map((keyword) => {
+    if (
+      !isPlainObject(keyword)
+      || !isPositiveSafeInteger(keyword.id)
+      || typeof keyword.name !== 'string'
+    ) {
+      throwMovieDnaError(MOVIEDNA_ERROR_CODES.INVALID_METADATA)
+    }
+
+    const name = keyword.name
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+
+    if (!name || name.length > 100) {
+      throwMovieDnaError(MOVIEDNA_ERROR_CODES.INVALID_METADATA)
+    }
+
+    return {
+      id: keyword.id,
+      name,
+    }
+  })
+
+  return uniqueSorted(
+    keywords,
+    (keyword) => keyword.id,
+    (a, b) => (
+      a.id - b.id
+      || a.name.localeCompare(b.name)
+    ),
+  )
+}
+
 function normalizeCountries(value) {
   if (value === undefined) return []
   if (!Array.isArray(value) || value.length > 20) {
@@ -132,7 +173,7 @@ function normalizeCompleteness(value) {
 function normalizeMetadata(value, mediaType) {
   if (value === undefined || value === null) {
     return {
-      status: 'missing', genres: [], releaseYear: null, originalLanguage: null,
+      status: 'missing', genres: [], keywords: [], releaseYear: null, originalLanguage: null,
       countries: [], directors: [], creators: [], actors: [],
       completeness: normalizeCompleteness(),
     }
@@ -157,6 +198,7 @@ function normalizeMetadata(value, mediaType) {
   return {
     status: value.status,
     genres: normalizeGenres(value.genres),
+    keywords: normalizeKeywords(value.keywords),
     releaseYear,
     originalLanguage: language && {
       key: `language:${language.code}`,
@@ -354,6 +396,10 @@ function fingerprintPayload(items) {
       metadata: {
         status: item.metadata.status,
         genreIds: item.metadata.genres.map((value) => value.id),
+        keywords: item.metadata.keywords.map((value) => ({
+          id: value.id,
+          name: value.name,
+        })),
         releaseYear: item.metadata.releaseYear,
         originalLanguage: item.metadata.originalLanguage?.code ?? null,
         countryCodes: item.metadata.countries.map((value) => value.code),
