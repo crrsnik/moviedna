@@ -1,7 +1,10 @@
+import { useEffect, useRef } from 'react'
+
 import {
   Link,
   NavLink,
   Outlet,
+  useLocation,
 } from 'react-router-dom'
 
 import { useMovieDna } from '../../dna/hooks/useMovieDna.js'
@@ -41,6 +44,104 @@ function SettingsIcon() {
 
 function ProfileLayout() {
   const { t } = useTranslation()
+  const { pathname } = useLocation()
+  const contentStartRef = useRef(null)
+  const previousPathRef = useRef(null)
+
+  useEffect(() => {
+    const previousPath = previousPathRef.current
+    previousPathRef.current = pathname
+
+    if (pathname === '/profile') return
+
+    const wasAlreadyInProfileContent = (
+      previousPath
+      && previousPath !== '/profile'
+      && previousPath.startsWith('/profile/')
+    )
+
+    if (wasAlreadyInProfileContent) return
+
+    const isMobile = window.matchMedia(
+      '(max-width: 639px)',
+    ).matches
+
+    if (!isMobile) return
+
+    const target = contentStartRef.current
+    if (!target) return
+
+    const startY = window.scrollY
+
+    const fullContentTargetY = Math.max(
+      0,
+      startY
+        + target.getBoundingClientRect().top
+        - 128,
+    )
+
+    const halfScreenTargetY = (
+      startY + (window.innerHeight * 0.32)
+    )
+
+    const targetY = Math.min(
+      fullContentTargetY,
+      halfScreenTargetY,
+    )
+
+    if (targetY <= startY + 4) return
+
+    const reduceMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches
+
+    if (reduceMotion) {
+      window.scrollTo(0, targetY)
+      return
+    }
+
+    const duration = 650
+    const distance = targetY - startY
+
+    let frameId = null
+    let startTime = null
+
+    const animate = timestamp => {
+      if (startTime === null) {
+        startTime = timestamp
+      }
+
+      const progress = Math.min(
+        (timestamp - startTime) / duration,
+        1,
+      )
+
+      const eased = progress < 0.5
+        ? 4 * (progress ** 3)
+        : 1 - (((-2 * progress + 2) ** 3) / 2)
+
+      window.scrollTo(
+        0,
+        startY + (distance * eased),
+      )
+
+      if (progress < 1) {
+        frameId = window.requestAnimationFrame(
+          animate,
+        )
+      }
+    }
+
+    frameId = window.requestAnimationFrame(
+      animate,
+    )
+
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId)
+      }
+    }
+  }, [pathname])
 
   const dnaState = useMovieDna()
 
@@ -132,21 +233,6 @@ function ProfileLayout() {
             >
               {avatar.symbol}
             </div>
-
-            <div
-              className="
-                flex flex-col items-center
-                gap-1.5 sm:hidden
-              "
-            >
-              {tasteTitle && (
-                <TasteTitleBadge
-                  title={tasteTitle}
-                  className="sm:hidden"
-                />
-              )}
-
-            </div>
           </div>
 
           <div className="min-w-0 flex-1">
@@ -167,16 +253,21 @@ function ProfileLayout() {
               </h1>
 
               {tasteTitle && (
-                <TasteTitleBadge
-                  title={tasteTitle}
-                  className="hidden sm:inline-flex"
-                />
+                <div className="hidden sm:block">
+                  <TasteTitleBadge title={tasteTitle} />
+                </div>
               )}
             </div>
 
             <p className="mt-1 break-all text-secondary">
               @{profile.username}
             </p>
+
+            {tasteTitle && (
+              <div className="mt-2 flex justify-center sm:hidden">
+                <TasteTitleBadge title={tasteTitle} />
+              </div>
+            )}
 
             {/* Original desktop edit button */}
             <Link
@@ -247,7 +338,16 @@ function ProfileLayout() {
         </NavLink>
       </nav>
 
-      <Outlet />
+      <div
+        ref={contentStartRef}
+        className="
+          min-h-[100svh]
+          scroll-mt-4
+          [overflow-anchor:none]
+        "
+      >
+        <Outlet />
+      </div>
     </div>
   )
 }

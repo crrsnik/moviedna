@@ -19,7 +19,12 @@ describe('profile hero and DNA preview parity', () => {
 
     assert.match(
       source,
-      /className="hidden sm:inline-flex"/,
+      /className="hidden sm:block"/,
+    )
+
+    assert.match(
+      source,
+      /className="mt-2 flex justify-center sm:hidden"/,
     )
 
     assert.doesNotMatch(
