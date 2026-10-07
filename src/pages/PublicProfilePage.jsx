@@ -3,6 +3,8 @@ import { Navigate, useParams } from 'react-router-dom'
 import { useAuth } from '../features/auth/hooks/useAuth.js'
 import AchievementsSection from '../features/achievements/components/AchievementsSection.jsx'
 import DnaTraitBar from '../features/dna/components/DnaTraitBar.jsx'
+import { resolveDimensionLabel } from '../features/dna/services/dimensionLabels.js'
+import TasteTitleBadge from '../features/dna/components/TasteTitleBadge.jsx'
 import { useTranslation } from '../features/localization/hooks/useTranslation.js'
 import FriendshipControls from '../features/friends/components/FriendshipControls.jsx'
 import { useFriendship } from '../features/friends/hooks/useFriendship.js'
@@ -31,7 +33,6 @@ function MessagePanel({ title, children }) {
 
 function ProfileIdentity({
   profile,
-  visibility,
   tasteTitle,
 }) {
   const { t } = useTranslation()
@@ -42,31 +43,7 @@ function ProfileIdentity({
 
   return (
     <section className="relative rounded-2xl border border-border bg-surface p-6 sm:p-8">
-      {tasteTitle && (
-        <div
-          className="
-            absolute right-8 top-1/2 hidden w-48
-            -translate-y-1/2 text-right sm:block
-          "
-        >
-          <p
-            className="
-              text-[11px] font-semibold uppercase
-              tracking-[0.18em] text-tertiary
-            "
-          >
-            {t('profile.tasteTitleLabel')}
-          </p>
-
-          <p className="mt-1 text-lg font-semibold text-primary">
-            {t(
-              `profile.tasteTitles.${tasteTitle.id}`,
-            )}
-          </p>
-        </div>
-      )}
-
-      <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:pr-56 sm:text-left">
+      <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
         <div
           role="img"
           aria-label={t(
@@ -91,44 +68,63 @@ function ProfileIdentity({
             @{profile.username}
           </p>
 
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-            <span
-              className="
-                rounded-full border border-border-strong
-                px-2.5 py-1 text-xs font-medium
-                text-secondary
-              "
-            >
-              {visibility === 'public'
-                ? t('profile.publicProfile')
-                : t('profile.privateProfile')}
-            </span>
-
-            {tasteTitle && (
-              <span
-                className="
-                  rounded-full border border-accent
-                  bg-surface px-2.5 py-1
-                  text-xs font-semibold text-primary
-                  sm:hidden
-                "
-              >
-                {t(
-                  `profile.tasteTitles.${tasteTitle.id}`,
-                )}
-              </span>
-            )}
-          </div>
+          {tasteTitle && (
+            <div className="mt-3 flex justify-center sm:justify-start">
+              <TasteTitleBadge
+                title={tasteTitle}
+              />
+            </div>
+          )}
         </div>
       </div>
     </section>
   )
 }
 
-function GenrePreview({ genres }) {
-  const { t } = useTranslation()
+const CATEGORY_KEYS = Object.freeze({
+  genres:
+    'profile.overviewPage.categories.genres',
 
-  if (!genres.length) {
+  mediaTypes:
+    'profile.overviewPage.categories.mediaTypes',
+
+  decades:
+    'profile.overviewPage.categories.decades',
+
+  countries:
+    'profile.overviewPage.categories.countries',
+
+  directors:
+    'profile.overviewPage.categories.directors',
+
+  actors:
+    'profile.overviewPage.categories.actors',
+})
+
+function publicDnaTraits(dna) {
+  if (
+    Array.isArray(dna?.traits)
+    && dna.traits.length
+  ) {
+    return dna.traits
+  }
+
+  return (
+    Array.isArray(dna?.genres)
+      ? dna.genres
+      : []
+  ).map((genre, index) => ({
+    dimension: 'genres',
+    key: `legacy:${index}:${genre.label}`,
+    label: genre.label,
+    score: genre.score,
+  }))
+}
+
+function DnaPreview({ traits }) {
+  const { t, locale } = useTranslation()
+
+  if (!traits.length) {
     return (
       <p className="text-sm text-secondary">
         {t('profile.public.dnaEmpty')}
@@ -138,25 +134,40 @@ function GenrePreview({ genres }) {
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {genres.map((genre) => {
+      {traits.map(trait => {
         const percentage = Math.round(
-          genre.score * 100,
+          trait.score * 100,
+        )
+
+        const label = (
+          trait.key.startsWith('legacy:')
+            ? trait.label
+            : (
+                resolveDimensionLabel(
+                  trait.dimension,
+                  trait,
+                  locale,
+                )
+                ?? trait.label
+              )
         )
 
         return (
           <article
-            key={genre.label}
+            key={`${trait.dimension}:${trait.key}`}
             className="rounded-xl border border-border bg-surface-muted p-4"
           >
             <p className="text-xs font-medium text-tertiary">
               {t(
-                'profile.overviewPage.categories.genres',
+                CATEGORY_KEYS[
+                  trait.dimension
+                ],
               )}
             </p>
 
             <div className="mt-1 flex items-baseline justify-between gap-3">
               <h3 className="font-semibold">
-                {genre.label}
+                {label}
               </h3>
 
               <span className="text-sm font-medium text-secondary">
@@ -165,14 +176,14 @@ function GenrePreview({ genres }) {
             </div>
 
             <DnaTraitBar
-              dimension="genres"
-              traitKey={genre.label}
-              label={genre.label}
+              dimension={trait.dimension}
+              traitKey={trait.key}
+              label={label}
               percent={percentage}
               ariaLabel={t(
                 'profile.overviewPage.dnaCompatibility',
                 {
-                  label: genre.label,
+                  label,
                 },
               )}
             />
@@ -246,7 +257,7 @@ function PublicPreview({
         </div>
 
         <div className="mt-5">
-          <GenrePreview genres={dna.genres} />
+          <DnaPreview traits={publicDnaTraits(dna)} />
         </div>
       </section>
 
@@ -402,7 +413,6 @@ export default function PublicProfilePage() {
     <div className="w-full min-w-0 max-w-4xl self-start space-y-6">
       <ProfileIdentity
         profile={profile}
-        visibility={result.kind}
         tasteTitle={
           previewState.preview?.dna?.tasteTitle
           ?? null

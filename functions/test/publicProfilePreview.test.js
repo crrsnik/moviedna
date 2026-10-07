@@ -428,3 +428,102 @@ assert.deepEqual(result, {
     ])
   })
 })
+
+
+describe('public profile DNA trait projection', () => {
+  it('selects diverse strongest DNA traits across preview dimensions', () => {
+    const result = buildPublicDnaPreview({
+      dimensions: {
+        genres: [
+          {
+            key: 'genre:18',
+            label: 'Drama',
+            score: 0.95,
+            confidence: 0.8,
+          },
+          {
+            key: 'genre:53',
+            label: 'Thriller',
+            score: 0.94,
+            confidence: 0.9,
+          },
+        ],
+
+        mediaTypes: [
+          {
+            key: 'media:movie',
+            label: 'Movies',
+            score: 0.9,
+            confidence: 0.9,
+          },
+        ],
+
+        decades: [
+          {
+            key: 'decade:2020',
+            label: '2020s',
+            score: 0.8,
+            confidence: 0.8,
+          },
+        ],
+
+        countries: [
+          {
+            key: 'country:US',
+            label: 'US',
+            score: 0.7,
+            confidence: 0.9,
+          },
+        ],
+
+        directors: [
+          {
+            key: 'person:10',
+            label: 'Director A',
+            score: 0.6,
+            confidence: 0.9,
+          },
+        ],
+
+        actors: [
+          {
+            key: 'person:20',
+            label: 'Actor A',
+            score: 0.5,
+            confidence: 0.9,
+          },
+        ],
+      },
+    })
+
+    assert.deepEqual(
+      result.traits,
+      [
+        {
+          dimension: 'genres',
+          key: 'genre:18',
+          label: 'Drama',
+          score: 0.95,
+        },
+        {
+          dimension: 'mediaTypes',
+          key: 'media:movie',
+          label: 'Movies',
+          score: 0.9,
+        },
+        {
+          dimension: 'decades',
+          key: 'decade:2020',
+          label: '2020s',
+          score: 0.8,
+        },
+        {
+          dimension: 'countries',
+          key: 'country:US',
+          label: 'US',
+          score: 0.7,
+        },
+      ],
+    )
+  })
+})

@@ -50,11 +50,17 @@ export default function SavedMediaCard({
           className="aspect-2/3 rounded-lg"
         />
 
-        <h2 className="break-words font-medium">
+        <h2
+          className="
+            line-clamp-2 min-h-12
+            break-words font-medium leading-6
+          "
+          title={displayItem.title}
+        >
           {displayItem.title}
         </h2>
 
-        <p className="text-sm text-secondary">
+        <p className="truncate text-sm text-secondary">
           {[
             item.mediaType === 'movie'
               ? t('catalog.media.movie')

@@ -74,7 +74,7 @@ describe(
         )
 
         const dna = source.indexOf(
-          '<GenrePreview genres={dna.genres} />',
+          '<DnaPreview traits={publicDnaTraits(dna)} />',
         )
 
         const achievements =

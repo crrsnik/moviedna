@@ -7,6 +7,16 @@ import { selectPublicTasteTitle } from './publicTasteTitle.js'
 
 const PROFILE_PREVIEW_SCHEMA_VERSION = 1
 const MAX_GENRES = 4
+const MAX_DNA_TRAITS = 4
+
+const PUBLIC_DNA_DIMENSIONS = Object.freeze([
+  'genres',
+  'mediaTypes',
+  'decades',
+  'countries',
+  'directors',
+  'actors',
+])
 const MEDIA_TYPES = new Set(['movie', 'tv'])
 
 function validUid(uid) {
@@ -42,6 +52,121 @@ function validNonNegativeInteger(value) {
     Number.isSafeInteger(value)
     && value >= 0
   )
+}
+
+function comparePublicDnaTraits(left, right) {
+  const score = right.score - left.score
+  if (score !== 0) return score
+
+  const confidence =
+    right.confidence - left.confidence
+
+  if (confidence !== 0) return confidence
+
+  const dimension =
+    left.dimensionOrder - right.dimensionOrder
+
+  if (dimension !== 0) return dimension
+
+  return left.label.localeCompare(right.label)
+}
+
+function normalizePublicDnaTraitGroup(
+  entries,
+  dimension,
+  dimensionOrder,
+) {
+  if (!Array.isArray(entries)) return []
+
+  return entries
+    .filter(entry => (
+      entry
+      && typeof entry.key === 'string'
+      && entry.key
+      && typeof entry.label === 'string'
+      && entry.label.trim()
+      && typeof entry.score === 'number'
+      && Number.isFinite(entry.score)
+      && entry.score > 0
+      && entry.score <= 1
+      && typeof entry.confidence === 'number'
+      && Number.isFinite(entry.confidence)
+      && entry.confidence >= 0
+      && entry.confidence <= 1
+    ))
+    .map(entry => ({
+      dimension,
+      dimensionOrder,
+      key: entry.key,
+      label: entry.label.trim(),
+      score: entry.score,
+      confidence: entry.confidence,
+    }))
+    .sort(comparePublicDnaTraits)
+}
+
+function selectPublicDnaTraits(dimensions) {
+  if (
+    !dimensions
+    || typeof dimensions !== 'object'
+  ) {
+    return []
+  }
+
+  const groups = PUBLIC_DNA_DIMENSIONS.map(
+    (dimension, dimensionOrder) => (
+      normalizePublicDnaTraitGroup(
+        dimensions[dimension],
+        dimension,
+        dimensionOrder,
+      )
+    ),
+  )
+
+  const diverse = groups
+    .filter(group => group.length)
+    .map(group => group[0])
+    .sort(comparePublicDnaTraits)
+    .slice(0, MAX_DNA_TRAITS)
+
+  let selected = diverse
+
+  if (diverse.length < MAX_DNA_TRAITS) {
+    const selectedKeys = new Set(
+      diverse.map(
+        trait => `${trait.dimension}:${trait.key}`,
+      ),
+    )
+
+    const remaining = groups
+      .flat()
+      .filter(
+        trait => !selectedKeys.has(
+          `${trait.dimension}:${trait.key}`,
+        ),
+      )
+      .sort(comparePublicDnaTraits)
+
+    selected = [
+      ...diverse,
+      ...remaining.slice(
+        0,
+        MAX_DNA_TRAITS - diverse.length,
+      ),
+    ]
+  }
+
+  return selected.map(({
+    dimension,
+    key,
+    label,
+    score,
+  }) => ({
+    dimension,
+    key,
+    label,
+    score,
+  }))
 }
 
 export function buildPublicDnaPreview(movieDna) {
@@ -86,6 +211,15 @@ export function buildPublicDnaPreview(movieDna) {
       score: entry.score,
     }))
 
+  const traits = selectPublicDnaTraits(
+    movieDna?.dimensions,
+  )
+
+  const hasCrossDimensionTraits =
+    traits.some(
+      trait => trait.dimension !== 'genres',
+    )
+
   const tasteTitle =
     selectPublicTasteTitle(
       movieDna?.dimensions,
@@ -93,6 +227,11 @@ export function buildPublicDnaPreview(movieDna) {
 
   return {
     genres,
+
+    ...(hasCrossDimensionTraits
+      ? { traits }
+      : {}),
+
     ...(tasteTitle
       ? {
           tasteTitle: {

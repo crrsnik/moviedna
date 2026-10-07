@@ -2,11 +2,11 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { describe, it } from 'node:test'
 
-describe('Taste Title profile UI', () => {
-  it('shows Taste Title as profile identity instead of privacy status', async () => {
+describe('public profile DNA traits UI', () => {
+  it('renders diverse public DNA traits instead of genre-only preview', async () => {
     const source = await readFile(
       new URL(
-        '../../src/features/profile/components/ProfileLayout.jsx',
+        '../../src/pages/PublicProfilePage.jsx',
         import.meta.url,
       ),
       'utf8',
@@ -14,34 +14,34 @@ describe('Taste Title profile UI', () => {
 
     assert.match(
       source,
-      /selectTasteTitle/,
+      /function DnaPreview\(\{ traits \}\)/,
     )
 
     assert.match(
       source,
-      /TasteTitleBadge/,
+      /publicDnaTraits\(dna\)/,
     )
 
     assert.match(
       source,
-      /title=\{tasteTitle\}/,
+      /trait\.dimension/,
+    )
+
+    assert.match(
+      source,
+      /resolveDimensionLabel/,
     )
 
     assert.doesNotMatch(
       source,
-      /profile\.publicProfile/,
-    )
-
-    assert.doesNotMatch(
-      source,
-      /profile\.privateProfile/,
+      /function GenrePreview/,
     )
   })
 
-  it('keeps Taste Title interactive presentation inside the shared badge component', async () => {
+  it('accepts optional public DNA trait projection', async () => {
     const source = await readFile(
       new URL(
-        '../../src/features/dna/components/TasteTitleBadge.jsx',
+        '../../src/features/profile/services/publicProfilePreviewService.js',
         import.meta.url,
       ),
       'utf8',
@@ -49,17 +49,17 @@ describe('Taste Title profile UI', () => {
 
     assert.match(
       source,
-      /profile\.tasteTitles\.\$\{titleId\}/,
+      /PUBLIC_DNA_DIMENSIONS/,
     )
 
     assert.match(
       source,
-      /aria-haspopup="dialog"/,
+      /normalizePublicDnaTrait/,
     )
 
     assert.match(
       source,
-      /role="dialog"/,
+      /data\.dna\.traits/,
     )
   })
 })
