@@ -59,6 +59,10 @@ async function result(items, extra = {}) {
   return calculateMovieDna({ items, ...extra })
 }
 
+function roundForTest(value) {
+  return Number(value.toFixed(6))
+}
+
 async function expectCode(promise, code) {
   await assert.rejects(promise, (error) => {
     assert.equal(error instanceof MovieDnaError, true)
@@ -262,6 +266,130 @@ describe('MovieDNA dimensions, evidence and normalization', () => {
     })])
     assert.equal(dna.dimensions.genres[0].signedContribution, 0.333333)
     assert.equal(dna.dimensions.genres[0].score, 0.333333)
+  })
+})
+
+describe('MovieDNA taste foundations', () => {
+  it('keeps legacy genre evidence unchanged while weighting diagnostic genres separately', async () => {
+    const dna = await result([item(55, {
+      rating: 10,
+      metadata: {
+        genres: [
+          { id: 18, label: 'Drama' },
+          { id: 53, label: 'Thriller' },
+        ],
+      },
+    })])
+
+    assert.deepEqual(
+      dna.dimensions.genres.map(({ key, signedContribution }) => ({
+        key,
+        signedContribution,
+      })),
+      [
+        { key: 'genre:18', signedContribution: 0.5 },
+        { key: 'genre:53', signedContribution: 0.5 },
+      ],
+    )
+
+    const drama = dna.dimensions.specificGenres.find(
+      entry => entry.key === 'genre:18',
+    )
+    const thriller = dna.dimensions.specificGenres.find(
+      entry => entry.key === 'genre:53',
+    )
+
+    assert.equal(drama.signedContribution, 0.361111)
+    assert.equal(thriller.signedContribution, 0.638889)
+    assert.ok(thriller.score > drama.score)
+
+    assert.equal(
+      roundForTest(
+        dna.dimensions.specificGenres.reduce(
+          (sum, entry) => sum + entry.signedContribution,
+          0,
+        ),
+      ),
+      1,
+    )
+  })
+
+  it('builds stable genre-pair evidence from repeated combinations', async () => {
+    const sharedGenres = [
+      { id: 18, label: 'Drama' },
+      { id: 53, label: 'Thriller' },
+    ]
+
+    const dna = await result([
+      item(56, {
+        rating: 10,
+        metadata: { genres: sharedGenres },
+      }),
+      item(57, {
+        rating: 8,
+        metadata: { genres: [...sharedGenres].reverse() },
+      }),
+    ])
+
+    assert.equal(dna.dimensions.genrePairs.length, 1)
+
+    const pair = dna.dimensions.genrePairs[0]
+
+    assert.equal(pair.key, 'genre-pair:18+53')
+    assert.equal(pair.label, 'Drama + Thriller')
+    assert.equal(pair.signedContribution, 1.6)
+    assert.equal(pair.absoluteEvidenceWeight, 1.6)
+    assert.equal(pair.evidenceCount, 2)
+    assert.equal(pair.score, 1)
+    assert.ok(pair.confidence > 0.5)
+  })
+
+  it('uses neutral specificity for unknown genre ids', async () => {
+    const dna = await result([item(58, {
+      rating: 10,
+      metadata: {
+        genres: [
+          { id: 900001, label: 'Custom One' },
+          { id: 900002, label: 'Custom Two' },
+        ],
+      },
+    })])
+
+    assert.deepEqual(
+      dna.dimensions.specificGenres.map(
+        ({ key, signedContribution }) => ({
+          key,
+          signedContribution,
+        }),
+      ),
+      [
+        { key: 'genre:900001', signedContribution: 0.5 },
+        { key: 'genre:900002', signedContribution: 0.5 },
+      ],
+    )
+  })
+
+  it('preserves negative direction in specific genres and genre pairs', async () => {
+    const dna = await result([item(59, {
+      rating: 1,
+      metadata: {
+        genres: [
+          { id: 18, label: 'Drama' },
+          { id: 53, label: 'Thriller' },
+        ],
+      },
+    })])
+
+    assert.ok(
+      dna.dimensions.specificGenres.every(
+        entry => entry.signedContribution < 0,
+      ),
+    )
+
+    assert.equal(
+      dna.dimensions.genrePairs[0].signedContribution,
+      -1,
+    )
   })
 })
 
