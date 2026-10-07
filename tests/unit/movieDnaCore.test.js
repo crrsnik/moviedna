@@ -391,6 +391,123 @@ describe('MovieDNA taste foundations', () => {
       -1,
     )
   })
+
+  it('separates taste affinity from profile share', async () => {
+    const drama = { id: 18, label: 'Drama' }
+    const thriller = { id: 53, label: 'Thriller' }
+
+    const dna = await result([
+      item(110, {
+        rating: 10,
+        metadata: { genres: [drama] },
+      }),
+      item(111, {
+        rating: 1,
+        metadata: { genres: [drama] },
+      }),
+      item(112, {
+        rating: 10,
+        metadata: { genres: [drama] },
+      }),
+      item(113, {
+        rating: 10,
+        metadata: { genres: [thriller] },
+      }),
+      item(114, {
+        rating: 9,
+        metadata: { genres: [thriller] },
+      }),
+      item(115, {
+        rating: 8,
+        metadata: { genres: [thriller] },
+      }),
+    ])
+
+    const dramaTaste = dna.dimensions.specificGenres.find(
+      entry => entry.key === 'genre:18',
+    )
+
+    const thrillerTaste = dna.dimensions.specificGenres.find(
+      entry => entry.key === 'genre:53',
+    )
+
+    assert.equal(dramaTaste.affinity, 0.333333)
+    assert.equal(dramaTaste.positiveEvidenceWeight, 2)
+    assert.equal(dramaTaste.negativeEvidenceWeight, 1)
+
+    assert.equal(thrillerTaste.affinity, 1)
+    assert.equal(thrillerTaste.negativeEvidenceWeight, 0)
+
+    assert.ok(thrillerTaste.strength > dramaTaste.strength)
+  })
+
+  it('keeps confidence separate from affinity', async () => {
+    const thriller = { id: 53, label: 'Thriller' }
+
+    const one = await result([
+      item(116, {
+        rating: 10,
+        metadata: { genres: [thriller] },
+      }),
+    ])
+
+    const repeated = await result([
+      item(117, {
+        rating: 10,
+        metadata: { genres: [thriller] },
+      }),
+      item(118, {
+        rating: 9,
+        metadata: { genres: [thriller] },
+      }),
+      item(119, {
+        rating: 8,
+        metadata: { genres: [thriller] },
+      }),
+    ])
+
+    const oneTaste = one.dimensions.specificGenres[0]
+    const repeatedTaste = repeated.dimensions.specificGenres[0]
+
+    assert.equal(oneTaste.affinity, 1)
+    assert.equal(repeatedTaste.affinity, 1)
+
+    assert.ok(repeatedTaste.confidence > oneTaste.confidence)
+    assert.ok(repeatedTaste.strength > oneTaste.strength)
+  })
+
+  it('computes affinity for genre-pair evidence independently of frequency', async () => {
+    const genres = [
+      { id: 80, label: 'Crime' },
+      { id: 53, label: 'Thriller' },
+    ]
+
+    const dna = await result([
+      item(120, {
+        rating: 10,
+        metadata: { genres },
+      }),
+      item(121, {
+        rating: 9,
+        metadata: { genres },
+      }),
+      item(122, {
+        rating: 2,
+        metadata: { genres },
+      }),
+    ])
+
+    const pair = dna.dimensions.genrePairs[0]
+
+    assert.equal(pair.positiveEvidenceWeight, 1.8)
+    assert.equal(pair.negativeEvidenceWeight, 0.75)
+    assert.equal(pair.absoluteEvidenceWeight, 2.55)
+    assert.equal(pair.signedContribution, 1.05)
+    assert.equal(pair.affinity, 0.411765)
+
+    assert.ok(pair.confidence > 0.9)
+    assert.ok(pair.strength > 0)
+  })
 })
 
 describe('MovieDNA coverage and confidence', () => {

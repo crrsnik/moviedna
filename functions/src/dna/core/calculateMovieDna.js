@@ -278,16 +278,46 @@ function finalizeDimensions(accumulator) {
     const denominator = candidates.reduce((sum, value) => sum + value.absoluteEvidenceWeight, 0)
     dimensions[name] = candidates
       .filter((value) => name !== 'actors' || value.mediaKeys.size >= 2)
-      .map((value) => ({
-        key: value.key,
-        label: value.label,
-        signedContribution: round(value.signedContribution),
-        absoluteEvidenceWeight: round(value.absoluteEvidenceWeight),
-        evidenceCount: value.mediaKeys.size,
-        score: denominator ? round(value.signedContribution / denominator) : 0,
-        confidence: round(Math.min(1, value.absoluteEvidenceWeight / 2)
-          * Math.min(1, value.mediaKeys.size / 3)),
-      }))
+      .map((value) => {
+        const confidence = round(
+          Math.min(1, value.absoluteEvidenceWeight / 2)
+            * Math.min(1, value.mediaKeys.size / 3),
+        )
+
+        const entry = {
+          key: value.key,
+          label: value.label,
+          signedContribution: round(value.signedContribution),
+          absoluteEvidenceWeight: round(value.absoluteEvidenceWeight),
+          evidenceCount: value.mediaKeys.size,
+          score: denominator ? round(value.signedContribution / denominator) : 0,
+          confidence,
+        }
+
+        if (name === 'specificGenres' || name === 'genrePairs') {
+          const affinity = value.absoluteEvidenceWeight
+            ? round(value.signedContribution / value.absoluteEvidenceWeight)
+            : 0
+
+          const positiveEvidenceWeight = round(
+            (value.absoluteEvidenceWeight + value.signedContribution) / 2,
+          )
+
+          const negativeEvidenceWeight = round(
+            (value.absoluteEvidenceWeight - value.signedContribution) / 2,
+          )
+
+          return {
+            ...entry,
+            affinity,
+            positiveEvidenceWeight,
+            negativeEvidenceWeight,
+            strength: round(affinity * confidence),
+          }
+        }
+
+        return entry
+      })
       .sort((a, b) => b.score - a.score || b.evidenceCount - a.evidenceCount || a.key.localeCompare(b.key))
       .slice(0, name === 'mediaTypes' ? 2 : 20)
   }
