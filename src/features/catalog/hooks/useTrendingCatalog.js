@@ -11,19 +11,69 @@ import {
   isTmdbAbort,
 } from '../services/tmdbErrors.js'
 
-function useCatalogSection(load, language) {
+import {
+  trendingCatalogCache,
+} from '../services/trendingCatalogCache.js'
+
+function useCatalogSection(
+  type,
+  load,
+  language,
+) {
   const [attempt, setAttempt] = useState(0)
-  const [state, setState] = useState(null)
+
+  const cached = trendingCatalogCache.get(
+    type,
+    language,
+  )
+
+  const [state, setState] = useState(
+    cached
+      ? {
+          key: `${language}:0`,
+          data: cached.data,
+          isLoading: false,
+          error: null,
+        }
+      : null,
+  )
+
   const key = `${language}:${attempt}`
 
   useEffect(() => {
     const controller = new AbortController()
+
+    const cached = trendingCatalogCache.get(
+      type,
+      language,
+    )
+
+    if (
+      cached
+      && cached.fresh
+      && attempt === 0
+    ) {
+      setState({
+        key,
+        data: cached.data,
+        isLoading: false,
+        error: null,
+      })
+
+      return () => controller.abort()
+    }
 
     load({
       language,
       signal: controller.signal,
     }).then((data) => {
       if (!controller.signal.aborted) {
+        trendingCatalogCache.set(
+          type,
+          language,
+          data,
+        )
+
         setState({
           key,
           data,
@@ -46,7 +96,13 @@ function useCatalogSection(load, language) {
     })
 
     return () => controller.abort()
-  }, [load, language, key])
+  }, [
+    type,
+    load,
+    language,
+    key,
+    attempt,
+  ])
 
   const visible = state?.key === key
     ? state
@@ -73,11 +129,13 @@ export function useTrendingCatalog() {
   // Independent effects start together; retrying one section
   // preserves the other.
   const movies = useCatalogSection(
+    'movie',
     getTrendingMovies,
     language,
   )
 
   const tvShows = useCatalogSection(
+    'tv',
     getTrendingTvShows,
     language,
   )
