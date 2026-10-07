@@ -6,6 +6,7 @@ import {
 
 import { useMovieDna } from '../../dna/hooks/useMovieDna.js'
 import { selectTasteTitle } from '../../dna/utils/selectTasteTitle.js'
+import TasteTitleBadge from '../../dna/components/TasteTitleBadge.jsx'
 import { useTranslation } from '../../localization/hooks/useTranslation.js'
 import {
   PROFILE_AVATARS,
@@ -86,29 +87,6 @@ function ProfileLayout() {
   return (
     <div className="w-full min-w-0 self-start space-y-8">
       <section className="relative rounded-2xl border border-border bg-surface p-5 sm:p-7">
-        {tasteTitle && (
-          <div
-            className="
-              absolute right-7 top-1/2 hidden w-48
-              -translate-y-1/2 text-right sm:block
-            "
-          >
-            <p
-              className="
-                text-[11px] font-semibold uppercase
-                tracking-[0.18em] text-tertiary
-              "
-            >
-              {t('profile.tasteTitleLabel')}
-            </p>
-
-            <p className="mt-1 text-lg font-semibold text-primary">
-              {t(
-                `profile.tasteTitles.${tasteTitle.id}`,
-              )}
-            </p>
-          </div>
-        )}
         {/* Mobile settings shortcut */}
         <Link
           to="/profile/settings"
@@ -133,7 +111,7 @@ function ProfileLayout() {
         <div
           className="
             flex flex-col items-center gap-4 text-center
-            sm:flex-row sm:items-center sm:gap-5 sm:pr-56 sm:text-left
+            sm:flex-row sm:items-center sm:gap-5 sm:text-left
           "
         >
           <div className="flex shrink-0 flex-col items-center gap-2">
@@ -162,33 +140,12 @@ function ProfileLayout() {
               "
             >
               {tasteTitle && (
-                <span
-                  className="
-                    rounded-full border border-accent
-                    bg-surface px-2.5 py-1
-                    text-xs font-semibold text-primary
-                  "
-                >
-                  {t(
-                    `profile.tasteTitles.${tasteTitle.id}`,
-                  )}
-                </span>
+                <TasteTitleBadge
+                  title={tasteTitle}
+                  className="sm:hidden"
+                />
               )}
 
-              {/* Mobile visibility */}
-              <span
-                className="
-                  rounded-full
-                  border border-border-strong
-                  px-2.5 py-1
-                  text-xs font-medium
-                  text-secondary
-                "
-              >
-                {profile.profileVisibility === 'public'
-                  ? t('profile.publicProfile')
-                  : t('profile.privateProfile')}
-              </span>
             </div>
           </div>
 
@@ -197,7 +154,7 @@ function ProfileLayout() {
               className="
                 flex flex-col items-center gap-2
                 sm:flex-row sm:flex-wrap
-                sm:items-center sm:gap-3
+                sm:items-center sm:gap-4
               "
             >
               <h1
@@ -209,20 +166,12 @@ function ProfileLayout() {
                 {profile.displayName}
               </h1>
 
-              {/* Desktop visibility */}
-              <span
-                className="
-                  hidden rounded-full
-                  border border-border-strong
-                  px-2.5 py-1 text-xs font-medium
-                  text-secondary
-                  sm:inline-flex
-                "
-              >
-                {profile.profileVisibility === 'public'
-                  ? t('profile.publicProfile')
-                  : t('profile.privateProfile')}
-              </span>
+              {tasteTitle && (
+                <TasteTitleBadge
+                  title={tasteTitle}
+                  className="hidden sm:inline-flex"
+                />
+              )}
             </div>
 
             <p className="mt-1 break-all text-secondary">

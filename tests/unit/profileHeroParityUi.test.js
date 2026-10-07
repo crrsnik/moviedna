@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { describe, it } from 'node:test'
 
 describe('profile hero and DNA preview parity', () => {
-  it('keeps Taste Title in the hero instead of the own-profile name row', async () => {
+  it('uses Taste Title instead of privacy status in the own profile hero', async () => {
     const source = await readFile(
       new URL(
         '../../src/features/profile/components/ProfileLayout.jsx',
@@ -14,21 +14,36 @@ describe('profile hero and DNA preview parity', () => {
 
     assert.match(
       source,
-      /profile\.tasteTitleLabel/,
+      /TasteTitleBadge/,
     )
 
     assert.match(
       source,
-      /absolute right-7 top-1\/2/,
+      /className="hidden sm:inline-flex"/,
     )
 
-    assert.match(
+    assert.doesNotMatch(
       source,
-      /sm:pr-56/,
+      /profile\.publicProfile/,
+    )
+
+    assert.doesNotMatch(
+      source,
+      /profile\.privateProfile/,
+    )
+
+    assert.doesNotMatch(
+      source,
+      /bottom-5 right-6/,
+    )
+
+    assert.doesNotMatch(
+      source,
+      /sm:pr-44/,
     )
   })
 
-  it('shows public profile visibility and Taste Title in the public hero', async () => {
+  it('uses Taste Title instead of privacy status in the public profile hero', async () => {
     const source = await readFile(
       new URL(
         '../../src/pages/PublicProfilePage.jsx',
@@ -37,33 +52,42 @@ describe('profile hero and DNA preview parity', () => {
       'utf8',
     )
 
-    assert.match(
-      source,
-      /visibility=\{result\.kind\}/,
+    const identity = source.slice(
+      source.indexOf(
+        'function ProfileIdentity',
+      ),
+      source.indexOf(
+        'function GenrePreview',
+      ),
     )
 
     assert.match(
-      source,
+      identity,
+      /TasteTitleBadge/,
+    )
+
+    assert.doesNotMatch(
+      identity,
       /profile\.publicProfile/,
     )
 
-    assert.match(
-      source,
+    assert.doesNotMatch(
+      identity,
       /profile\.privateProfile/,
     )
 
-    assert.match(
-      source,
-      /profile\.tasteTitleLabel/,
+    assert.doesNotMatch(
+      identity,
+      /visibility ===/,
     )
 
-    assert.match(
-      source,
-      /previewState\.preview\?\.dna\?\.tasteTitle/,
+    assert.doesNotMatch(
+      identity,
+      /bottom-5 right-6/,
     )
   })
 
-  it('uses the current DNA bar design and keeps Taste Title out of the DNA section', async () => {
+  it('keeps Taste Title out of the public DNA section', async () => {
     const source = await readFile(
       new URL(
         '../../src/pages/PublicProfilePage.jsx',
@@ -83,7 +107,9 @@ describe('profile hero and DNA preview parity', () => {
     )
 
     const publicPreview = source.slice(
-      source.indexOf('function PublicPreview'),
+      source.indexOf(
+        'function PublicPreview',
+      ),
       source.indexOf(
         'export default function PublicProfilePage',
       ),

@@ -20,6 +20,10 @@ import {
 } from '../../../shared/config/tmdb.js'
 
 import {
+  getTmdbPosterUrl,
+} from '../services/tmdbImages.js'
+
+import {
   useSearchAutocomplete,
 } from '../hooks/useSearchAutocomplete.js'
 
@@ -81,6 +85,19 @@ function suggestionDetail(item, t) {
   return year
     ? `${type} · ${year}`
     : type
+}
+
+function suggestionArtwork(item) {
+  if (
+    item.mediaType !== 'movie'
+    && item.mediaType !== 'tv'
+  ) {
+    return null
+  }
+
+  return getTmdbPosterUrl(
+    item.posterPath,
+  )
 }
 
 
@@ -342,7 +359,7 @@ export default function SearchForm({
                         )
                       }
                     >
-                      <span className="min-w-0">
+                      <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium text-primary">
                           {suggestionTitle(
                             item,
@@ -356,6 +373,45 @@ export default function SearchForm({
                           )}
                         </span>
                       </span>
+
+                      {(
+                        item.mediaType === 'movie'
+                        || item.mediaType === 'tv'
+                      ) && (
+                        suggestionArtwork(item)
+                          ? (
+                            <img
+                              src={
+                                suggestionArtwork(
+                                  item,
+                                )
+                              }
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                              className="
+                                h-[66px] w-11 shrink-0
+                                rounded-md object-cover
+                                bg-surface-muted
+                              "
+                            />
+                          )
+                          : (
+                            <span
+                              aria-hidden="true"
+                              className="
+                                flex h-[66px] w-11
+                                shrink-0 items-center
+                                justify-center rounded-md
+                                border border-border
+                                bg-surface-muted
+                                text-lg text-tertiary
+                              "
+                            >
+                              🎬
+                            </span>
+                          )
+                      )}
                     </button>
                   </li>
                 ),

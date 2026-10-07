@@ -72,11 +72,17 @@ function BoardItems({ items }) {
               className="aspect-2/3 rounded-lg"
             />
 
-            <h2 className="mt-2 break-words font-medium">
+            <h2
+              className="
+                mt-2 line-clamp-2 min-h-12
+                break-words font-medium leading-6
+              "
+              title={item.title}
+            >
               {item.title}
             </h2>
 
-            <p className="mt-1 text-sm text-secondary">
+            <p className="mt-1 truncate text-sm text-secondary">
               {[
                 item.mediaType === 'movie'
                   ? t('catalog.media.movie')

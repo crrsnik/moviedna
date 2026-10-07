@@ -15,6 +15,15 @@ const PUBLIC_TASTE_TITLE_IDS = new Set([
   ...Object.values(TASTE_TITLE_COMBINATIONS),
 ])
 
+const PUBLIC_DNA_DIMENSIONS = new Set([
+  'genres',
+  'mediaTypes',
+  'decades',
+  'countries',
+  'directors',
+  'actors',
+])
+
 export class PublicProfilePreviewError extends Error {
   constructor(code) {
     super(code)
@@ -181,6 +190,35 @@ function normalizeTasteTitle(value) {
   }
 }
 
+function normalizePublicDnaTrait(value) {
+  if (
+    !plain(value)
+    || typeof value.dimension !== 'string'
+    || !PUBLIC_DNA_DIMENSIONS.has(
+      value.dimension,
+    )
+    || typeof value.key !== 'string'
+    || !value.key
+    || typeof value.label !== 'string'
+    || !value.label.trim()
+    || typeof value.score !== 'number'
+    || !Number.isFinite(value.score)
+    || value.score <= 0
+    || value.score > 1
+  ) {
+    throw new PublicProfilePreviewError(
+      'public-profile-preview/invalid',
+    )
+  }
+
+  return {
+    dimension: value.dimension,
+    key: value.key,
+    label: value.label.trim(),
+    score: value.score,
+  }
+}
+
 function normalizeGenre(value) {
   if (
     !plain(value)
@@ -225,6 +263,13 @@ function normalizePreview(snapshot) {
     || !plain(data.dna)
     || !Array.isArray(data.dna.genres)
     || data.dna.genres.length > 4
+    || (
+      data.dna.traits !== undefined
+      && (
+        !Array.isArray(data.dna.traits)
+        || data.dna.traits.length > 4
+      )
+    )
     || !plain(data.statistics)
     || !nonNegativeInteger(data.statistics.totalViewings)
     || !nonNegativeInteger(data.statistics.movieCount)
@@ -251,12 +296,24 @@ function normalizePreview(snapshot) {
       data.dna.tasteTitle,
     )
 
+  const traits = (
+    data.dna.traits === undefined
+      ? null
+      : data.dna.traits.map(
+          normalizePublicDnaTrait,
+        )
+  )
+
   return {
     dna: {
       genres:
         data.dna.genres.map(
           normalizeGenre,
         ),
+
+      ...(traits
+        ? { traits }
+        : {}),
 
       ...(tasteTitle
         ? { tasteTitle }
