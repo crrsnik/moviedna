@@ -300,10 +300,14 @@ export function recommendationMetadataFromResolved(
     ),
   }
 
-  result.tasteTags = inferTasteTags(
+  const inferredTasteTags = inferTasteTags(
     taxonomyMetadata,
     mediaType,
   )
+
+  if (inferredTasteTags.length) {
+    result.tasteTags = inferredTasteTags
+  }
 
   return result
 }

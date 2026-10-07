@@ -86,7 +86,7 @@ describe(
         assert.ok(result)
 
         assert.ok(
-          result.tasteTags.some(
+          (result.tasteTags ?? []).some(
             taste => (
               taste.key
               === 'taste:psychological-thriller'
@@ -110,7 +110,7 @@ describe(
         assert.ok(result)
 
         assert.equal(
-          result.tasteTags.some(
+          (result.tasteTags ?? []).some(
             taste => (
               taste.key
               === 'taste:psychological-thriller'
@@ -167,7 +167,7 @@ describe(
         assert.ok(result)
 
         assert.ok(
-          result.tasteTags.some(
+          (result.tasteTags ?? []).some(
             taste => (
               taste.key
               === 'taste:russian-romantic-tv'
@@ -191,9 +191,9 @@ describe(
           )
 
         assert.ok(result)
-        assert.deepEqual(
+        assert.equal(
           result.tasteTags,
-          [],
+          undefined,
         )
       },
     )
