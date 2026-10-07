@@ -533,6 +533,7 @@ export async function calculateMovieDna(input) {
   return {
     schemaVersion: MOVIEDNA_SCHEMA_VERSION,
     algorithmVersion: MOVIEDNA_ALGORITHM_VERSION,
+    calculationRevision: MOVIEDNA_CALCULATION_REVISION,
     inputFingerprint: await sha256(JSON.stringify(fingerprintPayload(items))),
     sourceCounts,
     metadataCoverage: coverage,
