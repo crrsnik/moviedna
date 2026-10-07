@@ -5,6 +5,7 @@ function validIdentity(entry, item) {
   return entry?.schemaVersion === 1
     && entry.tmdbId === item.tmdbId
     && entry.mediaType === item.mediaType
+    && Array.isArray(entry.keywords)
     && Object.prototype.hasOwnProperty.call(
       entry,
       'collectionId',

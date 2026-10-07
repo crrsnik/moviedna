@@ -184,7 +184,7 @@ describe('MovieDNA keyword metadata foundation', () => {
     ])
   })
 
-  it('keeps old valid cache entries without keywords backward compatible', async () => {
+  it('refreshes legacy cache entries that do not contain keywords', async () => {
     const cached = {
       schemaVersion: 1,
       tmdbId: 3,
@@ -203,18 +203,49 @@ describe('MovieDNA keyword metadata foundation', () => {
       expiresAt: 5000,
     }
 
+    let fetchCount = 0
+    let written = null
+
     const cache = {
       async get() {
         return cached
       },
-      async set() {
-        throw new Error('fresh cache entry should not be rewritten')
+      async set(mediaKey, value) {
+        assert.equal(mediaKey, 'movie_3')
+        written = value
       },
     }
 
     const tmdbClient = {
-      async getMetadata() {
-        throw new Error('fresh cache entry should not refetch')
+      async getMetadata(mediaType, tmdbId) {
+        fetchCount += 1
+
+        assert.equal(mediaType, 'movie')
+        assert.equal(tmdbId, 3)
+
+        return {
+          schemaVersion: 1,
+          tmdbId: 3,
+          mediaType: 'movie',
+          genreIds: [53],
+          keywords: [
+            {
+              id: 301,
+              name: 'psychology',
+            },
+          ],
+          releaseYear: 2020,
+          originalLanguage: 'en',
+          countryCodes: ['US'],
+          directors: [],
+          creators: [],
+          actors: [],
+          collectionId: null,
+          metadataStatus: 'ready',
+          metadataCompleteness: {
+            ...complete,
+          },
+        }
       },
     }
 
@@ -233,7 +264,30 @@ describe('MovieDNA keyword metadata foundation', () => {
       },
     ])
 
-    assert.deepEqual(resolved.metadata.keywords, [])
+    assert.equal(fetchCount, 1)
+
+    assert.deepEqual(
+      resolved.metadata.keywords,
+      [
+        {
+          id: 301,
+          name: 'psychology',
+        },
+      ],
+    )
+
+    assert.deepEqual(
+      written.keywords,
+      [
+        {
+          id: 301,
+          name: 'psychology',
+        },
+      ],
+    )
+
+    assert.equal(written.fetchedAt, 1000)
+    assert.equal(written.expiresAt, 11_000)
   })
 
   it('makes keyword evidence part of the deterministic DNA fingerprint', async () => {
