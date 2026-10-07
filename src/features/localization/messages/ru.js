@@ -118,6 +118,7 @@ export const ru = {
     loadError: 'Не удалось загрузить профиль.',
     publicProfile: 'Публичный профиль',
     privateProfile: 'Закрытый профиль',
+    tasteTitleLabel: 'Титул вкуса',
     editProfile: 'Редактировать профиль',
     navigation: 'Навигация профиля',
     avatar: 'Аватар {label}',

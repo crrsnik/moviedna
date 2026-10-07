@@ -2,6 +2,7 @@ import { Navigate, useParams } from 'react-router-dom'
 
 import { useAuth } from '../features/auth/hooks/useAuth.js'
 import AchievementsSection from '../features/achievements/components/AchievementsSection.jsx'
+import DnaTraitBar from '../features/dna/components/DnaTraitBar.jsx'
 import { useTranslation } from '../features/localization/hooks/useTranslation.js'
 import FriendshipControls from '../features/friends/components/FriendshipControls.jsx'
 import { useFriendship } from '../features/friends/hooks/useFriendship.js'
@@ -28,7 +29,11 @@ function MessagePanel({ title, children }) {
   )
 }
 
-function ProfileIdentity({ profile }) {
+function ProfileIdentity({
+  profile,
+  visibility,
+  tasteTitle,
+}) {
   const { t } = useTranslation()
 
   const avatar = PROFILE_AVATARS.find(
@@ -36,18 +41,42 @@ function ProfileIdentity({ profile }) {
   ) ?? PROFILE_AVATARS[0]
 
   return (
-    <section className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
-      <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
+    <section className="relative rounded-2xl border border-border bg-surface p-6 sm:p-8">
+      {tasteTitle && (
+        <div
+          className="
+            absolute right-8 top-1/2 hidden w-48
+            -translate-y-1/2 text-right sm:block
+          "
+        >
+          <p
+            className="
+              text-[11px] font-semibold uppercase
+              tracking-[0.18em] text-tertiary
+            "
+          >
+            {t('profile.tasteTitleLabel')}
+          </p>
+
+          <p className="mt-1 text-lg font-semibold text-primary">
+            {t(
+              `profile.tasteTitles.${tasteTitle.id}`,
+            )}
+          </p>
+        </div>
+      )}
+
+      <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:pr-56 sm:text-left">
         <div
           role="img"
           aria-label={t(
-          'profile.avatar',
-          {
-            label: t(
-              `profile.avatars.${avatar.id}`,
-            ),
-          },
-        )}
+            'profile.avatar',
+            {
+              label: t(
+                `profile.avatars.${avatar.id}`,
+              ),
+            },
+          )}
           className="flex size-28 shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted text-6xl"
         >
           {avatar.symbol}
@@ -61,6 +90,35 @@ function ProfileIdentity({ profile }) {
           <p className="mt-2 break-all text-secondary">
             @{profile.username}
           </p>
+
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+            <span
+              className="
+                rounded-full border border-border-strong
+                px-2.5 py-1 text-xs font-medium
+                text-secondary
+              "
+            >
+              {visibility === 'public'
+                ? t('profile.publicProfile')
+                : t('profile.privateProfile')}
+            </span>
+
+            {tasteTitle && (
+              <span
+                className="
+                  rounded-full border border-accent
+                  bg-surface px-2.5 py-1
+                  text-xs font-semibold text-primary
+                  sm:hidden
+                "
+              >
+                {t(
+                  `profile.tasteTitles.${tasteTitle.id}`,
+                )}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </section>
@@ -81,33 +139,42 @@ function GenrePreview({ genres }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {genres.map((genre) => {
-        const percentage = Math.round(genre.score * 100)
+        const percentage = Math.round(
+          genre.score * 100,
+        )
 
         return (
           <article
             key={genre.label}
             className="rounded-xl border border-border bg-surface-muted p-4"
           >
-            <div className="flex items-baseline justify-between gap-3">
-              <strong className="break-words">
-                {genre.label}
-              </strong>
+            <p className="text-xs font-medium text-tertiary">
+              {t(
+                'profile.overviewPage.categories.genres',
+              )}
+            </p>
 
-              <span className="text-sm text-secondary">
+            <div className="mt-1 flex items-baseline justify-between gap-3">
+              <h3 className="font-semibold">
+                {genre.label}
+              </h3>
+
+              <span className="text-sm font-medium text-secondary">
                 +{percentage}%
               </span>
             </div>
 
-            <progress
-              aria-label={t(
-                'profile.public.dnaCompatibility',
+            <DnaTraitBar
+              dimension="genres"
+              traitKey={genre.label}
+              label={genre.label}
+              percent={percentage}
+              ariaLabel={t(
+                'profile.overviewPage.dnaCompatibility',
                 {
                   label: genre.label,
                 },
               )}
-              value={percentage}
-              max="100"
-              className="mt-3 h-2 w-full accent-violet-400"
             />
           </article>
         )
@@ -177,23 +244,6 @@ function PublicPreview({
             {t('profile.public.dnaDescription')}
           </p>
         </div>
-
-        {dna.tasteTitle && (
-          <div className="mt-4">
-            <span
-              className="
-                inline-flex rounded-full
-                border border-accent
-                bg-surface px-2.5 py-1
-                text-xs font-semibold text-primary
-              "
-            >
-              {t(
-                `profile.tasteTitles.${dna.tasteTitle.id}`,
-              )}
-            </span>
-          </div>
-        )}
 
         <div className="mt-5">
           <GenrePreview genres={dna.genres} />
@@ -350,7 +400,14 @@ export default function PublicProfilePage() {
 
   return (
     <div className="w-full min-w-0 max-w-4xl self-start space-y-6">
-      <ProfileIdentity profile={profile} />
+      <ProfileIdentity
+        profile={profile}
+        visibility={result.kind}
+        tasteTitle={
+          previewState.preview?.dna?.tasteTitle
+          ?? null
+        }
+      />
 
       <section className="rounded-2xl border border-border bg-surface p-6">
         <FriendshipControls

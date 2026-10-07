@@ -86,6 +86,29 @@ function ProfileLayout() {
   return (
     <div className="w-full min-w-0 self-start space-y-8">
       <section className="relative rounded-2xl border border-border bg-surface p-5 sm:p-7">
+        {tasteTitle && (
+          <div
+            className="
+              absolute right-7 top-1/2 hidden w-48
+              -translate-y-1/2 text-right sm:block
+            "
+          >
+            <p
+              className="
+                text-[11px] font-semibold uppercase
+                tracking-[0.18em] text-tertiary
+              "
+            >
+              {t('profile.tasteTitleLabel')}
+            </p>
+
+            <p className="mt-1 text-lg font-semibold text-primary">
+              {t(
+                `profile.tasteTitles.${tasteTitle.id}`,
+              )}
+            </p>
+          </div>
+        )}
         {/* Mobile settings shortcut */}
         <Link
           to="/profile/settings"
@@ -110,7 +133,7 @@ function ProfileLayout() {
         <div
           className="
             flex flex-col items-center gap-4 text-center
-            sm:flex-row sm:items-center sm:gap-5 sm:text-left
+            sm:flex-row sm:items-center sm:gap-5 sm:pr-56 sm:text-left
           "
         >
           <div className="flex shrink-0 flex-col items-center gap-2">
@@ -185,22 +208,6 @@ function ProfileLayout() {
               >
                 {profile.displayName}
               </h1>
-
-              {tasteTitle && (
-                <span
-                  className="
-                    hidden rounded-full
-                    border border-accent
-                    bg-surface px-2.5 py-1
-                    text-xs font-semibold text-primary
-                    sm:inline-flex
-                  "
-                >
-                  {t(
-                    `profile.tasteTitles.${tasteTitle.id}`,
-                  )}
-                </span>
-              )}
 
               {/* Desktop visibility */}
               <span
