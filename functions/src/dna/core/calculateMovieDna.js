@@ -4,17 +4,19 @@ import {
   FAVORITE_WEIGHT,
   GENRE_SPECIFICITY_WEIGHTS,
   MOVIEDNA_ALGORITHM_VERSION,
+  MOVIEDNA_CALCULATION_REVISION,
   MOVIEDNA_ROUNDING_DECIMALS,
   ONBOARDING_WEIGHTS,
   RATING_WEIGHTS,
 } from './movieDnaConstants.js'
 import { MOVIEDNA_ERROR_CODES, throwMovieDnaError } from './movieDnaErrors.js'
+import { inferTasteTags } from './tasteTaxonomy.js'
 
 const MEDIA_TYPES = new Set(['movie', 'tv'])
 const REACTIONS = new Set(['like', 'dislike', 'skip'])
 const METADATA_STATUSES = new Set(['ready', 'partial', 'missing', 'temporary-error'])
 const DIMENSION_NAMES = [
-  'genres', 'specificGenres', 'genrePairs',
+  'genres', 'specificGenres', 'genrePairs', 'tasteTags',
   'mediaTypes', 'decades', 'languages',
   'countries', 'directors', 'creators', 'actors',
 ]
@@ -285,6 +287,7 @@ function dimensionValues(item) {
     genres: metadata.genres,
     specificGenres: metadata.genres,
     genrePairs: genrePairValues(metadata.genres),
+    tasteTags: inferTasteTags(metadata, item.mediaType),
     mediaTypes: [{ key: `media:${item.mediaType}`, label: item.mediaType === 'movie' ? 'Movies' : 'TV' }],
     decades: decade,
     languages: metadata.originalLanguage ? [metadata.originalLanguage] : [],
@@ -336,7 +339,11 @@ function finalizeDimensions(accumulator) {
           confidence,
         }
 
-        if (name === 'specificGenres' || name === 'genrePairs') {
+        if (
+          name === 'specificGenres'
+          || name === 'genrePairs'
+          || name === 'tasteTags'
+        ) {
           const affinity = value.absoluteEvidenceWeight
             ? round(value.signedContribution / value.absoluteEvidenceWeight)
             : 0
@@ -385,7 +392,7 @@ function metadataCoverage(items) {
 function fingerprintPayload(items) {
   return {
     algorithmVersion: MOVIEDNA_ALGORITHM_VERSION,
-    calculationRevision: 2,
+    calculationRevision: MOVIEDNA_CALCULATION_REVISION,
     items: items.map((item) => ({
       mediaKey: item.mediaKey,
       tmdbId: item.tmdbId,
@@ -471,6 +478,19 @@ export async function calculateMovieDna(input) {
     for (const name of DIMENSION_NAMES) {
       const dimension = values[name]
       if (!dimension.length) continue
+      if (name === 'tasteTags') {
+        for (const value of dimension) {
+          addContribution(
+            accumulator[name],
+            value,
+            signal.weight,
+            item.mediaKey,
+          )
+        }
+
+        continue
+      }
+
       if (name === 'specificGenres') {
         const specificityTotal = dimension.reduce(
           (sum, value) => sum + genreSpecificityWeight(value),
