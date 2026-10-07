@@ -201,6 +201,7 @@ function createRecommendationRuntimeHandler() {
   const pipeline = createRecommendationPipeline({
     sourceClient,
     metadataResolver,
+    sourceConcurrency: 8,
     maxPerMediaType: 70,
   })
 
