@@ -662,3 +662,206 @@ export function orderDiagnosticOnboardingSeeds(
   return ordered
 }
 
+
+export const ONBOARDING_ADAPTIVE_START = 12
+export const ONBOARDING_ADAPTIVE_MIN_OPINIONS = 3
+
+function adaptiveTasteUtility(
+  taste,
+  tasteEvidence,
+) {
+  const evidence =
+    tasteEvidence.get(taste)
+
+  if (!evidence) {
+    // Still-unexplored taste:
+    // useful, but weaker than a hypothesis
+    // that already needs confirmation.
+    return 2.5
+  }
+
+  if (evidence.count === 1) {
+    // One signal is exactly where another
+    // discriminator is most valuable.
+    return 4
+  }
+
+  const consistency = Math.abs(
+    evidence.signed
+  ) / evidence.count
+
+  if (consistency < 0.5) {
+    // Conflicting answers:
+    // high uncertainty, so ask again.
+    return 3.5
+  }
+
+  if (consistency < 1) {
+    return 2
+  }
+
+  // Already strongly confirmed.
+  // Do not create a recommendation bubble
+  // inside onboarding.
+  return 0.75
+}
+
+function adaptiveCandidateScore(
+  media,
+  tasteEvidence,
+  index,
+) {
+  const profile =
+    getOnboardingDiagnosticProfile(media)
+
+  const roleScore = ({
+    discriminator: 3,
+    probe: 2,
+    anchor: 0.5,
+  })[profile.role] ?? 0
+
+  const tasteScore =
+    profile.tasteTargets.length
+      ? Math.max(
+          ...profile.tasteTargets.map(
+            taste => (
+              adaptiveTasteUtility(
+                taste,
+                tasteEvidence,
+              )
+            ),
+          ),
+        )
+      : 0
+
+  return (
+    roleScore
+    + tasteScore
+    + profile.priority / 100
+    - index / 100000
+  )
+}
+
+export function prepareAdaptiveOnboardingDeck(
+  deck,
+  responses = [],
+) {
+  if (!Array.isArray(deck)) return []
+
+  if (!Array.isArray(responses)) {
+    return [...deck]
+  }
+
+  if (
+    responses.length
+    < ONBOARDING_ADAPTIVE_START
+  ) {
+    return [...deck]
+  }
+
+  const opinionated = responses.filter(
+    response => (
+      response?.reaction === 'like'
+      || response?.reaction === 'dislike'
+    ),
+  )
+
+  if (
+    opinionated.length
+    < ONBOARDING_ADAPTIVE_MIN_OPINIONS
+  ) {
+    return [...deck]
+  }
+
+  const answeredKeys = new Set(
+    responses
+      .map(response => (
+        getOnboardingMediaKey(
+          response?.mediaType,
+          response?.tmdbId,
+        )
+      ))
+      .filter(Boolean),
+  )
+
+  const tasteEvidence = new Map()
+
+  for (const response of opinionated) {
+    const profile =
+      getOnboardingDiagnosticProfile({
+        mediaType: response.mediaType,
+        tmdbId: response.tmdbId,
+      })
+
+    const direction =
+      response.reaction === 'like'
+        ? 1
+        : -1
+
+    for (
+      const taste
+      of profile.tasteTargets
+    ) {
+      const current =
+        tasteEvidence.get(taste)
+        ?? {
+          count: 0,
+          signed: 0,
+        }
+
+      tasteEvidence.set(
+        taste,
+        {
+          count: current.count + 1,
+          signed:
+            current.signed + direction,
+        },
+      )
+    }
+  }
+
+  if (!tasteEvidence.size) {
+    return [...deck]
+  }
+
+  const answered = []
+  const remaining = []
+
+  deck.forEach((media, index) => {
+    const key = getOnboardingMediaKey(
+      media?.mediaType,
+      media?.id,
+    )
+
+    if (key && answeredKeys.has(key)) {
+      answered.push({
+        media,
+        index,
+      })
+      return
+    }
+
+    remaining.push({
+      media,
+      index,
+      score:
+        adaptiveCandidateScore(
+          media,
+          tasteEvidence,
+          index,
+        ),
+    })
+  })
+
+  remaining.sort(
+    (left, right) => (
+      right.score - left.score
+      || left.index - right.index
+    ),
+  )
+
+  return [
+    ...answered.map(item => item.media),
+    ...remaining.map(item => item.media),
+  ]
+}
