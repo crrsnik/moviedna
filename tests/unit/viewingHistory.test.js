@@ -12,6 +12,10 @@ import {
   normalizeViewingHistory,
 } from '../../src/features/viewingHistory/services/normalizeViewingHistory.js'
 
+import {
+  createViewingHistorySnapshotCache,
+} from '../../src/features/viewingHistory/services/viewingHistorySnapshotCache.js'
+
 const stamp = value => ({
   toDate: () => new Date(value),
 })
@@ -318,5 +322,57 @@ describe('viewing history presentation', () => {
     const groups = groupViewingHistoryByMonth(events)
 
     assert.equal(groups[0].events.length, 2)
+  })
+})
+
+
+describe('viewing history snapshot cache', () => {
+  it('reuses the last confirmed history by owner', () => {
+    const cache = createViewingHistorySnapshotCache()
+    const history = [
+      {
+        eventId: 'ABCDEFGHIJKLMNOPQRST',
+        watchedDate: '2026-09-29',
+      },
+    ]
+
+    assert.equal(cache.get('owner-a'), null)
+
+    cache.set('owner-a', history)
+
+    assert.equal(
+      cache.get('owner-a'),
+      history,
+    )
+    assert.equal(
+      cache.get('owner-b'),
+      null,
+    )
+  })
+
+  it('can clear one owner without affecting another', () => {
+    const cache = createViewingHistorySnapshotCache()
+
+    cache.set('owner-a', [])
+    cache.set('owner-b', [])
+
+    cache.clear('owner-a')
+
+    assert.equal(cache.get('owner-a'), null)
+    assert.deepEqual(cache.get('owner-b'), [])
+  })
+
+  it('rejects malformed cache writes', () => {
+    const cache = createViewingHistorySnapshotCache()
+
+    assert.throws(
+      () => cache.set('', []),
+      TypeError,
+    )
+
+    assert.throws(
+      () => cache.set('owner-a', null),
+      TypeError,
+    )
   })
 })

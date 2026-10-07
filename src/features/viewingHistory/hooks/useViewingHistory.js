@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { useAuth } from '../../auth/hooks/useAuth.js'
 import { viewingHistoryService } from '../services/viewingHistoryService.js'
+import { viewingHistorySnapshotCache } from '../services/viewingHistorySnapshotCache.js'
 
 export function useViewingHistory() {
   const { user } = useAuth()
@@ -21,6 +22,11 @@ export function useViewingHistory() {
       uid,
       data => {
         if (active) {
+          viewingHistorySnapshotCache.set(
+            uid,
+            data,
+          )
+
           setState({
             key,
             data,
