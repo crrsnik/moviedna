@@ -3,6 +3,7 @@ import {
 } from '../achievements/achievementDefinitions.js'
 
 import { resolvePublicGenreLabel } from './genreLabels.js'
+import { selectPublicTasteTitle } from './publicTasteTitle.js'
 
 const PROFILE_PREVIEW_SCHEMA_VERSION = 1
 const MAX_GENRES = 4
@@ -85,8 +86,20 @@ export function buildPublicDnaPreview(movieDna) {
       score: entry.score,
     }))
 
+  const tasteTitle =
+    selectPublicTasteTitle(
+      movieDna?.dimensions,
+    )
+
   return {
     genres,
+    ...(tasteTitle
+      ? {
+          tasteTitle: {
+            id: tasteTitle,
+          },
+        }
+      : {}),
   }
 }
 

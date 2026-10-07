@@ -5,6 +5,15 @@ import {
 
 import { db } from '../../../shared/config/firebase.js'
 import { resolveGenreIdLabel } from '../../dna/services/dimensionLabels.js'
+import {
+  TASTE_TITLE_COMBINATIONS,
+  TASTE_TITLE_IDS,
+} from '../../dna/utils/selectTasteTitle.js'
+
+const PUBLIC_TASTE_TITLE_IDS = new Set([
+  ...Object.values(TASTE_TITLE_IDS),
+  ...Object.values(TASTE_TITLE_COMBINATIONS),
+])
 
 export class PublicProfilePreviewError extends Error {
   constructor(code) {
@@ -151,6 +160,27 @@ function normalizePublicAchievements(value) {
   }
 }
 
+function normalizeTasteTitle(value) {
+  if (value == null) return null
+
+  if (
+    !plain(value)
+    || Object.keys(value).length !== 1
+    || typeof value.id !== 'string'
+    || !PUBLIC_TASTE_TITLE_IDS.has(
+      value.id,
+    )
+  ) {
+    throw new PublicProfilePreviewError(
+      'public-profile-preview/invalid',
+    )
+  }
+
+  return {
+    id: value.id,
+  }
+}
+
 function normalizeGenre(value) {
   if (
     !plain(value)
@@ -216,9 +246,21 @@ function normalizePreview(snapshot) {
     )
   }
 
+  const tasteTitle =
+    normalizeTasteTitle(
+      data.dna.tasteTitle,
+    )
+
   return {
     dna: {
-      genres: data.dna.genres.map(normalizeGenre),
+      genres:
+        data.dna.genres.map(
+          normalizeGenre,
+        ),
+
+      ...(tasteTitle
+        ? { tasteTitle }
+        : {}),
     },
 
     statistics: {

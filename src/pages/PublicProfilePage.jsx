@@ -178,6 +178,23 @@ function PublicPreview({
           </p>
         </div>
 
+        {dna.tasteTitle && (
+          <div className="mt-4">
+            <span
+              className="
+                inline-flex rounded-full
+                border border-accent
+                bg-surface px-2.5 py-1
+                text-xs font-semibold text-primary
+              "
+            >
+              {t(
+                `profile.tasteTitles.${dna.tasteTitle.id}`,
+              )}
+            </span>
+          </div>
+        )}
+
         <div className="mt-5">
           <GenrePreview genres={dna.genres} />
         </div>
