@@ -1,7 +1,7 @@
 {
   "name": "moviedna",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "imports": {
     "#firebase-app-check-debug": "./src/shared/config/firebaseAppCheckDebug.js",
