@@ -317,6 +317,7 @@ export default function AccountSettingsPage() {
             <label className="flex items-start gap-3 text-sm text-secondary">
               <input
                 type="checkbox"
+                name="confirmAccountDeletion"
                 checked={deleteConfirmed}
                 disabled={isDeleting}
                 onChange={event => {

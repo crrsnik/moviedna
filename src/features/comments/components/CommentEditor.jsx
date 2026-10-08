@@ -138,6 +138,7 @@ export default function CommentEditor({
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
+              name="containsSpoiler"
               checked={input.containsSpoiler}
               disabled={action.pending}
               onChange={(event) => setDraft({

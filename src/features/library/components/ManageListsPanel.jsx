@@ -174,6 +174,7 @@ export default function ManageListsPanel({
                 >
                   <input
                     type="checkbox"
+                    name={`list-${list.id}`}
                     checked={selected.includes(
                       list.id,
                     )}

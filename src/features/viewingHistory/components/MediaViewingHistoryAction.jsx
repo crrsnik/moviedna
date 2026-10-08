@@ -126,6 +126,7 @@ function AuthenticatedViewingAction({
 
           <input
             type="date"
+            name="watchedDate"
             value={watchedDate}
             max={today}
             onChange={event => {

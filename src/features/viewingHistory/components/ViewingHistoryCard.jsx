@@ -184,6 +184,7 @@ export default function ViewingHistoryCard({
 
               <input
                 type="date"
+                name="watchedDate"
                 value={watchedDate}
                 max={localDateString()}
                 disabled={Boolean(pending)}
