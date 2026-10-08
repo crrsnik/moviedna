@@ -214,39 +214,38 @@ The interface intentionally uses a minimal visual style so that movie artwork an
 
 MovieDNA uses a feature-based frontend structure.
 
-src/
-├── features/
-│   ├── achievements/
-│   ├── auth/
-│   ├── catalog/
-│   ├── comments/
-│   ├── dna/
-│   ├── friends/
-│   ├── library/
-│   ├── localization/
-│   ├── notifications/
-│   ├── profile/
-│   ├── ratings/
-│   ├── recommendations/
-│   ├── statistics/
-│   └── viewingHistory/
-│
-├── pages/
-├── router/
-└── shared/
+- `src/`
+  - `features/`
+    - `achievements/`
+    - `auth/`
+    - `catalog/`
+    - `comments/`
+    - `dna/`
+    - `friends/`
+    - `library/`
+    - `localization/`
+    - `notifications/`
+    - `profile/`
+    - `ratings/`
+    - `recommendations/`
+    - `statistics/`
+    - `viewingHistory/`
+  - `pages/`
+  - `router/`
+  - `shared/`
 
 Server-side functionality is separated into Firebase Functions responsible for areas such as:
 
-functions/src/
-├── achievements/
-├── accountDeletion/
-├── adapters/
-├── dna/
-├── metadata/
-├── notifications/
-├── profilePreview/
-├── publicBoards/
-└── recommendations/
+- `functions/src/`
+  - `achievements/`
+  - `accountDeletion/`
+  - `adapters/`
+  - `dna/`
+  - `metadata/`
+  - `notifications/`
+  - `profilePreview/`
+  - `publicBoards/`
+  - `recommendations/`
 
 This structure separates interface code, domain logic, persistence, recommendation processing, and server-side operations.
 
@@ -358,7 +357,7 @@ The project was developed as a complete application rather than a minimal protot
 - responsive design;
 - localization;
 - production deployment.
-- 
+
 Future development is expected to focus mainly on refinement, experimentation, and maintenance rather than expanding the core feature set.
 TMDB attribution
 Movie and TV metadata and artwork are provided by TMDB.
